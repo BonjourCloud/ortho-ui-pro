@@ -1,4 +1,5 @@
 import { Link, useLocation } from "react-router-dom";
+import WhatsAppFloat from "./WhatsAppFloat";
 import { Phone, Mail, MapPin, Clock, Menu, X, Shield, Globe } from "lucide-react";
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
@@ -210,6 +211,8 @@ export default function Layout({ children }: { children: React.ReactNode }) {
           </div>
         </div>
       </footer>
+
+      <WhatsAppFloat />
     </div>
   );
 }
