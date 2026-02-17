@@ -19,6 +19,7 @@ export interface SiteConfig {
   location: string;
   hours: string;
   logoInitials: string;
+  heroImageUrl: string;
 }
 
 const defaultConfig: SiteConfig = {
@@ -40,6 +41,7 @@ const defaultConfig: SiteConfig = {
   location: "Banjara Hills, Hyderabad, Telangana",
   hours: "Mon - Sat: 9 AM - 8 PM",
   logoInitials: "DO",
+  heroImageUrl: "",
 };
 
 interface SiteConfigContextType {

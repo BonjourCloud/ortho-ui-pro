@@ -22,7 +22,7 @@ export default function About() {
               <p className="text-primary-foreground/70 leading-relaxed">{config.fullBio}</p>
             </motion.div>
             <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} transition={{ duration: 0.6, delay: 0.2 }}>
-              <img src={heroImage} alt={config.doctorName} className="rounded-2xl shadow-2xl w-full object-cover aspect-[4/3]" />
+              <img src={config.heroImageUrl || heroImage} alt={config.doctorName} className="rounded-2xl shadow-2xl w-full object-cover aspect-[4/3]" />
             </motion.div>
           </div>
         </div>
