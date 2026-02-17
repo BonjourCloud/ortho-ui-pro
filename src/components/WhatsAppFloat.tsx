@@ -5,6 +5,7 @@ export default function WhatsAppFloat() {
   const { config } = useSiteConfig();
   const number = config.whatsapp?.replace(/\D/g, "") || config.phone.replace(/\D/g, "");
 
+  if (!config.whatsappFloatEnabled) return null;
   return (
     <a
       href={`https://wa.me/${number}?text=${encodeURIComponent("Hi Doctor, I'd like to book a consultation.")}`}

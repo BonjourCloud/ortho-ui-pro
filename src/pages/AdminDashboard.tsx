@@ -384,6 +384,26 @@ export default function AdminDashboard() {
                   </div>
                 </div>
 
+                {/* Feature Toggles */}
+                <div className="border-t pt-5">
+                  <div className="flex items-center gap-2 mb-3">
+                    <MessageCircle size={18} className="text-primary" />
+                    <label className="text-sm font-medium text-foreground">Feature Toggles</label>
+                  </div>
+                  <label className="flex items-center gap-3 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={configForm.whatsappFloatEnabled}
+                      onChange={(e) => setConfigForm({ ...configForm, whatsappFloatEnabled: e.target.checked })}
+                      className="rounded border-primary text-primary focus:ring-primary/20"
+                    />
+                    <div>
+                      <span className="text-sm font-medium text-foreground">Floating WhatsApp Button</span>
+                      <p className="text-xs text-muted-foreground">Show a WhatsApp chat button on all pages</p>
+                    </div>
+                  </label>
+                </div>
+
                 <button onClick={handleSaveConfig}
                   className="w-full rounded-lg bg-primary px-6 py-3 text-sm font-semibold text-primary-foreground hover:opacity-90 transition-all">
                   Save Configuration
