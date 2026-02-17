@@ -1,18 +1,31 @@
 import { Link, useLocation } from "react-router-dom";
-import { Phone, Mail, MapPin, Clock, Menu, X } from "lucide-react";
+import { Phone, Mail, MapPin, Clock, Menu, X, Shield } from "lucide-react";
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
+import { useSiteConfig } from "@/contexts/SiteConfigContext";
 
 const navLinks = [
   { to: "/", label: "Home" },
   { to: "/about", label: "About" },
   { to: "/services", label: "Services" },
+  { to: "/case-studies", label: "Case Studies" },
+  { to: "/blog", label: "Blog" },
   { to: "/contact", label: "Contact" },
 ];
 
 export default function Layout({ children }: { children: React.ReactNode }) {
   const [menuOpen, setMenuOpen] = useState(false);
   const location = useLocation();
+  const { config, isAdmin } = useSiteConfig();
+
+  const isAdminRoute = location.pathname.startsWith("/admin");
+  if (isAdminRoute) return <>{children}</>;
+
+  const formatPhone = (phone: string) => {
+    const digits = phone.replace(/\D/g, "");
+    if (digits.length === 12) return `+${digits.slice(0, 2)} ${digits.slice(2, 7)} ${digits.slice(7)}`;
+    return phone;
+  };
 
   return (
     <div className="min-h-screen flex flex-col font-body">
@@ -20,12 +33,16 @@ export default function Layout({ children }: { children: React.ReactNode }) {
       <div className="bg-primary text-primary-foreground text-sm hidden md:block">
         <div className="container flex items-center justify-between py-2">
           <div className="flex items-center gap-6">
-            <span className="flex items-center gap-1.5"><Phone size={14} /> +91 98765 43210</span>
-            <span className="flex items-center gap-1.5"><Mail size={14} /> consult@drsrivanthortho.com</span>
+            <span className="flex items-center gap-1.5"><Phone size={14} /> {formatPhone(config.phone)}</span>
+            <span className="flex items-center gap-1.5"><Mail size={14} /> {config.email}</span>
           </div>
-          <div className="flex items-center gap-1.5">
-            <Clock size={14} />
-            <span>Mon - Sat: 9 AM - 8 PM</span>
+          <div className="flex items-center gap-4">
+            <span className="flex items-center gap-1.5"><Clock size={14} /> {config.hours}</span>
+            {isAdmin && (
+              <Link to="/admin" className="flex items-center gap-1 text-accent hover:text-accent/80 transition-colors">
+                <Shield size={12} /> Admin
+              </Link>
+            )}
           </div>
         </div>
       </div>
@@ -35,21 +52,21 @@ export default function Layout({ children }: { children: React.ReactNode }) {
         <div className="container flex items-center justify-between h-16 md:h-20">
           <Link to="/" className="flex items-center gap-2">
             <div className="w-10 h-10 rounded-lg bg-primary flex items-center justify-center text-primary-foreground font-display font-bold text-lg">
-              SO
+              {config.logoInitials}
             </div>
             <div className="leading-tight">
-              <div className="font-display font-bold text-foreground text-lg">Dr. Srivanth</div>
-              <div className="text-xs text-muted-foreground">Ortho Clinic</div>
+              <div className="font-display font-bold text-foreground text-lg">{config.doctorName}</div>
+              <div className="text-xs text-muted-foreground">{config.clinicName}</div>
             </div>
           </Link>
 
           {/* Desktop nav */}
-          <nav className="hidden md:flex items-center gap-8">
+          <nav className="hidden lg:flex items-center gap-6">
             {navLinks.map((l) => (
               <Link
                 key={l.to}
                 to={l.to}
-                className={`text-sm font-medium transition-colors hover:text-primary ${location.pathname === l.to ? "text-primary" : "text-muted-foreground"}`}
+                className={`text-sm font-medium transition-colors hover:text-primary ${location.pathname === l.to || (l.to !== "/" && location.pathname.startsWith(l.to)) ? "text-primary" : "text-muted-foreground"}`}
               >
                 {l.label}
               </Link>
@@ -63,7 +80,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
           </nav>
 
           {/* Mobile menu toggle */}
-          <button className="md:hidden p-2" onClick={() => setMenuOpen(!menuOpen)}>
+          <button className="lg:hidden p-2" onClick={() => setMenuOpen(!menuOpen)}>
             {menuOpen ? <X size={24} /> : <Menu size={24} />}
           </button>
         </div>
@@ -75,7 +92,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
               initial={{ height: 0, opacity: 0 }}
               animate={{ height: "auto", opacity: 1 }}
               exit={{ height: 0, opacity: 0 }}
-              className="md:hidden border-t bg-card overflow-hidden"
+              className="lg:hidden border-t bg-card overflow-hidden"
             >
               <div className="container py-4 flex flex-col gap-3">
                 {navLinks.map((l) => (
@@ -95,6 +112,11 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                 >
                   Book Appointment
                 </Link>
+                {isAdmin && (
+                  <Link to="/admin" onClick={() => setMenuOpen(false)} className="text-sm font-medium py-2 text-accent flex items-center gap-1">
+                    <Shield size={14} /> Admin Dashboard
+                  </Link>
+                )}
               </div>
             </motion.div>
           )}
@@ -108,9 +130,9 @@ export default function Layout({ children }: { children: React.ReactNode }) {
         <div className="container py-12 md:py-16">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-10">
             <div>
-              <h3 className="font-display text-xl font-bold mb-4">Dr. Srivanth Ortho</h3>
+              <h3 className="font-display text-xl font-bold mb-4">{config.doctorName} {config.clinicName}</h3>
               <p className="text-primary-foreground/70 text-sm leading-relaxed">
-                Premium orthopedic care specializing in joint replacements, sports medicine, and trauma care in Hyderabad.
+                Premium orthopedic care specializing in joint replacements, sports medicine, and trauma care.
               </p>
             </div>
             <div>
@@ -129,14 +151,14 @@ export default function Layout({ children }: { children: React.ReactNode }) {
             <div>
               <h4 className="font-display text-lg font-semibold mb-4">Contact</h4>
               <div className="flex flex-col gap-3 text-sm text-primary-foreground/70">
-                <span className="flex items-start gap-2"><MapPin size={16} className="mt-0.5 shrink-0" /> Banjara Hills, Hyderabad, Telangana</span>
-                <span className="flex items-center gap-2"><Phone size={16} className="shrink-0" /> +91 98765 43210</span>
-                <span className="flex items-center gap-2"><Mail size={16} className="shrink-0" /> consult@drsrivanthortho.com</span>
+                <span className="flex items-start gap-2"><MapPin size={16} className="mt-0.5 shrink-0" /> {config.location}</span>
+                <span className="flex items-center gap-2"><Phone size={16} className="shrink-0" /> {formatPhone(config.phone)}</span>
+                <span className="flex items-center gap-2"><Mail size={16} className="shrink-0" /> {config.email}</span>
               </div>
             </div>
           </div>
           <div className="border-t border-primary-foreground/20 mt-10 pt-6 text-center text-xs text-primary-foreground/50">
-            © {new Date().getFullYear()} Dr. Srivanth Ortho. All rights reserved.
+            © {new Date().getFullYear()} {config.doctorName} {config.clinicName}. All rights reserved.
           </div>
         </div>
       </footer>
