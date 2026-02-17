@@ -20,6 +20,7 @@ export interface SiteConfig {
   hours: string;
   logoInitials: string;
   heroImageUrl: string;
+  whatsappFloatEnabled: boolean;
 }
 
 const defaultConfig: SiteConfig = {
@@ -42,6 +43,7 @@ const defaultConfig: SiteConfig = {
   hours: "Mon - Sat: 9 AM - 8 PM",
   logoInitials: "DO",
   heroImageUrl: "",
+  whatsappFloatEnabled: true,
 };
 
 interface SiteConfigContextType {
