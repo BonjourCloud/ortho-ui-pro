@@ -62,7 +62,7 @@ export default function Contact() {
               </div>
 
               <a
-                href="https://wa.me/919876543210"
+                href={`https://wa.me/${config.whatsapp?.replace(/\D/g, "") || config.phone.replace(/\D/g, "")}`}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="inline-flex items-center gap-2 rounded-lg bg-primary px-5 py-2.5 text-sm font-semibold text-primary-foreground hover:opacity-90"
