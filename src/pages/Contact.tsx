@@ -1,0 +1,131 @@
+import { motion } from "framer-motion";
+import { MapPin, Phone, Mail, Clock, MessageCircle } from "lucide-react";
+import { useState } from "react";
+
+const contactInfo = [
+  { icon: MapPin, label: "Location", value: "Banjara Hills, Hyderabad, Telangana 500034" },
+  { icon: Phone, label: "Phone", value: "+91 98765 43210", href: "tel:+919876543210" },
+  { icon: Mail, label: "Email", value: "consult@drsrivanthortho.com", href: "mailto:consult@drsrivanthortho.com" },
+  { icon: Clock, label: "Hours", value: "Mon - Sat: 9:00 AM - 8:00 PM" },
+];
+
+export default function Contact() {
+  const [sent, setSent] = useState(false);
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    setTimeout(() => setSent(true), 500);
+  };
+
+  return (
+    <>
+      <section className="bg-hero-gradient py-14 md:py-20">
+        <div className="container text-center">
+          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
+            <h1 className="font-display text-4xl md:text-5xl font-bold text-primary-foreground mb-3">Contact Us</h1>
+            <p className="text-primary-foreground/70">Get in touch with Dr. Srivanth's clinic</p>
+          </motion.div>
+        </div>
+      </section>
+
+      <section className="py-12 md:py-20">
+        <div className="container">
+          <div className="grid md:grid-cols-2 gap-12">
+            {/* Contact Info */}
+            <div>
+              <h2 className="font-display text-2xl font-bold text-foreground mb-6">Get In Touch</h2>
+              <div className="space-y-5 mb-8">
+                {contactInfo.map((item, i) => (
+                  <motion.div
+                    key={i}
+                    initial={{ opacity: 0, x: -20 }}
+                    whileInView={{ opacity: 1, x: 0 }}
+                    viewport={{ once: true }}
+                    transition={{ delay: i * 0.1 }}
+                    className="flex items-start gap-4"
+                  >
+                    <div className="w-10 h-10 rounded-full bg-accent/10 flex items-center justify-center shrink-0">
+                      <item.icon className="text-accent" size={18} />
+                    </div>
+                    <div>
+                      <div className="text-sm font-semibold text-foreground">{item.label}</div>
+                      {item.href ? (
+                        <a href={item.href} className="text-sm text-muted-foreground hover:text-primary transition-colors">{item.value}</a>
+                      ) : (
+                        <div className="text-sm text-muted-foreground">{item.value}</div>
+                      )}
+                    </div>
+                  </motion.div>
+                ))}
+              </div>
+
+              <a
+                href="https://wa.me/919876543210"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-2 rounded-lg bg-primary px-5 py-2.5 text-sm font-semibold text-primary-foreground hover:opacity-90"
+              >
+                <MessageCircle size={16} /> Chat on WhatsApp
+              </a>
+
+              {/* Map placeholder */}
+              <div className="mt-8 rounded-xl overflow-hidden border">
+                <iframe
+                  title="Clinic Location"
+                  src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3806.7!2d78.4!3d17.4!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x0%3A0x0!2zMTfCsDI0JzAwLjAiTiA3OMKwMjQnMDAuMCJF!5e0!3m2!1sen!2sin!4v1"
+                  width="100%"
+                  height="250"
+                  style={{ border: 0 }}
+                  allowFullScreen
+                  loading="lazy"
+                />
+              </div>
+            </div>
+
+            {/* Contact Form */}
+            <div>
+              <h2 className="font-display text-2xl font-bold text-foreground mb-6">Send a Message</h2>
+              {sent ? (
+                <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="bg-teal-light rounded-xl p-8 text-center">
+                  <h3 className="font-display text-xl font-bold text-foreground mb-2">Message Sent!</h3>
+                  <p className="text-sm text-muted-foreground">We'll get back to you within 24 hours.</p>
+                </motion.div>
+              ) : (
+                <form onSubmit={handleSubmit} className="space-y-5">
+                  <div>
+                    <label className="block text-sm font-medium text-foreground mb-1.5">Full Name *</label>
+                    <input required type="text" className="w-full rounded-lg border bg-card px-4 py-2.5 text-sm text-foreground focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none" />
+                  </div>
+                  <div className="grid sm:grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium text-foreground mb-1.5">Email *</label>
+                      <input required type="email" className="w-full rounded-lg border bg-card px-4 py-2.5 text-sm text-foreground focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none" />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-foreground mb-1.5">Phone</label>
+                      <input type="tel" className="w-full rounded-lg border bg-card px-4 py-2.5 text-sm text-foreground focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none" placeholder="+91" />
+                    </div>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-foreground mb-1.5">Subject *</label>
+                    <input required type="text" className="w-full rounded-lg border bg-card px-4 py-2.5 text-sm text-foreground focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none" />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-foreground mb-1.5">Message *</label>
+                    <textarea required rows={5} className="w-full rounded-lg border bg-card px-4 py-2.5 text-sm text-foreground focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none resize-none" />
+                  </div>
+                  <button
+                    type="submit"
+                    className="w-full rounded-lg bg-accent px-6 py-3 text-sm font-semibold text-accent-foreground shadow-lg hover:opacity-90 transition-all"
+                  >
+                    Send Message
+                  </button>
+                </form>
+              )}
+            </div>
+          </div>
+        </div>
+      </section>
+    </>
+  );
+}
