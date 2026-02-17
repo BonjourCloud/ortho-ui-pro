@@ -341,6 +341,13 @@ export default function AdminDashboard() {
                 </div>
 
                 <div>
+                  <label className="block text-sm font-medium text-foreground mb-1.5">Doctor Photo URL</label>
+                  <input value={configForm.heroImageUrl} onChange={(e) => setConfigForm({ ...configForm, heroImageUrl: e.target.value })} placeholder="https://example.com/doctor-photo.jpg"
+                    className="w-full rounded-lg border bg-background px-4 py-2.5 text-sm text-foreground focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none" />
+                  <p className="text-xs text-muted-foreground mt-1">Leave empty to use the default image.</p>
+                </div>
+
+                <div>
                   <label className="block text-sm font-medium text-foreground mb-1.5">Consultation Fee (₹)</label>
                   <input type="number" value={configForm.consultationFee} onChange={(e) => setConfigForm({ ...configForm, consultationFee: +e.target.value })}
                     className="w-full rounded-lg border bg-background px-4 py-2.5 text-sm text-foreground focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none" />
