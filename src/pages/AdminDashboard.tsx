@@ -1,17 +1,21 @@
 import { useState } from "react";
 import { motion } from "framer-motion";
-import { BarChart3, Users, Calendar, Settings, LogOut, TrendingUp, Phone, MessageCircle, Eye, FileText } from "lucide-react";
+import { BarChart3, Users, Calendar, Settings, LogOut, TrendingUp, Phone, MessageCircle, Eye, FileText, Globe } from "lucide-react";
 import { useSiteConfig, SiteConfig } from "@/contexts/SiteConfigContext";
 import { useNavigate } from "react-router-dom";
 import { mockAnalytics, blogPosts, caseStudies, services } from "@/data/mockData";
+import { useLanguage, Language } from "@/contexts/LanguageContext";
+import { languageLabels } from "@/data/translations";
 
 type Tab = "overview" | "appointments" | "content" | "settings";
 
 export default function AdminDashboard() {
   const { config, updateConfig, isAdmin, adminLogout } = useSiteConfig();
+  const { enabledLanguages, setEnabledLanguages } = useLanguage();
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState<Tab>("overview");
   const [configForm, setConfigForm] = useState<SiteConfig>({ ...config });
+  const [langSettings, setLangSettings] = useState<Language[]>([...enabledLanguages]);
   const [saved, setSaved] = useState(false);
 
   if (!isAdmin) {
@@ -26,6 +30,7 @@ export default function AdminDashboard() {
 
   const handleSaveConfig = () => {
     updateConfig(configForm);
+    setEnabledLanguages(langSettings);
     setSaved(true);
     setTimeout(() => setSaved(false), 2000);
   };
@@ -351,6 +356,32 @@ export default function AdminDashboard() {
                   <label className="block text-sm font-medium text-foreground mb-1.5">Consultation Fee (₹)</label>
                   <input type="number" value={configForm.consultationFee} onChange={(e) => setConfigForm({ ...configForm, consultationFee: +e.target.value })}
                     className="w-full rounded-lg border bg-background px-4 py-2.5 text-sm text-foreground focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none" />
+                </div>
+
+                {/* Language Settings */}
+                <div className="border-t pt-5">
+                  <div className="flex items-center gap-2 mb-3">
+                    <Globe size={18} className="text-primary" />
+                    <label className="text-sm font-medium text-foreground">Enabled Languages</label>
+                  </div>
+                  <p className="text-xs text-muted-foreground mb-3">Toggle languages visitors can switch between. English is always enabled.</p>
+                  <div className="flex flex-wrap gap-3">
+                    {(["en", "hi", "te"] as Language[]).map((lang) => (
+                      <label key={lang} className="flex items-center gap-2 cursor-pointer">
+                        <input
+                          type="checkbox"
+                          checked={langSettings.includes(lang)}
+                          disabled={lang === "en"}
+                          onChange={(e) => {
+                            if (e.target.checked) setLangSettings([...langSettings, lang]);
+                            else setLangSettings(langSettings.filter((l) => l !== lang));
+                          }}
+                          className="rounded border-primary text-primary focus:ring-primary/20"
+                        />
+                        <span className="text-sm text-foreground">{languageLabels[lang]}</span>
+                      </label>
+                    ))}
+                  </div>
                 </div>
 
                 <button onClick={handleSaveConfig}
