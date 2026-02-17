@@ -1,16 +1,18 @@
 import { motion } from "framer-motion";
 import { MapPin, Phone, Mail, Clock, MessageCircle } from "lucide-react";
 import { useState } from "react";
-
-const contactInfo = [
-  { icon: MapPin, label: "Location", value: "Banjara Hills, Hyderabad, Telangana 500034" },
-  { icon: Phone, label: "Phone", value: "+91 98765 43210", href: "tel:+919876543210" },
-  { icon: Mail, label: "Email", value: "consult@drsrivanthortho.com", href: "mailto:consult@drsrivanthortho.com" },
-  { icon: Clock, label: "Hours", value: "Mon - Sat: 9:00 AM - 8:00 PM" },
-];
+import { useSiteConfig } from "@/contexts/SiteConfigContext";
 
 export default function Contact() {
   const [sent, setSent] = useState(false);
+  const { config } = useSiteConfig();
+
+  const contactInfo = [
+    { icon: MapPin, label: "Location", value: config.location },
+    { icon: Phone, label: "Phone", value: config.phone, href: `tel:${config.phone}` },
+    { icon: Mail, label: "Email", value: config.email, href: `mailto:${config.email}` },
+    { icon: Clock, label: "Hours", value: config.hours },
+  ];
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -23,7 +25,7 @@ export default function Contact() {
         <div className="container text-center">
           <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
             <h1 className="font-display text-4xl md:text-5xl font-bold text-primary-foreground mb-3">Contact Us</h1>
-            <p className="text-primary-foreground/70">Get in touch with Dr. Srivanth's clinic</p>
+            <p className="text-primary-foreground/70">Get in touch with {config.doctorName}'s clinic</p>
           </motion.div>
         </div>
       </section>
