@@ -41,6 +41,11 @@ export default function AdminSecondOpinions() {
     }
   };
 
+  const handleStatusChange = async (id: string, newStatus: string) => {
+    await supabase.from("second_opinions").update({ status: newStatus }).eq("id", id);
+    setItems((prev) => prev.map((item) => item.id === id ? { ...item, status: newStatus } : item));
+  };
+
   const getFileName = (path: string) => path.split("/").pop() || path;
 
   if (loading) {
@@ -68,11 +73,19 @@ export default function AdminSecondOpinions() {
                   </div>
                 </div>
                 <div className="flex items-center gap-2 shrink-0">
-                  <span className={`text-xs font-medium rounded-full px-3 py-1 ${
-                    item.status === "reviewed" ? "bg-primary/10 text-primary" : "bg-accent/10 text-accent-foreground"
-                  }`}>
-                    {item.status || "pending"}
-                  </span>
+                  <select
+                    value={item.status || "pending"}
+                    onChange={(e) => handleStatusChange(item.id, e.target.value)}
+                    className={`text-xs font-medium rounded-full px-3 py-1 border-none outline-none cursor-pointer ${
+                      item.status === "reviewed" ? "bg-primary/10 text-primary" :
+                      item.status === "in-progress" ? "bg-yellow-100 text-yellow-800" :
+                      "bg-accent/10 text-accent-foreground"
+                    }`}
+                  >
+                    <option value="pending">Pending</option>
+                    <option value="in-progress">In Progress</option>
+                    <option value="reviewed">Reviewed</option>
+                  </select>
                   {item.created_at && (
                     <span className="text-xs text-muted-foreground">
                       {new Date(item.created_at).toLocaleDateString()}
