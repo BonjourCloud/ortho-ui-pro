@@ -14,7 +14,132 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      appointments: {
+        Row: {
+          appointment_type: string
+          created_at: string | null
+          email: string | null
+          emi_interest: boolean | null
+          first_name: string
+          id: string
+          insurance_provider: string | null
+          last_name: string
+          phone: string
+          preferred_date: string
+          preferred_time: string
+          service: string | null
+          status: string | null
+          symptoms: string
+        }
+        Insert: {
+          appointment_type: string
+          created_at?: string | null
+          email?: string | null
+          emi_interest?: boolean | null
+          first_name: string
+          id?: string
+          insurance_provider?: string | null
+          last_name: string
+          phone: string
+          preferred_date: string
+          preferred_time: string
+          service?: string | null
+          status?: string | null
+          symptoms: string
+        }
+        Update: {
+          appointment_type?: string
+          created_at?: string | null
+          email?: string | null
+          emi_interest?: boolean | null
+          first_name?: string
+          id?: string
+          insurance_provider?: string | null
+          last_name?: string
+          phone?: string
+          preferred_date?: string
+          preferred_time?: string
+          service?: string | null
+          status?: string | null
+          symptoms?: string
+        }
+        Relationships: []
+      }
+      contact_messages: {
+        Row: {
+          created_at: string | null
+          email: string
+          id: string
+          message: string
+          name: string
+          phone: string | null
+          read: boolean | null
+          subject: string
+        }
+        Insert: {
+          created_at?: string | null
+          email: string
+          id?: string
+          message: string
+          name: string
+          phone?: string | null
+          read?: boolean | null
+          subject: string
+        }
+        Update: {
+          created_at?: string | null
+          email?: string
+          id?: string
+          message?: string
+          name?: string
+          phone?: string | null
+          read?: boolean | null
+          subject?: string
+        }
+        Relationships: []
+      }
+      second_opinions: {
+        Row: {
+          additional_notes: string | null
+          age: number
+          condition: string
+          created_at: string | null
+          current_diagnosis: string
+          email: string | null
+          file_names: string[] | null
+          id: string
+          name: string
+          phone: string
+          status: string | null
+        }
+        Insert: {
+          additional_notes?: string | null
+          age: number
+          condition: string
+          created_at?: string | null
+          current_diagnosis: string
+          email?: string | null
+          file_names?: string[] | null
+          id?: string
+          name: string
+          phone: string
+          status?: string | null
+        }
+        Update: {
+          additional_notes?: string | null
+          age?: number
+          condition?: string
+          created_at?: string | null
+          current_diagnosis?: string
+          email?: string | null
+          file_names?: string[] | null
+          id?: string
+          name?: string
+          phone?: string
+          status?: string | null
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
