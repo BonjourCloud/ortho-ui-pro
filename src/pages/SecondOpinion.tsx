@@ -48,6 +48,24 @@ export default function SecondOpinion() {
     e.preventDefault();
     setLoading(true);
 
+    // Generate a unique folder for this submission
+    const folder = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+    const uploadedPaths: string[] = [];
+
+    // Upload files to storage
+    for (const file of form.files) {
+      const filePath = `${folder}/${file.name}`;
+      const { error: uploadError } = await supabase.storage
+        .from("second-opinion-reports")
+        .upload(filePath, file);
+      if (uploadError) {
+        toast({ title: "Upload Error", description: `Failed to upload ${file.name}. Please try again.`, variant: "destructive" });
+        setLoading(false);
+        return;
+      }
+      uploadedPaths.push(filePath);
+    }
+
     const { error } = await supabase.from("second_opinions").insert({
       name: form.name,
       age: parseInt(form.age),
@@ -56,7 +74,7 @@ export default function SecondOpinion() {
       condition: form.condition,
       current_diagnosis: form.currentDiagnosis,
       additional_notes: form.additionalNotes || null,
-      file_names: form.files.map((f) => f.name),
+      file_names: uploadedPaths.length > 0 ? uploadedPaths : null,
     });
 
     setLoading(false);
