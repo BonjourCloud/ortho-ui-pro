@@ -338,6 +338,57 @@ export type Database = {
         }
         Relationships: []
       }
+      testimonials: {
+        Row: {
+          age: number | null
+          condition: string
+          created_at: string | null
+          gender: string | null
+          id: string
+          initials: string
+          is_featured: boolean | null
+          location: string | null
+          occupation: string | null
+          patient_name: string
+          rating: number
+          sort_order: number | null
+          text: string
+          updated_at: string | null
+        }
+        Insert: {
+          age?: number | null
+          condition: string
+          created_at?: string | null
+          gender?: string | null
+          id?: string
+          initials: string
+          is_featured?: boolean | null
+          location?: string | null
+          occupation?: string | null
+          patient_name: string
+          rating?: number
+          sort_order?: number | null
+          text: string
+          updated_at?: string | null
+        }
+        Update: {
+          age?: number | null
+          condition?: string
+          created_at?: string | null
+          gender?: string | null
+          id?: string
+          initials?: string
+          is_featured?: boolean | null
+          location?: string | null
+          occupation?: string | null
+          patient_name?: string
+          rating?: number
+          sort_order?: number | null
+          text?: string
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never

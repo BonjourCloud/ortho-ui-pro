@@ -2,9 +2,9 @@ import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
 import { Star, ArrowRight, Shield, Heart, Zap, Users } from "lucide-react";
 import heroImage from "@/assets/hero-doctor.jpg";
-import { serviceCategories, testimonials } from "@/data/mockData";
+import { serviceCategories } from "@/data/mockData";
 import { useSiteConfig } from "@/contexts/SiteConfigContext";
-import { useServices } from "@/hooks/useContent";
+import { useServices, useTestimonials } from "@/hooks/useContent";
 
 const whyChoose = [
   { icon: Shield, title: "15+ Years of Expertise", desc: "Board-certified with fellowship training from Singapore General Hospital." },
@@ -16,6 +16,7 @@ const whyChoose = [
 export default function Index() {
   const { config } = useSiteConfig();
   const { services } = useServices();
+  const { testimonials } = useTestimonials();
 
   const stats = [
     { label: "Years Experience", value: `${config.yearsExperience}+` },
@@ -168,7 +169,7 @@ export default function Index() {
                 <div className="flex items-center gap-3">
                   <div className="w-10 h-10 rounded-full bg-accent/20 flex items-center justify-center text-accent text-sm font-bold">{t.initials}</div>
                   <div>
-                    <div className="text-sm font-semibold text-primary-foreground">{t.patientName}</div>
+                    <div className="text-sm font-semibold text-primary-foreground">{t.patient_name}</div>
                     <div className="text-xs text-primary-foreground/60">{t.condition} • {t.location}</div>
                   </div>
                 </div>
