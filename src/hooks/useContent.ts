@@ -5,6 +5,7 @@ import type { Tables } from "@/integrations/supabase/types";
 type Service = Tables<"services">;
 type BlogPost = Tables<"blog_posts">;
 type CaseStudy = Tables<"case_studies">;
+type Testimonial = Tables<"testimonials">;
 
 export function useServices() {
   const [services, setServices] = useState<Service[]>([]);
@@ -66,4 +67,16 @@ export function useCaseStudy(slug: string | undefined) {
     });
   }, [slug]);
   return { study, loading };
+}
+
+export function useTestimonials() {
+  const [testimonials, setTestimonials] = useState<Testimonial[]>([]);
+  const [loading, setLoading] = useState(true);
+  useEffect(() => {
+    supabase.from("testimonials").select("*").eq("is_featured", true).order("sort_order").then(({ data }) => {
+      if (data) setTestimonials(data);
+      setLoading(false);
+    });
+  }, []);
+  return { testimonials, loading };
 }

@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
-import { BarChart3, Users, Calendar, Settings, LogOut, TrendingUp, Phone, MessageCircle, Eye, FileText, Globe, Stethoscope, BookOpen, ClipboardList } from "lucide-react";
+import { BarChart3, Users, Calendar, Settings, LogOut, TrendingUp, Phone, MessageCircle, Eye, FileText, Globe, Stethoscope, BookOpen, ClipboardList, Quote } from "lucide-react";
 import { useSiteConfig, SiteConfig } from "@/contexts/SiteConfigContext";
 import { useNavigate } from "react-router-dom";
 import { mockAnalytics } from "@/data/mockData";
@@ -11,9 +11,10 @@ import AdminServices from "@/components/admin/AdminServices";
 import AdminBlogPosts from "@/components/admin/AdminBlogPosts";
 import AdminCaseStudies from "@/components/admin/AdminCaseStudies";
 import AdminSecondOpinions from "@/components/admin/AdminSecondOpinions";
+import AdminTestimonials from "@/components/admin/AdminTestimonials";
 
 type Tab = "overview" | "appointments" | "second-opinions" | "content" | "settings";
-type ContentSubTab = "services" | "blog" | "case-studies";
+type ContentSubTab = "services" | "blog" | "case-studies" | "testimonials";
 
 export default function AdminDashboard() {
   const { config, updateConfig, isAdmin, adminLogout } = useSiteConfig();
@@ -214,6 +215,7 @@ export default function AdminDashboard() {
                 { id: "services" as ContentSubTab, label: "Services", icon: Stethoscope },
                 { id: "blog" as ContentSubTab, label: "Blog Posts", icon: BookOpen },
                 { id: "case-studies" as ContentSubTab, label: "Case Studies", icon: ClipboardList },
+                { id: "testimonials" as ContentSubTab, label: "Testimonials", icon: Quote },
               ]).map((sub) => (
                 <button key={sub.id} onClick={() => setContentSubTab(sub.id)}
                   className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition-all ${
@@ -226,6 +228,7 @@ export default function AdminDashboard() {
             {contentSubTab === "services" && <AdminServices />}
             {contentSubTab === "blog" && <AdminBlogPosts />}
             {contentSubTab === "case-studies" && <AdminCaseStudies />}
+            {contentSubTab === "testimonials" && <AdminTestimonials />}
           </motion.div>
         )}
 
