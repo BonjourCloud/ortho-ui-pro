@@ -3,6 +3,8 @@ import { motion } from "framer-motion";
 import { FileText, Upload, CheckCircle, Shield, Clock, MessageCircle } from "lucide-react";
 import { useSiteConfig } from "@/contexts/SiteConfigContext";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { supabase } from "@/integrations/supabase/client";
+import { useToast } from "@/hooks/use-toast";
 
 const conditionOptions = [
   "Joint Replacement Recommendation",
@@ -17,7 +19,9 @@ const conditionOptions = [
 export default function SecondOpinion() {
   const { config } = useSiteConfig();
   const { t } = useLanguage();
+  const { toast } = useToast();
   const [submitted, setSubmitted] = useState(false);
+  const [loading, setLoading] = useState(false);
   const [form, setForm] = useState({
     name: "",
     age: "",
@@ -40,8 +44,28 @@ export default function SecondOpinion() {
     setForm((prev) => ({ ...prev, files: prev.files.filter((_, i) => i !== index) }));
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setLoading(true);
+
+    const { error } = await supabase.from("second_opinions").insert({
+      name: form.name,
+      age: parseInt(form.age),
+      phone: form.phone,
+      email: form.email || null,
+      condition: form.condition,
+      current_diagnosis: form.currentDiagnosis,
+      additional_notes: form.additionalNotes || null,
+      file_names: form.files.map((f) => f.name),
+    });
+
+    setLoading(false);
+
+    if (error) {
+      toast({ title: "Error", description: "Failed to submit. Please try again.", variant: "destructive" });
+      return;
+    }
+
     setSubmitted(true);
   };
 
@@ -185,9 +209,9 @@ export default function SecondOpinion() {
                 className="w-full rounded-lg border bg-background px-4 py-2.5 text-sm text-foreground focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none resize-none" />
             </div>
 
-            <button type="submit"
-              className="w-full rounded-lg bg-accent px-6 py-3 text-sm font-semibold text-accent-foreground hover:opacity-90 transition-all shadow-md">
-              {t("secondOpinion.submit")}
+            <button type="submit" disabled={loading}
+              className="w-full rounded-lg bg-accent px-6 py-3 text-sm font-semibold text-accent-foreground hover:opacity-90 disabled:opacity-60 transition-all shadow-md">
+              {loading ? "Submitting..." : t("secondOpinion.submit")}
             </button>
 
             <p className="text-xs text-muted-foreground text-center">{t("secondOpinion.privacy")}</p>

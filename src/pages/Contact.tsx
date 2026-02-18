@@ -2,10 +2,15 @@ import { motion } from "framer-motion";
 import { MapPin, Phone, Mail, Clock, MessageCircle } from "lucide-react";
 import { useState } from "react";
 import { useSiteConfig } from "@/contexts/SiteConfigContext";
+import { supabase } from "@/integrations/supabase/client";
+import { useToast } from "@/hooks/use-toast";
 
 export default function Contact() {
   const [sent, setSent] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [form, setForm] = useState({ name: "", email: "", phone: "", subject: "", message: "" });
   const { config } = useSiteConfig();
+  const { toast } = useToast();
 
   const contactInfo = [
     { icon: MapPin, label: "Location", value: config.location },
@@ -14,9 +19,26 @@ export default function Contact() {
     { icon: Clock, label: "Hours", value: config.hours },
   ];
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setTimeout(() => setSent(true), 500);
+    setLoading(true);
+
+    const { error } = await supabase.from("contact_messages").insert({
+      name: form.name,
+      email: form.email,
+      phone: form.phone || null,
+      subject: form.subject,
+      message: form.message,
+    });
+
+    setLoading(false);
+
+    if (error) {
+      toast({ title: "Error", description: "Failed to send message. Please try again.", variant: "destructive" });
+      return;
+    }
+
+    setSent(true);
   };
 
   return (
@@ -38,14 +60,7 @@ export default function Contact() {
               <h2 className="font-display text-2xl font-bold text-foreground mb-6">Get In Touch</h2>
               <div className="space-y-5 mb-8">
                 {contactInfo.map((item, i) => (
-                  <motion.div
-                    key={i}
-                    initial={{ opacity: 0, x: -20 }}
-                    whileInView={{ opacity: 1, x: 0 }}
-                    viewport={{ once: true }}
-                    transition={{ delay: i * 0.1 }}
-                    className="flex items-start gap-4"
-                  >
+                  <motion.div key={i} initial={{ opacity: 0, x: -20 }} whileInView={{ opacity: 1, x: 0 }} viewport={{ once: true }} transition={{ delay: i * 0.1 }} className="flex items-start gap-4">
                     <div className="w-10 h-10 rounded-full bg-accent/10 flex items-center justify-center shrink-0">
                       <item.icon className="text-accent" size={18} />
                     </div>
@@ -70,7 +85,6 @@ export default function Contact() {
                 <MessageCircle size={16} /> Chat on WhatsApp
               </a>
 
-              {/* Map placeholder */}
               <div className="mt-8 rounded-xl overflow-hidden border">
                 <iframe
                   title="Clinic Location"
@@ -96,31 +110,35 @@ export default function Contact() {
                 <form onSubmit={handleSubmit} className="space-y-5">
                   <div>
                     <label className="block text-sm font-medium text-foreground mb-1.5">Full Name *</label>
-                    <input required type="text" className="w-full rounded-lg border bg-card px-4 py-2.5 text-sm text-foreground focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none" />
+                    <input required type="text" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })}
+                      className="w-full rounded-lg border bg-card px-4 py-2.5 text-sm text-foreground focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none" />
                   </div>
                   <div className="grid sm:grid-cols-2 gap-4">
                     <div>
                       <label className="block text-sm font-medium text-foreground mb-1.5">Email *</label>
-                      <input required type="email" className="w-full rounded-lg border bg-card px-4 py-2.5 text-sm text-foreground focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none" />
+                      <input required type="email" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })}
+                        className="w-full rounded-lg border bg-card px-4 py-2.5 text-sm text-foreground focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none" />
                     </div>
                     <div>
                       <label className="block text-sm font-medium text-foreground mb-1.5">Phone</label>
-                      <input type="tel" className="w-full rounded-lg border bg-card px-4 py-2.5 text-sm text-foreground focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none" placeholder="+91" />
+                      <input type="tel" value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })}
+                        className="w-full rounded-lg border bg-card px-4 py-2.5 text-sm text-foreground focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none" placeholder="+91" />
                     </div>
                   </div>
                   <div>
                     <label className="block text-sm font-medium text-foreground mb-1.5">Subject *</label>
-                    <input required type="text" className="w-full rounded-lg border bg-card px-4 py-2.5 text-sm text-foreground focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none" />
+                    <input required type="text" value={form.subject} onChange={(e) => setForm({ ...form, subject: e.target.value })}
+                      className="w-full rounded-lg border bg-card px-4 py-2.5 text-sm text-foreground focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none" />
                   </div>
                   <div>
                     <label className="block text-sm font-medium text-foreground mb-1.5">Message *</label>
-                    <textarea required rows={5} className="w-full rounded-lg border bg-card px-4 py-2.5 text-sm text-foreground focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none resize-none" />
+                    <textarea required rows={5} value={form.message} onChange={(e) => setForm({ ...form, message: e.target.value })}
+                      className="w-full rounded-lg border bg-card px-4 py-2.5 text-sm text-foreground focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none resize-none" />
                   </div>
-                  <button
-                    type="submit"
-                    className="w-full rounded-lg bg-accent px-6 py-3 text-sm font-semibold text-accent-foreground shadow-lg hover:opacity-90 transition-all"
+                  <button type="submit" disabled={loading}
+                    className="w-full rounded-lg bg-accent px-6 py-3 text-sm font-semibold text-accent-foreground shadow-lg hover:opacity-90 disabled:opacity-60 transition-all"
                   >
-                    Send Message
+                    {loading ? "Sending..." : "Send Message"}
                   </button>
                 </form>
               )}
