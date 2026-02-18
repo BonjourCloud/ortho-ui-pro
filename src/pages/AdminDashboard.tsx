@@ -10,8 +10,9 @@ import { supabase } from "@/integrations/supabase/client";
 import AdminServices from "@/components/admin/AdminServices";
 import AdminBlogPosts from "@/components/admin/AdminBlogPosts";
 import AdminCaseStudies from "@/components/admin/AdminCaseStudies";
+import AdminSecondOpinions from "@/components/admin/AdminSecondOpinions";
 
-type Tab = "overview" | "appointments" | "content" | "settings";
+type Tab = "overview" | "appointments" | "second-opinions" | "content" | "settings";
 type ContentSubTab = "services" | "blog" | "case-studies";
 
 export default function AdminDashboard() {
@@ -49,6 +50,7 @@ export default function AdminDashboard() {
   const tabs: { id: Tab; label: string; icon: React.ElementType }[] = [
     { id: "overview", label: "Overview", icon: BarChart3 },
     { id: "appointments", label: "Appointments", icon: Calendar },
+    { id: "second-opinions", label: "2nd Opinions", icon: Stethoscope },
     { id: "content", label: "Content", icon: FileText },
     { id: "settings", label: "Site Settings", icon: Settings },
   ];
@@ -194,6 +196,13 @@ export default function AdminDashboard() {
                 </table>
               </div>
             </div>
+          </motion.div>
+        )}
+
+        {/* Second Opinions Tab */}
+        {activeTab === "second-opinions" && (
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
+            <AdminSecondOpinions />
           </motion.div>
         )}
 
