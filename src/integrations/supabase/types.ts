@@ -65,6 +65,141 @@ export type Database = {
         }
         Relationships: []
       }
+      blog_posts: {
+        Row: {
+          category: string | null
+          content: string
+          created_at: string | null
+          excerpt: string | null
+          id: string
+          is_featured: boolean | null
+          likes_count: number | null
+          published_at: string | null
+          read_time: number | null
+          slug: string
+          tags: string[] | null
+          title: string
+          updated_at: string | null
+          views_count: number | null
+        }
+        Insert: {
+          category?: string | null
+          content: string
+          created_at?: string | null
+          excerpt?: string | null
+          id?: string
+          is_featured?: boolean | null
+          likes_count?: number | null
+          published_at?: string | null
+          read_time?: number | null
+          slug: string
+          tags?: string[] | null
+          title: string
+          updated_at?: string | null
+          views_count?: number | null
+        }
+        Update: {
+          category?: string | null
+          content?: string
+          created_at?: string | null
+          excerpt?: string | null
+          id?: string
+          is_featured?: boolean | null
+          likes_count?: number | null
+          published_at?: string | null
+          read_time?: number | null
+          slug?: string
+          tags?: string[] | null
+          title?: string
+          updated_at?: string | null
+          views_count?: number | null
+        }
+        Relationships: []
+      }
+      case_studies: {
+        Row: {
+          age: number | null
+          condition: string
+          created_at: string | null
+          follow_up_period: string | null
+          gender: string | null
+          hospital_stay_days: number | null
+          id: string
+          is_featured: boolean | null
+          milestones: Json | null
+          occupation: string | null
+          outcome_summary: string | null
+          pain_score_post: number | null
+          pain_score_pre: number | null
+          patient_initials: string | null
+          procedure_name: string | null
+          published_date: string | null
+          range_of_motion_post: string | null
+          range_of_motion_pre: string | null
+          return_to_sports: string | null
+          return_to_work: string | null
+          slug: string
+          surgery_date: string | null
+          surgery_type: string | null
+          testimonial: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          age?: number | null
+          condition: string
+          created_at?: string | null
+          follow_up_period?: string | null
+          gender?: string | null
+          hospital_stay_days?: number | null
+          id?: string
+          is_featured?: boolean | null
+          milestones?: Json | null
+          occupation?: string | null
+          outcome_summary?: string | null
+          pain_score_post?: number | null
+          pain_score_pre?: number | null
+          patient_initials?: string | null
+          procedure_name?: string | null
+          published_date?: string | null
+          range_of_motion_post?: string | null
+          range_of_motion_pre?: string | null
+          return_to_sports?: string | null
+          return_to_work?: string | null
+          slug: string
+          surgery_date?: string | null
+          surgery_type?: string | null
+          testimonial?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          age?: number | null
+          condition?: string
+          created_at?: string | null
+          follow_up_period?: string | null
+          gender?: string | null
+          hospital_stay_days?: number | null
+          id?: string
+          is_featured?: boolean | null
+          milestones?: Json | null
+          occupation?: string | null
+          outcome_summary?: string | null
+          pain_score_post?: number | null
+          pain_score_pre?: number | null
+          patient_initials?: string | null
+          procedure_name?: string | null
+          published_date?: string | null
+          range_of_motion_post?: string | null
+          range_of_motion_pre?: string | null
+          return_to_sports?: string | null
+          return_to_work?: string | null
+          slug?: string
+          surgery_date?: string | null
+          surgery_type?: string | null
+          testimonial?: string | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       contact_messages: {
         Row: {
           created_at: string | null
@@ -137,6 +272,69 @@ export type Database = {
           name?: string
           phone?: string
           status?: string | null
+        }
+        Relationships: []
+      }
+      services: {
+        Row: {
+          body_part: string | null
+          category: string | null
+          cost_range: string | null
+          created_at: string | null
+          emi_available: boolean | null
+          full_recovery: string | null
+          hospital_stay: string | null
+          id: string
+          insurance_covered: boolean | null
+          name: string
+          patients_treated: number | null
+          procedure_time: string | null
+          recovery_time: string | null
+          short_description: string | null
+          slug: string
+          sort_order: number | null
+          success_rate: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          body_part?: string | null
+          category?: string | null
+          cost_range?: string | null
+          created_at?: string | null
+          emi_available?: boolean | null
+          full_recovery?: string | null
+          hospital_stay?: string | null
+          id?: string
+          insurance_covered?: boolean | null
+          name: string
+          patients_treated?: number | null
+          procedure_time?: string | null
+          recovery_time?: string | null
+          short_description?: string | null
+          slug: string
+          sort_order?: number | null
+          success_rate?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          body_part?: string | null
+          category?: string | null
+          cost_range?: string | null
+          created_at?: string | null
+          emi_available?: boolean | null
+          full_recovery?: string | null
+          hospital_stay?: string | null
+          id?: string
+          insurance_covered?: boolean | null
+          name?: string
+          patients_treated?: number | null
+          procedure_time?: string | null
+          recovery_time?: string | null
+          short_description?: string | null
+          slug?: string
+          sort_order?: number | null
+          success_rate?: string | null
+          updated_at?: string | null
         }
         Relationships: []
       }
