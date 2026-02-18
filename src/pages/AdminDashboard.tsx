@@ -1,32 +1,43 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
-import { BarChart3, Users, Calendar, Settings, LogOut, TrendingUp, Phone, MessageCircle, Eye, FileText, Globe } from "lucide-react";
+import { BarChart3, Users, Calendar, Settings, LogOut, TrendingUp, Phone, MessageCircle, Eye, FileText, Globe, Stethoscope, BookOpen, ClipboardList } from "lucide-react";
 import { useSiteConfig, SiteConfig } from "@/contexts/SiteConfigContext";
 import { useNavigate } from "react-router-dom";
-import { mockAnalytics, blogPosts, caseStudies, services } from "@/data/mockData";
+import { mockAnalytics } from "@/data/mockData";
 import { useLanguage, Language } from "@/contexts/LanguageContext";
 import { languageLabels } from "@/data/translations";
+import { supabase } from "@/integrations/supabase/client";
+import AdminServices from "@/components/admin/AdminServices";
+import AdminBlogPosts from "@/components/admin/AdminBlogPosts";
+import AdminCaseStudies from "@/components/admin/AdminCaseStudies";
 
 type Tab = "overview" | "appointments" | "content" | "settings";
+type ContentSubTab = "services" | "blog" | "case-studies";
 
 export default function AdminDashboard() {
   const { config, updateConfig, isAdmin, adminLogout } = useSiteConfig();
   const { enabledLanguages, setEnabledLanguages } = useLanguage();
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState<Tab>("overview");
+  const [contentSubTab, setContentSubTab] = useState<ContentSubTab>("services");
   const [configForm, setConfigForm] = useState<SiteConfig>({ ...config });
   const [langSettings, setLangSettings] = useState<Language[]>([...enabledLanguages]);
   const [saved, setSaved] = useState(false);
+  const [appointments, setAppointments] = useState<any[]>([]);
+
+  useEffect(() => {
+    if (isAdmin && activeTab === "appointments") {
+      supabase.from("appointments").select("*").order("created_at", { ascending: false }).limit(20)
+        .then(({ data }) => { if (data) setAppointments(data); });
+    }
+  }, [isAdmin, activeTab]);
 
   if (!isAdmin) {
     navigate("/admin/login");
     return null;
   }
 
-  const handleLogout = () => {
-    adminLogout();
-    navigate("/");
-  };
+  const handleLogout = () => { adminLogout(); navigate("/"); };
 
   const handleSaveConfig = () => {
     updateConfig(configForm);
@@ -60,13 +71,10 @@ export default function AdminDashboard() {
         {/* Tabs */}
         <div className="flex gap-1 mb-8 overflow-x-auto pb-2">
           {tabs.map((tab) => (
-            <button
-              key={tab.id}
-              onClick={() => setActiveTab(tab.id)}
+            <button key={tab.id} onClick={() => setActiveTab(tab.id)}
               className={`inline-flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all whitespace-nowrap ${
                 activeTab === tab.id ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:bg-secondary"
-              }`}
-            >
+              }`}>
               <tab.icon size={16} /> {tab.label}
             </button>
           ))}
@@ -75,7 +83,6 @@ export default function AdminDashboard() {
         {/* Overview Tab */}
         {activeTab === "overview" && (
           <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
-            {/* Stats cards */}
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
               {[
                 { label: "Total Visitors", value: a.totalVisitors.toLocaleString(), icon: Users, change: "+12%" },
@@ -93,8 +100,6 @@ export default function AdminDashboard() {
                 </div>
               ))}
             </div>
-
-            {/* Secondary stats */}
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
               <div className="bg-card rounded-xl border p-4 text-center">
                 <div className="text-xs text-muted-foreground mb-1">WhatsApp</div>
@@ -115,8 +120,6 @@ export default function AdminDashboard() {
                 <div className="font-display text-xl font-bold text-foreground">{a.emiInquiries}</div>
               </div>
             </div>
-
-            {/* Top pages & Traffic sources */}
             <div className="grid md:grid-cols-2 gap-6">
               <div className="bg-card rounded-xl border p-5">
                 <h3 className="font-display font-semibold text-foreground mb-4">Top Pages</h3>
@@ -147,7 +150,7 @@ export default function AdminDashboard() {
           </motion.div>
         )}
 
-        {/* Appointments Tab */}
+        {/* Appointments Tab - Now from DB */}
         {activeTab === "appointments" && (
           <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
             <div className="bg-card rounded-xl border overflow-hidden">
@@ -158,7 +161,6 @@ export default function AdminDashboard() {
                 <table className="w-full text-sm">
                   <thead className="bg-secondary/50">
                     <tr>
-                      <th className="px-4 py-3 text-left font-medium text-muted-foreground">ID</th>
                       <th className="px-4 py-3 text-left font-medium text-muted-foreground">Patient</th>
                       <th className="px-4 py-3 text-left font-medium text-muted-foreground">Type</th>
                       <th className="px-4 py-3 text-left font-medium text-muted-foreground">Service</th>
@@ -167,16 +169,15 @@ export default function AdminDashboard() {
                     </tr>
                   </thead>
                   <tbody>
-                    {a.recentAppointments.map((apt) => (
+                    {appointments.map((apt) => (
                       <tr key={apt.id} className="border-t">
-                        <td className="px-4 py-3 font-medium text-foreground">{apt.id}</td>
                         <td className="px-4 py-3">
-                          <div className="text-foreground">{apt.name}</div>
+                          <div className="text-foreground">{apt.first_name} {apt.last_name}</div>
                           <div className="text-xs text-muted-foreground">{apt.phone}</div>
                         </td>
-                        <td className="px-4 py-3 text-muted-foreground">{apt.type}</td>
-                        <td className="px-4 py-3 text-muted-foreground">{apt.service}</td>
-                        <td className="px-4 py-3 text-muted-foreground">{apt.date} • {apt.time}</td>
+                        <td className="px-4 py-3 text-muted-foreground">{apt.appointment_type}</td>
+                        <td className="px-4 py-3 text-muted-foreground">{apt.service || "—"}</td>
+                        <td className="px-4 py-3 text-muted-foreground">{apt.preferred_date} • {apt.preferred_time}</td>
                         <td className="px-4 py-3">
                           <span className={`text-xs font-medium rounded-full px-3 py-1 ${
                             apt.status === "confirmed" ? "bg-primary/10 text-primary" : "bg-accent/10 text-accent"
@@ -186,6 +187,9 @@ export default function AdminDashboard() {
                         </td>
                       </tr>
                     ))}
+                    {appointments.length === 0 && (
+                      <tr><td colSpan={5} className="px-4 py-8 text-center text-muted-foreground">No appointments yet.</td></tr>
+                    )}
                   </tbody>
                 </table>
               </div>
@@ -193,48 +197,26 @@ export default function AdminDashboard() {
           </motion.div>
         )}
 
-        {/* Content Tab */}
+        {/* Content Tab - With CRUD sub-tabs */}
         {activeTab === "content" && (
           <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
-            <div className="grid md:grid-cols-3 gap-6 mb-8">
-              <div className="bg-card rounded-xl border p-5 text-center">
-                <div className="font-display text-3xl font-bold text-foreground">{services.length}</div>
-                <div className="text-sm text-muted-foreground mt-1">Services</div>
-              </div>
-              <div className="bg-card rounded-xl border p-5 text-center">
-                <div className="font-display text-3xl font-bold text-foreground">{blogPosts.length}</div>
-                <div className="text-sm text-muted-foreground mt-1">Blog Posts</div>
-              </div>
-              <div className="bg-card rounded-xl border p-5 text-center">
-                <div className="font-display text-3xl font-bold text-foreground">{caseStudies.length}</div>
-                <div className="text-sm text-muted-foreground mt-1">Case Studies</div>
-              </div>
+            <div className="flex gap-2 mb-6">
+              {([
+                { id: "services" as ContentSubTab, label: "Services", icon: Stethoscope },
+                { id: "blog" as ContentSubTab, label: "Blog Posts", icon: BookOpen },
+                { id: "case-studies" as ContentSubTab, label: "Case Studies", icon: ClipboardList },
+              ]).map((sub) => (
+                <button key={sub.id} onClick={() => setContentSubTab(sub.id)}
+                  className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition-all ${
+                    contentSubTab === sub.id ? "bg-accent text-accent-foreground" : "text-muted-foreground hover:bg-secondary"
+                  }`}>
+                  <sub.icon size={14} /> {sub.label}
+                </button>
+              ))}
             </div>
-
-            <div className="grid md:grid-cols-2 gap-6">
-              <div className="bg-card rounded-xl border p-5">
-                <h3 className="font-display font-semibold text-foreground mb-4">Recent Blog Posts</h3>
-                <div className="space-y-3">
-                  {blogPosts.slice(0, 4).map((post) => (
-                    <div key={post.id} className="flex items-center justify-between text-sm border-b pb-2 last:border-0">
-                      <span className="text-foreground truncate max-w-[250px]">{post.title}</span>
-                      <span className="text-xs text-muted-foreground">{post.viewsCount} views</span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-              <div className="bg-card rounded-xl border p-5">
-                <h3 className="font-display font-semibold text-foreground mb-4">Recent Case Studies</h3>
-                <div className="space-y-3">
-                  {caseStudies.map((cs) => (
-                    <div key={cs.id} className="flex items-center justify-between text-sm border-b pb-2 last:border-0">
-                      <span className="text-foreground truncate max-w-[250px]">{cs.condition}</span>
-                      <span className="text-xs text-muted-foreground">{cs.patientInitials}</span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </div>
+            {contentSubTab === "services" && <AdminServices />}
+            {contentSubTab === "blog" && <AdminBlogPosts />}
+            {contentSubTab === "case-studies" && <AdminCaseStudies />}
           </motion.div>
         )}
 
@@ -264,7 +246,6 @@ export default function AdminDashboard() {
                       className="w-full rounded-lg border bg-background px-4 py-2.5 text-sm text-foreground focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none" />
                   </div>
                 </div>
-
                 <div className="grid sm:grid-cols-2 gap-4">
                   <div>
                     <label className="block text-sm font-medium text-foreground mb-1.5">Title / Credentials</label>
@@ -277,25 +258,21 @@ export default function AdminDashboard() {
                       className="w-full rounded-lg border bg-background px-4 py-2.5 text-sm text-foreground focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none" />
                   </div>
                 </div>
-
                 <div>
                   <label className="block text-sm font-medium text-foreground mb-1.5">Specialization</label>
                   <input value={configForm.specialization} onChange={(e) => setConfigForm({ ...configForm, specialization: e.target.value })}
                     className="w-full rounded-lg border bg-background px-4 py-2.5 text-sm text-foreground focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none" />
                 </div>
-
                 <div>
                   <label className="block text-sm font-medium text-foreground mb-1.5">Short Bio</label>
                   <textarea value={configForm.shortBio} onChange={(e) => setConfigForm({ ...configForm, shortBio: e.target.value })} rows={3}
                     className="w-full rounded-lg border bg-background px-4 py-2.5 text-sm text-foreground focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none resize-none" />
                 </div>
-
                 <div>
                   <label className="block text-sm font-medium text-foreground mb-1.5">Philosophy</label>
                   <textarea value={configForm.philosophy} onChange={(e) => setConfigForm({ ...configForm, philosophy: e.target.value })} rows={3}
                     className="w-full rounded-lg border bg-background px-4 py-2.5 text-sm text-foreground focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none resize-none" />
                 </div>
-
                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
                   <div>
                     <label className="block text-sm font-medium text-foreground mb-1.5">Years Exp.</label>
@@ -318,7 +295,6 @@ export default function AdminDashboard() {
                       className="w-full rounded-lg border bg-background px-4 py-2.5 text-sm text-foreground focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none" />
                   </div>
                 </div>
-
                 <div className="grid sm:grid-cols-2 gap-4">
                   <div>
                     <label className="block text-sm font-medium text-foreground mb-1.5">Phone</label>
@@ -331,7 +307,6 @@ export default function AdminDashboard() {
                       className="w-full rounded-lg border bg-background px-4 py-2.5 text-sm text-foreground focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none" />
                   </div>
                 </div>
-
                 <div className="grid sm:grid-cols-2 gap-4">
                   <div>
                     <label className="block text-sm font-medium text-foreground mb-1.5">Location</label>
@@ -344,14 +319,12 @@ export default function AdminDashboard() {
                       className="w-full rounded-lg border bg-background px-4 py-2.5 text-sm text-foreground focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none" />
                   </div>
                 </div>
-
                 <div>
                   <label className="block text-sm font-medium text-foreground mb-1.5">Doctor Photo URL</label>
                   <input value={configForm.heroImageUrl} onChange={(e) => setConfigForm({ ...configForm, heroImageUrl: e.target.value })} placeholder="https://example.com/doctor-photo.jpg"
                     className="w-full rounded-lg border bg-background px-4 py-2.5 text-sm text-foreground focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none" />
                   <p className="text-xs text-muted-foreground mt-1">Leave empty to use the default image.</p>
                 </div>
-
                 <div>
                   <label className="block text-sm font-medium text-foreground mb-1.5">Consultation Fee (₹)</label>
                   <input type="number" value={configForm.consultationFee} onChange={(e) => setConfigForm({ ...configForm, consultationFee: +e.target.value })}
@@ -368,16 +341,11 @@ export default function AdminDashboard() {
                   <div className="flex flex-wrap gap-3">
                     {(["en", "hi", "te"] as Language[]).map((lang) => (
                       <label key={lang} className="flex items-center gap-2 cursor-pointer">
-                        <input
-                          type="checkbox"
-                          checked={langSettings.includes(lang)}
-                          disabled={lang === "en"}
+                        <input type="checkbox" checked={langSettings.includes(lang)} disabled={lang === "en"}
                           onChange={(e) => {
                             if (e.target.checked) setLangSettings([...langSettings, lang]);
                             else setLangSettings(langSettings.filter((l) => l !== lang));
-                          }}
-                          className="rounded border-primary text-primary focus:ring-primary/20"
-                        />
+                          }} className="rounded border-primary text-primary focus:ring-primary/20" />
                         <span className="text-sm text-foreground">{languageLabels[lang]}</span>
                       </label>
                     ))}
@@ -391,12 +359,9 @@ export default function AdminDashboard() {
                     <label className="text-sm font-medium text-foreground">Feature Toggles</label>
                   </div>
                   <label className="flex items-center gap-3 cursor-pointer">
-                    <input
-                      type="checkbox"
-                      checked={configForm.whatsappFloatEnabled}
+                    <input type="checkbox" checked={configForm.whatsappFloatEnabled}
                       onChange={(e) => setConfigForm({ ...configForm, whatsappFloatEnabled: e.target.checked })}
-                      className="rounded border-primary text-primary focus:ring-primary/20"
-                    />
+                      className="rounded border-primary text-primary focus:ring-primary/20" />
                     <div>
                       <span className="text-sm font-medium text-foreground">Floating WhatsApp Button</span>
                       <p className="text-xs text-muted-foreground">Show a WhatsApp chat button on all pages</p>

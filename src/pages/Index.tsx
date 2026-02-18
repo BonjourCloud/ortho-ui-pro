@@ -2,8 +2,9 @@ import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
 import { Star, ArrowRight, Shield, Heart, Zap, Users } from "lucide-react";
 import heroImage from "@/assets/hero-doctor.jpg";
-import { services, testimonials, serviceCategories } from "@/data/mockData";
+import { serviceCategories, testimonials } from "@/data/mockData";
 import { useSiteConfig } from "@/contexts/SiteConfigContext";
+import { useServices } from "@/hooks/useContent";
 
 const whyChoose = [
   { icon: Shield, title: "15+ Years of Expertise", desc: "Board-certified with fellowship training from Singapore General Hospital." },
@@ -14,6 +15,7 @@ const whyChoose = [
 
 export default function Index() {
   const { config } = useSiteConfig();
+  const { services } = useServices();
 
   const stats = [
     { label: "Years Experience", value: `${config.yearsExperience}+` },
@@ -100,7 +102,7 @@ export default function Index() {
         </div>
       </section>
 
-      {/* Featured Services */}
+      {/* Featured Services from DB */}
       <section className="bg-teal-light py-16 md:py-24">
         <div className="container">
           <div className="text-center mb-12">
@@ -113,12 +115,12 @@ export default function Index() {
                 <div className="p-6">
                   <span className="text-xs font-medium text-accent bg-accent/10 rounded-full px-3 py-1">{svc.category}</span>
                   <h3 className="font-display text-xl font-semibold text-foreground mt-3 mb-2">{svc.name}</h3>
-                  <p className="text-sm text-muted-foreground leading-relaxed mb-4">{svc.shortDescription}</p>
+                  <p className="text-sm text-muted-foreground leading-relaxed mb-4">{svc.short_description}</p>
                   <div className="grid grid-cols-2 gap-3 text-xs text-muted-foreground mb-4">
-                    <div><span className="font-semibold text-foreground">Time:</span> {svc.procedureTime}</div>
-                    <div><span className="font-semibold text-foreground">Stay:</span> {svc.hospitalStay}</div>
-                    <div><span className="font-semibold text-foreground">Success:</span> {svc.successRate}</div>
-                    <div><span className="font-semibold text-foreground">Cost:</span> {svc.costRange}</div>
+                    <div><span className="font-semibold text-foreground">Time:</span> {svc.procedure_time}</div>
+                    <div><span className="font-semibold text-foreground">Stay:</span> {svc.hospital_stay}</div>
+                    <div><span className="font-semibold text-foreground">Success:</span> {svc.success_rate}</div>
+                    <div><span className="font-semibold text-foreground">Cost:</span> {svc.cost_range}</div>
                   </div>
                   <Link to="/services" className="inline-flex items-center gap-1 text-sm font-semibold text-primary hover:text-accent transition-colors">
                     Learn More <ArrowRight size={14} />
