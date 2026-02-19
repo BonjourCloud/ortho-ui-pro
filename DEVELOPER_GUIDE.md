@@ -141,7 +141,7 @@ The signup toggle is stored in the `app_settings` table (`key: 'signup_enabled'`
 | Page | Route | Data Source | Backend Status | Notes |
 |------|-------|------------|----------------|-------|
 | **Index (Landing)** | `/` | `useServices()` → DB, `useTestimonials()` → DB, `mockData.serviceCategories` + `SiteConfigContext` | 🟡 Partial | Services ✅, Testimonials ✅; categories, stats still mock/localStorage |
-| **About** | `/about` | `mockData.doctorProfile` + `SiteConfigContext` | ❌ Mock | Education, awards, memberships all hardcoded in mockData |
+| **About** | `/about` | `SiteConfigContext` → DB (`site_config` JSONB) | ✅ Backend | Education, awards, memberships all from `site_config` table |
 | **Services** | `/services` | `useServices()` → DB, `mockData.serviceCategories` | 🟡 Partial | Service list from DB ✅; category definitions still mock |
 | **Book Appointment** | `/book` | `mockData.services/insuranceProviders/timeSlots`, submits → `appointments` table | 🟡 Partial | **Form submits to DB ✅**; service dropdown, insurance list, time slots still mock |
 | **Contact** | `/contact` | `SiteConfigContext` → DB, submits → `contact_messages` table | ✅ Backend | **Form submits to DB ✅**; contact info from `site_config` table |
@@ -219,7 +219,7 @@ The signup toggle is stored in the `app_settings` table (`key: 'signup_enabled'`
 | Export | Used By | Priority to Migrate |
 |--------|---------|-------------------|
 | `serviceCategories` | Index, Services (filter tabs) | 🟡 Medium — could become a DB table or derived from services |
-| `doctorProfile` | About page | 🟡 Medium — could extend SiteConfig or create DB table |
+| ~~`doctorProfile`~~ | ~~About page~~ | ✅ Migrated to `site_config` JSONB |
 | `insuranceProviders` | BookAppointment dropdown | 🟢 Low — rarely changes |
 | `timeSlots` | BookAppointment time picker | 🟡 Medium — should be dynamic for real scheduling |
 | `mockAnalytics` | Admin Overview tab | 🔴 High — completely fake numbers |
@@ -239,7 +239,7 @@ The signup toggle is stored in the `app_settings` table (`key: 'signup_enabled'`
 | Feature | Current State | What's Needed |
 |---------|--------------|---------------|
 | **Dynamic time slots** | Static array in mockData | Availability calendar or configurable schedule |
-| **Doctor profile in DB** | Hardcoded in mockData | Could extend `site_config` JSONB or create separate DB table |
+| ~~**Doctor profile in DB**~~ | ~~Hardcoded in mockData~~ | ✅ Done — migrated to `site_config` JSONB |
 | **Service categories table** | Hardcoded array | Derive from services or separate table |
 | **Email notifications** | None | Edge function for appointment confirmations, second opinion acknowledgements |
 

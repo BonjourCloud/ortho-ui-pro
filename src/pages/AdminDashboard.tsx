@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
-import { BarChart3, Users, Calendar, Settings, LogOut, TrendingUp, Phone, MessageCircle, Eye, FileText, Globe, Stethoscope, BookOpen, ClipboardList, Quote } from "lucide-react";
-import { useSiteConfig, SiteConfig } from "@/contexts/SiteConfigContext";
+import { BarChart3, Users, Calendar, Settings, LogOut, TrendingUp, Phone, MessageCircle, Eye, FileText, Globe, Stethoscope, BookOpen, ClipboardList, Quote, Plus, Trash2 } from "lucide-react";
+import { useSiteConfig, SiteConfig, EducationEntry, AwardEntry } from "@/contexts/SiteConfigContext";
 import { useNavigate } from "react-router-dom";
 import { mockAnalytics } from "@/data/mockData";
 import { useLanguage, Language } from "@/contexts/LanguageContext";
@@ -387,6 +387,98 @@ export default function AdminDashboard() {
                 <div>
                   <label className="block text-sm font-medium text-foreground mb-1.5">Consultation Fee (₹)</label>
                   <input type="number" value={configForm.consultationFee} onChange={(e) => setConfigForm({ ...configForm, consultationFee: +e.target.value })}
+                    className="w-full rounded-lg border bg-background px-4 py-2.5 text-sm text-foreground focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none" />
+                </div>
+
+                {/* Doctor Profile: Education */}
+                <div className="border-t pt-5">
+                  <div className="flex items-center justify-between mb-3">
+                    <div className="flex items-center gap-2">
+                      <BookOpen size={18} className="text-primary" />
+                      <label className="text-sm font-medium text-foreground">Education & Training</label>
+                    </div>
+                    <button type="button" onClick={() => setConfigForm({ ...configForm, education: [...configForm.education, { degree: "", institution: "", yearStart: 2020 }] })}
+                      className="inline-flex items-center gap-1 text-xs text-primary hover:underline"><Plus size={14} /> Add</button>
+                  </div>
+                  <div className="space-y-3">
+                    {configForm.education.map((edu, i) => (
+                      <div key={i} className="bg-secondary/30 rounded-lg p-3 space-y-2">
+                        <div className="flex gap-2">
+                          <input placeholder="Degree" value={edu.degree} onChange={(e) => { const arr = [...configForm.education]; arr[i] = { ...arr[i], degree: e.target.value }; setConfigForm({ ...configForm, education: arr }); }}
+                            className="flex-1 rounded-lg border bg-background px-3 py-2 text-sm text-foreground focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none" />
+                          <button type="button" onClick={() => setConfigForm({ ...configForm, education: configForm.education.filter((_, j) => j !== i) })}
+                            className="text-destructive hover:text-destructive/80"><Trash2 size={14} /></button>
+                        </div>
+                        <input placeholder="Institution" value={edu.institution} onChange={(e) => { const arr = [...configForm.education]; arr[i] = { ...arr[i], institution: e.target.value }; setConfigForm({ ...configForm, education: arr }); }}
+                          className="w-full rounded-lg border bg-background px-3 py-2 text-sm text-foreground focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none" />
+                        <div className="flex gap-2">
+                          <input type="number" placeholder="Start Year" value={edu.yearStart} onChange={(e) => { const arr = [...configForm.education]; arr[i] = { ...arr[i], yearStart: +e.target.value }; setConfigForm({ ...configForm, education: arr }); }}
+                            className="w-1/2 rounded-lg border bg-background px-3 py-2 text-sm text-foreground focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none" />
+                          <input type="number" placeholder="End Year" value={edu.yearEnd || ""} onChange={(e) => { const arr = [...configForm.education]; arr[i] = { ...arr[i], yearEnd: e.target.value ? +e.target.value : undefined }; setConfigForm({ ...configForm, education: arr }); }}
+                            className="w-1/2 rounded-lg border bg-background px-3 py-2 text-sm text-foreground focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none" />
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Doctor Profile: Awards */}
+                <div className="border-t pt-5">
+                  <div className="flex items-center justify-between mb-3">
+                    <div className="flex items-center gap-2">
+                      <Stethoscope size={18} className="text-primary" />
+                      <label className="text-sm font-medium text-foreground">Awards & Recognition</label>
+                    </div>
+                    <button type="button" onClick={() => setConfigForm({ ...configForm, awards: [...configForm.awards, { title: "", organization: "", year: new Date().getFullYear() }] })}
+                      className="inline-flex items-center gap-1 text-xs text-primary hover:underline"><Plus size={14} /> Add</button>
+                  </div>
+                  <div className="space-y-3">
+                    {configForm.awards.map((award, i) => (
+                      <div key={i} className="bg-secondary/30 rounded-lg p-3 flex gap-2 items-start">
+                        <div className="flex-1 space-y-2">
+                          <input placeholder="Award Title" value={award.title} onChange={(e) => { const arr = [...configForm.awards]; arr[i] = { ...arr[i], title: e.target.value }; setConfigForm({ ...configForm, awards: arr }); }}
+                            className="w-full rounded-lg border bg-background px-3 py-2 text-sm text-foreground focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none" />
+                          <div className="flex gap-2">
+                            <input placeholder="Organization" value={award.organization} onChange={(e) => { const arr = [...configForm.awards]; arr[i] = { ...arr[i], organization: e.target.value }; setConfigForm({ ...configForm, awards: arr }); }}
+                              className="flex-1 rounded-lg border bg-background px-3 py-2 text-sm text-foreground focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none" />
+                            <input type="number" placeholder="Year" value={award.year} onChange={(e) => { const arr = [...configForm.awards]; arr[i] = { ...arr[i], year: +e.target.value }; setConfigForm({ ...configForm, awards: arr }); }}
+                              className="w-24 rounded-lg border bg-background px-3 py-2 text-sm text-foreground focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none" />
+                          </div>
+                        </div>
+                        <button type="button" onClick={() => setConfigForm({ ...configForm, awards: configForm.awards.filter((_, j) => j !== i) })}
+                          className="text-destructive hover:text-destructive/80 mt-2"><Trash2 size={14} /></button>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Doctor Profile: Memberships */}
+                <div className="border-t pt-5">
+                  <div className="flex items-center justify-between mb-3">
+                    <div className="flex items-center gap-2">
+                      <ClipboardList size={18} className="text-primary" />
+                      <label className="text-sm font-medium text-foreground">Professional Memberships</label>
+                    </div>
+                    <button type="button" onClick={() => setConfigForm({ ...configForm, memberships: [...configForm.memberships, ""] })}
+                      className="inline-flex items-center gap-1 text-xs text-primary hover:underline"><Plus size={14} /> Add</button>
+                  </div>
+                  <div className="space-y-2">
+                    {configForm.memberships.map((m, i) => (
+                      <div key={i} className="flex gap-2">
+                        <input value={m} onChange={(e) => { const arr = [...configForm.memberships]; arr[i] = e.target.value; setConfigForm({ ...configForm, memberships: arr }); }}
+                          placeholder="Organization name"
+                          className="flex-1 rounded-lg border bg-background px-3 py-2 text-sm text-foreground focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none" />
+                        <button type="button" onClick={() => setConfigForm({ ...configForm, memberships: configForm.memberships.filter((_, j) => j !== i) })}
+                          className="text-destructive hover:text-destructive/80"><Trash2 size={14} /></button>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Registration Number */}
+                <div className="border-t pt-5">
+                  <label className="block text-sm font-medium text-foreground mb-1.5">Registration Number</label>
+                  <input value={configForm.registrationNumber} onChange={(e) => setConfigForm({ ...configForm, registrationNumber: e.target.value })}
                     className="w-full rounded-lg border bg-background px-4 py-2.5 text-sm text-foreground focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none" />
                 </div>
 

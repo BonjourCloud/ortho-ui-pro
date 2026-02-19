@@ -2,6 +2,19 @@ import { createContext, useContext, useState, useEffect, ReactNode } from "react
 import { supabase } from "@/integrations/supabase/client";
 import type { User } from "@supabase/supabase-js";
 
+export interface EducationEntry {
+  degree: string;
+  institution: string;
+  yearStart: number;
+  yearEnd?: number;
+}
+
+export interface AwardEntry {
+  title: string;
+  organization: string;
+  year: number;
+}
+
 export interface SiteConfig {
   doctorName: string;
   clinicName: string;
@@ -23,6 +36,11 @@ export interface SiteConfig {
   logoInitials: string;
   heroImageUrl: string;
   whatsappFloatEnabled: boolean;
+  languages: string[];
+  registrationNumber: string;
+  education: EducationEntry[];
+  awards: AwardEntry[];
+  memberships: string[];
 }
 
 const defaultConfig: SiteConfig = {
@@ -46,6 +64,21 @@ const defaultConfig: SiteConfig = {
   logoInitials: "DO",
   heroImageUrl: "",
   whatsappFloatEnabled: true,
+  languages: ["English", "Hindi", "Telugu"],
+  registrationNumber: "TSMC/FMR/12345",
+  education: [
+    { degree: "MBBS", institution: "Osmania Medical College, Hyderabad", yearStart: 2000, yearEnd: 2004 },
+    { degree: "MS Orthopaedics", institution: "Nizam's Institute of Medical Sciences", yearStart: 2005, yearEnd: 2008 },
+    { degree: "Fellowship - Joint Replacement", institution: "Singapore General Hospital", yearStart: 2010, yearEnd: 2011 },
+  ],
+  awards: [
+    { title: "Best Orthopedic Surgeon", organization: "Hyderabad Medical Association", year: 2023 },
+    { title: "Young Achiever Award", organization: "Indian Orthopaedic Association", year: 2018 },
+  ],
+  memberships: [
+    "Indian Orthopaedic Association",
+    "Telangana Orthopaedic Surgeons Society",
+  ],
 };
 
 interface SiteConfigContextType {

@@ -1,7 +1,6 @@
 import { motion } from "framer-motion";
 import { Award, BookOpen, GraduationCap, Stethoscope } from "lucide-react";
 import heroImage from "@/assets/hero-doctor.jpg";
-import { doctorProfile } from "@/data/mockData";
 import { useSiteConfig } from "@/contexts/SiteConfigContext";
 
 export default function About() {
@@ -49,7 +48,7 @@ export default function About() {
             <h2 className="font-display text-2xl md:text-3xl font-bold text-foreground">Education & Training</h2>
           </div>
           <div className="space-y-4">
-            {doctorProfile.education.map((edu, i) => (
+            {config.education.map((edu, i) => (
               <motion.div key={i} initial={{ opacity: 0, x: -20 }} whileInView={{ opacity: 1, x: 0 }} viewport={{ once: true }} transition={{ delay: i * 0.1 }}
                 className="bg-card rounded-xl p-5 border flex items-start gap-4">
                 <div className="w-10 h-10 rounded-full bg-accent/10 flex items-center justify-center shrink-0"><BookOpen className="text-accent" size={18} /></div>
@@ -72,7 +71,7 @@ export default function About() {
             <h2 className="font-display text-2xl md:text-3xl font-bold text-foreground">Awards & Recognition</h2>
           </div>
           <div className="space-y-4">
-            {doctorProfile.awards.map((award, i) => (
+            {config.awards.map((award, i) => (
               <motion.div key={i} initial={{ opacity: 0, x: -20 }} whileInView={{ opacity: 1, x: 0 }} viewport={{ once: true }} transition={{ delay: i * 0.1 }}
                 className="bg-card rounded-xl p-5 border flex items-start gap-4">
                 <div className="w-10 h-10 rounded-full bg-accent/10 flex items-center justify-center shrink-0"><Award className="text-accent" size={18} /></div>
@@ -91,7 +90,7 @@ export default function About() {
         <div className="container max-w-3xl text-center">
           <h2 className="font-display text-2xl md:text-3xl font-bold text-foreground mb-6">Professional Memberships</h2>
           <div className="flex flex-wrap justify-center gap-3">
-            {doctorProfile.memberships.map((m, i) => (
+            {config.memberships.map((m, i) => (
               <span key={i} className="bg-card rounded-full px-5 py-2 text-sm font-medium text-foreground border shadow-sm">{m}</span>
             ))}
           </div>
