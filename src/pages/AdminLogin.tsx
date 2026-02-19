@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { Lock, Loader2, UserPlus } from "lucide-react";
 import { useSiteConfig } from "@/contexts/SiteConfigContext";
@@ -12,8 +12,20 @@ export default function AdminLogin() {
   const [info, setInfo] = useState("");
   const [loading, setLoading] = useState(false);
   const [mode, setMode] = useState<"login" | "signup">("login");
+  const [signupEnabled, setSignupEnabled] = useState(false);
   const { adminLogin, isAdmin, isAuthLoading } = useSiteConfig();
   const navigate = useNavigate();
+
+  useEffect(() => {
+    supabase
+      .from("app_settings")
+      .select("value")
+      .eq("key", "signup_enabled")
+      .single()
+      .then(({ data }) => {
+        if (data) setSignupEnabled(data.value === true);
+      });
+  }, []);
 
   if (isAuthLoading) {
     return (
@@ -43,23 +55,18 @@ export default function AdminLogin() {
       if (signUpError) {
         setError(signUpError.message);
       } else {
-        // After signup, call the assign-admin-role edge function
-        const { error: roleError } = await supabase.functions.invoke("assign-admin-role", {
+        // Try to assign admin role via edge function
+        await supabase.functions.invoke("assign-admin-role", {
           body: { email },
         });
-        if (roleError) {
-          setInfo("Account created! But admin role could not be assigned automatically. Contact support.");
-        } else {
-          setInfo("Account created with admin role! You can now sign in.");
-          setMode("login");
-        }
+        setInfo("Account created! You can now sign in.");
+        setMode("login");
       }
     } else {
       const result = await adminLogin(email, password);
       if (!result.success) {
         setError(result.error || "Login failed");
       } else {
-        // Small delay to let onAuthStateChange update isAdmin
         setTimeout(() => navigate("/admin"), 500);
       }
     }
@@ -101,12 +108,14 @@ export default function AdminLogin() {
           </button>
         </form>
 
-        <div className="mt-4 text-center">
-          <button onClick={() => { setMode(mode === "login" ? "signup" : "login"); setError(""); setInfo(""); }}
-            className="text-sm text-primary hover:underline">
-            {mode === "login" ? "Need an account? Sign Up" : "Already have an account? Sign In"}
-          </button>
-        </div>
+        {signupEnabled && (
+          <div className="mt-4 text-center">
+            <button onClick={() => { setMode(mode === "login" ? "signup" : "login"); setError(""); setInfo(""); }}
+              className="text-sm text-primary hover:underline">
+              {mode === "login" ? "Need an account? Sign Up" : "Already have an account? Sign In"}
+            </button>
+          </div>
+        )}
       </div>
     </section>
   );

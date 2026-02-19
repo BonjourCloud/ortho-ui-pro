@@ -16,6 +16,45 @@ import AdminTestimonials from "@/components/admin/AdminTestimonials";
 type Tab = "overview" | "appointments" | "second-opinions" | "content" | "settings";
 type ContentSubTab = "services" | "blog" | "case-studies" | "testimonials";
 
+function SignupToggle() {
+  const [enabled, setEnabled] = useState(false);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    supabase
+      .from("app_settings")
+      .select("value")
+      .eq("key", "signup_enabled")
+      .single()
+      .then(({ data }) => {
+        if (data) setEnabled(data.value === true);
+        setLoading(false);
+      });
+  }, []);
+
+  const toggle = async () => {
+    const newVal = !enabled;
+    setEnabled(newVal);
+    await supabase
+      .from("app_settings")
+      .update({ value: newVal as any, updated_at: new Date().toISOString() })
+      .eq("key", "signup_enabled");
+  };
+
+  if (loading) return null;
+
+  return (
+    <label className="flex items-center gap-3 cursor-pointer">
+      <input type="checkbox" checked={enabled} onChange={toggle}
+        className="rounded border-primary text-primary focus:ring-primary/20" />
+      <div>
+        <span className="text-sm font-medium text-foreground">Allow New Sign Ups</span>
+        <p className="text-xs text-muted-foreground">When enabled, the login page shows a sign-up option</p>
+      </div>
+    </label>
+  );
+}
+
 export default function AdminDashboard() {
   const { config, updateConfig, isAdmin, isAuthLoading, adminLogout } = useSiteConfig();
   const { enabledLanguages, setEnabledLanguages } = useLanguage();
@@ -378,15 +417,18 @@ export default function AdminDashboard() {
                     <MessageCircle size={18} className="text-primary" />
                     <label className="text-sm font-medium text-foreground">Feature Toggles</label>
                   </div>
-                  <label className="flex items-center gap-3 cursor-pointer">
-                    <input type="checkbox" checked={configForm.whatsappFloatEnabled}
-                      onChange={(e) => setConfigForm({ ...configForm, whatsappFloatEnabled: e.target.checked })}
-                      className="rounded border-primary text-primary focus:ring-primary/20" />
-                    <div>
-                      <span className="text-sm font-medium text-foreground">Floating WhatsApp Button</span>
-                      <p className="text-xs text-muted-foreground">Show a WhatsApp chat button on all pages</p>
-                    </div>
-                  </label>
+                  <div className="space-y-4">
+                    <label className="flex items-center gap-3 cursor-pointer">
+                      <input type="checkbox" checked={configForm.whatsappFloatEnabled}
+                        onChange={(e) => setConfigForm({ ...configForm, whatsappFloatEnabled: e.target.checked })}
+                        className="rounded border-primary text-primary focus:ring-primary/20" />
+                      <div>
+                        <span className="text-sm font-medium text-foreground">Floating WhatsApp Button</span>
+                        <p className="text-xs text-muted-foreground">Show a WhatsApp chat button on all pages</p>
+                      </div>
+                    </label>
+                    <SignupToggle />
+                  </div>
                 </div>
 
                 <button onClick={handleSaveConfig}
