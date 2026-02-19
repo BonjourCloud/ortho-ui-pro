@@ -50,7 +50,7 @@ const defaultConfig: SiteConfig = {
 
 interface SiteConfigContextType {
   config: SiteConfig;
-  updateConfig: (updates: Partial<SiteConfig>) => void;
+  updateConfig: (updates: Partial<SiteConfig>) => Promise<void>;
   isAdmin: boolean;
   isAuthLoading: boolean;
   user: User | null;
@@ -61,23 +61,33 @@ interface SiteConfigContextType {
 const SiteConfigContext = createContext<SiteConfigContextType | null>(null);
 
 export function SiteConfigProvider({ children }: { children: ReactNode }) {
-  const [config, setConfig] = useState<SiteConfig>(() => {
-    const saved = localStorage.getItem("siteConfig");
-    return saved ? { ...defaultConfig, ...JSON.parse(saved) } : defaultConfig;
-  });
-
+  const [config, setConfig] = useState<SiteConfig>(defaultConfig);
   const [user, setUser] = useState<User | null>(null);
   const [isAdmin, setIsAdmin] = useState(false);
   const [isAuthLoading, setIsAuthLoading] = useState(true);
+  const [configRowId, setConfigRowId] = useState<string | null>(null);
+
+  // Load config from DB on mount
+  useEffect(() => {
+    supabase
+      .from("site_config")
+      .select("id, config")
+      .limit(1)
+      .single()
+      .then(({ data }) => {
+        if (data) {
+          setConfigRowId(data.id);
+          setConfig({ ...defaultConfig, ...(data.config as any) });
+        }
+      });
+  }, []);
 
   useEffect(() => {
-    // Set up auth listener FIRST
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, session) => {
       const currentUser = session?.user ?? null;
       setUser(currentUser);
 
       if (currentUser) {
-        // Check admin role via has_role function
         const { data } = await supabase.rpc("has_role" as any, {
           _user_id: currentUser.id,
           _role: "admin",
@@ -89,7 +99,6 @@ export function SiteConfigProvider({ children }: { children: ReactNode }) {
       setIsAuthLoading(false);
     });
 
-    // Then check existing session
     supabase.auth.getSession().then(async ({ data: { session } }) => {
       const currentUser = session?.user ?? null;
       setUser(currentUser);
@@ -107,20 +116,24 @@ export function SiteConfigProvider({ children }: { children: ReactNode }) {
     return () => subscription.unsubscribe();
   }, []);
 
-  useEffect(() => {
-    localStorage.setItem("siteConfig", JSON.stringify(config));
-  }, [config]);
+  const updateConfig = async (updates: Partial<SiteConfig>) => {
+    const newConfig = { ...config, ...updates };
+    setConfig(newConfig);
 
-  const updateConfig = (updates: Partial<SiteConfig>) => {
-    setConfig((prev) => ({ ...prev, ...updates }));
+    // Persist to DB
+    if (configRowId) {
+      await supabase
+        .from("site_config")
+        .update({ config: newConfig as any, updated_at: new Date().toISOString() })
+        .eq("id", configRowId);
+    }
   };
 
   const adminLogin = async (email: string, password: string) => {
-    const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+    const { error } = await supabase.auth.signInWithPassword({ email, password });
     if (error) {
       return { success: false, error: error.message };
     }
-    // Role check will happen via onAuthStateChange
     return { success: true };
   };
 

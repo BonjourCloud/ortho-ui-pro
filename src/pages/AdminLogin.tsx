@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
-import { Lock, Loader2, UserPlus } from "lucide-react";
+import { Lock, Loader2, UserPlus, KeyRound } from "lucide-react";
 import { useSiteConfig } from "@/contexts/SiteConfigContext";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
@@ -11,7 +11,7 @@ export default function AdminLogin() {
   const [error, setError] = useState("");
   const [info, setInfo] = useState("");
   const [loading, setLoading] = useState(false);
-  const [mode, setMode] = useState<"login" | "signup">("login");
+  const [mode, setMode] = useState<"login" | "signup" | "forgot">("login");
   const [signupEnabled, setSignupEnabled] = useState(false);
   const { adminLogin, isAdmin, isAuthLoading } = useSiteConfig();
   const navigate = useNavigate();
@@ -46,6 +46,19 @@ export default function AdminLogin() {
     setInfo("");
     setLoading(true);
 
+    if (mode === "forgot") {
+      const { error: resetError } = await supabase.auth.resetPasswordForEmail(email, {
+        redirectTo: `${window.location.origin}/reset-password`,
+      });
+      if (resetError) {
+        setError(resetError.message);
+      } else {
+        setInfo("Password reset email sent! Check your inbox.");
+      }
+      setLoading(false);
+      return;
+    }
+
     if (mode === "signup") {
       const { error: signUpError } = await supabase.auth.signUp({
         email,
@@ -55,7 +68,6 @@ export default function AdminLogin() {
       if (signUpError) {
         setError(signUpError.message);
       } else {
-        // Try to assign admin role via edge function
         await supabase.functions.invoke("assign-admin-role", {
           body: { email },
         });
@@ -73,19 +85,21 @@ export default function AdminLogin() {
     setLoading(false);
   };
 
+  const icons = { login: Lock, signup: UserPlus, forgot: KeyRound };
+  const titles = { login: "Admin Login", signup: "Admin Sign Up", forgot: "Reset Password" };
+  const subtitles = { login: "Access the dashboard", signup: "Create your admin account", forgot: "Enter your email to receive a reset link" };
+  const buttonLabels = { login: "Sign In", signup: "Sign Up", forgot: "Send Reset Link" };
+  const Icon = icons[mode];
+
   return (
     <section className="py-20 md:py-32">
       <div className="container max-w-sm">
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="text-center mb-8">
           <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center mx-auto mb-4">
-            {mode === "login" ? <Lock className="text-primary" size={28} /> : <UserPlus className="text-primary" size={28} />}
+            <Icon className="text-primary" size={28} />
           </div>
-          <h1 className="font-display text-2xl font-bold text-foreground">
-            {mode === "login" ? "Admin Login" : "Admin Sign Up"}
-          </h1>
-          <p className="text-sm text-muted-foreground mt-1">
-            {mode === "login" ? "Access the dashboard" : "Create your admin account"}
-          </p>
+          <h1 className="font-display text-2xl font-bold text-foreground">{titles[mode]}</h1>
+          <p className="text-sm text-muted-foreground mt-1">{subtitles[mode]}</p>
         </motion.div>
 
         <form onSubmit={handleSubmit} className="space-y-4">
@@ -96,26 +110,48 @@ export default function AdminLogin() {
             <input type="email" required value={email} onChange={(e) => setEmail(e.target.value)}
               className="w-full rounded-lg border bg-card px-4 py-2.5 text-sm text-foreground focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none" />
           </div>
-          <div>
-            <label className="block text-sm font-medium text-foreground mb-1.5">Password</label>
-            <input type="password" required minLength={6} value={password} onChange={(e) => setPassword(e.target.value)}
-              className="w-full rounded-lg border bg-card px-4 py-2.5 text-sm text-foreground focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none" />
-          </div>
+          {mode !== "forgot" && (
+            <div>
+              <label className="block text-sm font-medium text-foreground mb-1.5">Password</label>
+              <input type="password" required minLength={6} value={password} onChange={(e) => setPassword(e.target.value)}
+                className="w-full rounded-lg border bg-card px-4 py-2.5 text-sm text-foreground focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none" />
+            </div>
+          )}
           <button type="submit" disabled={loading}
             className="w-full rounded-lg bg-primary px-6 py-3 text-sm font-semibold text-primary-foreground hover:opacity-90 transition-all disabled:opacity-50 flex items-center justify-center gap-2">
             {loading && <Loader2 className="animate-spin" size={16} />}
-            {mode === "login" ? "Sign In" : "Sign Up"}
+            {buttonLabels[mode]}
           </button>
         </form>
 
-        {signupEnabled && (
-          <div className="mt-4 text-center">
-            <button onClick={() => { setMode(mode === "login" ? "signup" : "login"); setError(""); setInfo(""); }}
+        <div className="mt-4 text-center space-y-2">
+          {mode === "login" && (
+            <>
+              <button onClick={() => { setMode("forgot"); setError(""); setInfo(""); }}
+                className="text-sm text-muted-foreground hover:text-primary hover:underline block mx-auto">
+                Forgot password?
+              </button>
+              {signupEnabled && (
+                <button onClick={() => { setMode("signup"); setError(""); setInfo(""); }}
+                  className="text-sm text-primary hover:underline block mx-auto">
+                  Need an account? Sign Up
+                </button>
+              )}
+            </>
+          )}
+          {mode === "signup" && (
+            <button onClick={() => { setMode("login"); setError(""); setInfo(""); }}
               className="text-sm text-primary hover:underline">
-              {mode === "login" ? "Need an account? Sign Up" : "Already have an account? Sign In"}
+              Already have an account? Sign In
             </button>
-          </div>
-        )}
+          )}
+          {mode === "forgot" && (
+            <button onClick={() => { setMode("login"); setError(""); setInfo(""); }}
+              className="text-sm text-primary hover:underline">
+              Back to Sign In
+            </button>
+          )}
+        </div>
       </div>
     </section>
   );

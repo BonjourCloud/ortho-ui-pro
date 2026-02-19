@@ -356,6 +356,24 @@ export type Database = {
         }
         Relationships: []
       }
+      site_config: {
+        Row: {
+          config: Json
+          id: string
+          updated_at: string | null
+        }
+        Insert: {
+          config?: Json
+          id?: string
+          updated_at?: string | null
+        }
+        Update: {
+          config?: Json
+          id?: string
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       testimonials: {
         Row: {
           age: number | null
