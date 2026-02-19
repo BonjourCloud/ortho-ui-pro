@@ -88,8 +88,8 @@ export default function AdminDashboard() {
 
   const handleLogout = async () => { await adminLogout(); navigate("/"); };
 
-  const handleSaveConfig = () => {
-    updateConfig(configForm);
+  const handleSaveConfig = async () => {
+    await updateConfig(configForm);
     setEnabledLanguages(langSettings);
     setSaved(true);
     setTimeout(() => setSaved(false), 2000);
