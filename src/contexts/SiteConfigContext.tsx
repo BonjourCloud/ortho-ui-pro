@@ -1,4 +1,6 @@
 import { createContext, useContext, useState, useEffect, ReactNode } from "react";
+import { supabase } from "@/integrations/supabase/client";
+import type { User } from "@supabase/supabase-js";
 
 export interface SiteConfig {
   doctorName: string;
@@ -50,12 +52,11 @@ interface SiteConfigContextType {
   config: SiteConfig;
   updateConfig: (updates: Partial<SiteConfig>) => void;
   isAdmin: boolean;
-  adminLogin: (email: string, password: string) => boolean;
-  adminLogout: () => void;
+  isAuthLoading: boolean;
+  user: User | null;
+  adminLogin: (email: string, password: string) => Promise<{ success: boolean; error?: string }>;
+  adminLogout: () => Promise<void>;
 }
-
-const ADMIN_EMAIL = "itsrahgiv@gmail.com";
-const ADMIN_PASSWORD = "admin123";
 
 const SiteConfigContext = createContext<SiteConfigContextType | null>(null);
 
@@ -65,9 +66,46 @@ export function SiteConfigProvider({ children }: { children: ReactNode }) {
     return saved ? { ...defaultConfig, ...JSON.parse(saved) } : defaultConfig;
   });
 
-  const [isAdmin, setIsAdmin] = useState(() => {
-    return localStorage.getItem("adminToken") === "authenticated";
-  });
+  const [user, setUser] = useState<User | null>(null);
+  const [isAdmin, setIsAdmin] = useState(false);
+  const [isAuthLoading, setIsAuthLoading] = useState(true);
+
+  useEffect(() => {
+    // Set up auth listener FIRST
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, session) => {
+      const currentUser = session?.user ?? null;
+      setUser(currentUser);
+
+      if (currentUser) {
+        // Check admin role via has_role function
+        const { data } = await supabase.rpc("has_role" as any, {
+          _user_id: currentUser.id,
+          _role: "admin",
+        });
+        setIsAdmin(data === true);
+      } else {
+        setIsAdmin(false);
+      }
+      setIsAuthLoading(false);
+    });
+
+    // Then check existing session
+    supabase.auth.getSession().then(async ({ data: { session } }) => {
+      const currentUser = session?.user ?? null;
+      setUser(currentUser);
+
+      if (currentUser) {
+        const { data } = await supabase.rpc("has_role" as any, {
+          _user_id: currentUser.id,
+          _role: "admin",
+        });
+        setIsAdmin(data === true);
+      }
+      setIsAuthLoading(false);
+    });
+
+    return () => subscription.unsubscribe();
+  }, []);
 
   useEffect(() => {
     localStorage.setItem("siteConfig", JSON.stringify(config));
@@ -77,22 +115,23 @@ export function SiteConfigProvider({ children }: { children: ReactNode }) {
     setConfig((prev) => ({ ...prev, ...updates }));
   };
 
-  const adminLogin = (email: string, password: string) => {
-    if (email === ADMIN_EMAIL && password === ADMIN_PASSWORD) {
-      localStorage.setItem("adminToken", "authenticated");
-      setIsAdmin(true);
-      return true;
+  const adminLogin = async (email: string, password: string) => {
+    const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+    if (error) {
+      return { success: false, error: error.message };
     }
-    return false;
+    // Role check will happen via onAuthStateChange
+    return { success: true };
   };
 
-  const adminLogout = () => {
-    localStorage.removeItem("adminToken");
+  const adminLogout = async () => {
+    await supabase.auth.signOut();
+    setUser(null);
     setIsAdmin(false);
   };
 
   return (
-    <SiteConfigContext.Provider value={{ config, updateConfig, isAdmin, adminLogin, adminLogout }}>
+    <SiteConfigContext.Provider value={{ config, updateConfig, isAdmin, isAuthLoading, user, adminLogin, adminLogout }}>
       {children}
     </SiteConfigContext.Provider>
   );

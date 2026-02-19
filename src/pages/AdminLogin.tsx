@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { motion } from "framer-motion";
-import { Lock } from "lucide-react";
+import { Lock, Loader2 } from "lucide-react";
 import { useSiteConfig } from "@/contexts/SiteConfigContext";
 import { useNavigate } from "react-router-dom";
 
@@ -8,22 +8,35 @@ export default function AdminLogin() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
-  const { adminLogin, isAdmin } = useSiteConfig();
+  const [loading, setLoading] = useState(false);
+  const { adminLogin, isAdmin, isAuthLoading } = useSiteConfig();
   const navigate = useNavigate();
+
+  if (isAuthLoading) {
+    return (
+      <section className="py-20 md:py-32 flex justify-center">
+        <Loader2 className="animate-spin text-primary" size={32} />
+      </section>
+    );
+  }
 
   if (isAdmin) {
     navigate("/admin");
     return null;
   }
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    const success = adminLogin(email, password);
-    if (success) {
-      navigate("/admin");
+    setError("");
+    setLoading(true);
+
+    const result = await adminLogin(email, password);
+    if (!result.success) {
+      setError(result.error || "Login failed");
     } else {
-      setError("Invalid credentials. Use itsrahgiv@gmail.com / admin123");
+      navigate("/admin");
     }
+    setLoading(false);
   };
 
   return (
@@ -49,7 +62,9 @@ export default function AdminLogin() {
             <input type="password" required value={password} onChange={(e) => setPassword(e.target.value)}
               className="w-full rounded-lg border bg-card px-4 py-2.5 text-sm text-foreground focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none" />
           </div>
-          <button type="submit" className="w-full rounded-lg bg-primary px-6 py-3 text-sm font-semibold text-primary-foreground hover:opacity-90 transition-all">
+          <button type="submit" disabled={loading}
+            className="w-full rounded-lg bg-primary px-6 py-3 text-sm font-semibold text-primary-foreground hover:opacity-90 transition-all disabled:opacity-50 flex items-center justify-center gap-2">
+            {loading && <Loader2 className="animate-spin" size={16} />}
             Sign In
           </button>
         </form>
