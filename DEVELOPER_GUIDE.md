@@ -49,8 +49,9 @@ src/
 │   ├── CaseStudies.tsx        # Case study listing with pain scores
 │   ├── CaseStudyDetail.tsx    # Single case study (by slug)
 │   ├── SecondOpinion.tsx      # Second opinion portal with file upload
-│   ├── AdminLogin.tsx         # Admin login via Supabase Auth (signup toggleable)
+│   ├── AdminLogin.tsx         # Admin login via Supabase Auth (signup toggleable, forgot password)
 │   ├── AdminDashboard.tsx     # Admin: overview, appointments, content, settings
+│   ├── ResetPassword.tsx      # Password reset form (accessed via email recovery link)
 │   └── NotFound.tsx           # 404
 supabase/
 ├── config.toml                # Supabase project config (auto-managed)
@@ -74,8 +75,9 @@ supabase/
 | `/case-studies` | CaseStudies | Case study listing |
 | `/case-studies/:slug` | CaseStudyDetail | Individual case study |
 | `/second-opinion` | SecondOpinion | Upload reports for second opinion |
-| `/admin/login` | AdminLogin | Admin authentication (Supabase Auth) |
+| `/admin/login` | AdminLogin | Admin authentication (forgot password link) |
 | `/admin` | AdminDashboard | Site management dashboard (admin-only) |
+| `/reset-password` | ResetPassword | Set new password (accessed via recovery email link) |
 
 ---
 
@@ -96,12 +98,21 @@ supabase/
 3. The `assign-admin-role` edge function assigns admin role **only** to `itsrahgiv@gmail.com`.
 4. Admin disables signup toggle after account creation.
 
+### Password Reset Flow
+
+1. User clicks "Forgot password?" on `/admin/login`.
+2. `supabase.auth.resetPasswordForEmail()` sends a recovery email with a link to `/reset-password`.
+3. `/reset-password` listens for the `PASSWORD_RECOVERY` auth event (or checks for `type=recovery` in URL hash).
+4. User sets a new password via `supabase.auth.updateUser({ password })`.
+5. On success, redirects to `/admin/login` after 3 seconds.
+
 ### Key Files
 
 | File | Role |
 |------|------|
-| `src/contexts/SiteConfigContext.tsx` | Auth state, `adminLogin()`, `adminLogout()`, `isAdmin` check via `has_role` RPC |
-| `src/pages/AdminLogin.tsx` | Login/signup form, reads `signup_enabled` from `app_settings` table |
+| `src/contexts/SiteConfigContext.tsx` | Auth state, site config from `site_config` DB table, `adminLogin()`, `adminLogout()`, `isAdmin` check via `has_role` RPC |
+| `src/pages/AdminLogin.tsx` | Login/signup form, reads `signup_enabled` from `app_settings` table, "Forgot password?" link |
+| `src/pages/ResetPassword.tsx` | Password reset form, validates recovery token, calls `updateUser()` |
 | `src/pages/AdminDashboard.tsx` | Protected page, redirects to `/admin/login` if not admin, includes `SignupToggle` component |
 | `supabase/functions/assign-admin-role/index.ts` | Edge function: assigns admin role to designated email only |
 
@@ -133,7 +144,7 @@ The signup toggle is stored in the `app_settings` table (`key: 'signup_enabled'`
 | **About** | `/about` | `mockData.doctorProfile` + `SiteConfigContext` | ❌ Mock | Education, awards, memberships all hardcoded in mockData |
 | **Services** | `/services` | `useServices()` → DB, `mockData.serviceCategories` | 🟡 Partial | Service list from DB ✅; category definitions still mock |
 | **Book Appointment** | `/book` | `mockData.services/insuranceProviders/timeSlots`, submits → `appointments` table | 🟡 Partial | **Form submits to DB ✅**; service dropdown, insurance list, time slots still mock |
-| **Contact** | `/contact` | `SiteConfigContext`, submits → `contact_messages` table | 🟡 Partial | **Form submits to DB ✅**; contact info from localStorage config |
+| **Contact** | `/contact` | `SiteConfigContext` → DB, submits → `contact_messages` table | ✅ Backend | **Form submits to DB ✅**; contact info from `site_config` table |
 | **Blog Listing** | `/blog` | `useBlogPosts()` → DB | ✅ Backend | Reads from `blog_posts` table |
 | **Blog Post** | `/blog/:slug` | `useBlogPost()` → DB | ✅ Backend | Single post from DB by slug |
 | **Case Studies** | `/case-studies` | `useCaseStudies()` → DB | ✅ Backend | Reads from `case_studies` table |
@@ -156,7 +167,7 @@ The signup toggle is stored in the `app_settings` table (`key: 'signup_enabled'`
 | **Services** | `AdminServices` component → DB | ✅ Backend | Full CRUD on `services` table |
 | **Testimonials** | `AdminTestimonials` component → DB | ✅ Backend | Full CRUD on `testimonials` table |
 | **Contact Messages** | Reads from `contact_messages` table | ✅ Backend | View messages (read-only) |
-| **Settings** | `SiteConfigContext` → localStorage + `app_settings` → DB | 🟡 Partial | Doctor name, phone, hours saved to localStorage; signup toggle saved to DB |
+| **Settings** | `SiteConfigContext` → `site_config` table + `app_settings` → DB | ✅ Backend | All site settings (doctor name, phone, hours, etc.) persisted to `site_config` table; signup toggle in `app_settings` |
 | **Languages** | `LanguageContext` → localStorage | ❌ Mock | i18n toggle saved locally |
 
 ---
@@ -174,6 +185,7 @@ The signup toggle is stored in the `app_settings` table (`key: 'signup_enabled'`
 | `testimonials` | Index page, Admin CRUD | SELECT (public), INSERT/UPDATE/DELETE (admin) | ✅ Active |
 | `user_roles` | Auth system | SELECT (own roles only) | ✅ Active |
 | `app_settings` | Admin signup toggle, login page | SELECT (public), INSERT/UPDATE (admin) | ✅ Active |
+| `site_config` | All site settings (name, phone, hours, etc.) | SELECT (public), INSERT/UPDATE (admin) | ✅ Active |
 
 ### Database Functions
 
@@ -227,11 +239,9 @@ The signup toggle is stored in the `app_settings` table (`key: 'signup_enabled'`
 | Feature | Current State | What's Needed |
 |---------|--------------|---------------|
 | **Dynamic time slots** | Static array in mockData | Availability calendar or configurable schedule |
-| **Doctor profile in DB** | Hardcoded in mockData | DB table or extend SiteConfig to persist server-side |
-| **Site settings in DB** | localStorage only (except signup toggle) | DB table so settings persist across devices |
+| **Doctor profile in DB** | Hardcoded in mockData | Could extend `site_config` JSONB or create separate DB table |
 | **Service categories table** | Hardcoded array | Derive from services or separate table |
 | **Email notifications** | None | Edge function for appointment confirmations, second opinion acknowledgements |
-| **Password reset flow** | Not implemented | `/reset-password` page + `resetPasswordForEmail()` |
 
 #### 🟢 Nice-to-Have
 
