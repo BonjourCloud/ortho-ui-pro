@@ -17,7 +17,7 @@ type Tab = "overview" | "appointments" | "second-opinions" | "content" | "settin
 type ContentSubTab = "services" | "blog" | "case-studies" | "testimonials";
 
 export default function AdminDashboard() {
-  const { config, updateConfig, isAdmin, adminLogout } = useSiteConfig();
+  const { config, updateConfig, isAdmin, isAuthLoading, adminLogout } = useSiteConfig();
   const { enabledLanguages, setEnabledLanguages } = useLanguage();
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState<Tab>("overview");
@@ -34,12 +34,20 @@ export default function AdminDashboard() {
     }
   }, [isAdmin, activeTab]);
 
+  if (isAuthLoading) {
+    return (
+      <section className="py-20 md:py-32 flex justify-center">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
+      </section>
+    );
+  }
+
   if (!isAdmin) {
     navigate("/admin/login");
     return null;
   }
 
-  const handleLogout = () => { adminLogout(); navigate("/"); };
+  const handleLogout = async () => { await adminLogout(); navigate("/"); };
 
   const handleSaveConfig = () => {
     updateConfig(configForm);
