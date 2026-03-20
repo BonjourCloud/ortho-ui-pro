@@ -594,6 +594,11 @@ export default function AdminDashboard() {
                   </div>
                 </div>
 
+                {/* Language Settings */}
+                <div className="border-t pt-5">
+                  <div className="flex items-center gap-2 mb-3">
+                    <Globe size={18} className="text-primary" />
+                    <label className="text-sm font-medium text-foreground">Enabled Languages</label>
                   </div>
                   <p className="text-xs text-muted-foreground mb-3">Toggle languages visitors can switch between. English is always enabled.</p>
                   <div className="flex flex-wrap gap-3">
