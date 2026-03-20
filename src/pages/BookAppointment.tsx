@@ -1,7 +1,8 @@
 import { motion } from "framer-motion";
 import { Calendar, Clock, Phone, CheckCircle } from "lucide-react";
 import { useState } from "react";
-import { services, insuranceProviders, timeSlots } from "@/data/mockData";
+import { useServices } from "@/hooks/useContent";
+import { useSiteConfig } from "@/contexts/SiteConfigContext";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 
@@ -22,6 +23,8 @@ export default function BookAppointment() {
     emiInterest: false,
   });
   const { toast } = useToast();
+  const { services } = useServices();
+  const { config } = useSiteConfig();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -51,6 +54,9 @@ export default function BookAppointment() {
     setSubmitted(true);
   };
 
+  const whatsappLink = `https://wa.me/${config.whatsapp.replace(/\+/g, "")}`;
+  const phoneDisplay = config.phone.replace(/(\+91)(\d{5})(\d{5})/, "$1 $2 $3");
+
   if (submitted) {
     return (
       <section className="py-20 md:py-32">
@@ -65,7 +71,7 @@ export default function BookAppointment() {
             </p>
             <p className="text-muted-foreground mb-6">We will confirm within 2 hours via WhatsApp.</p>
             <a
-              href="https://wa.me/919876543210"
+              href={whatsappLink}
               target="_blank"
               rel="noopener noreferrer"
               className="inline-flex items-center gap-2 rounded-lg bg-primary px-6 py-3 text-sm font-semibold text-primary-foreground"
@@ -158,7 +164,7 @@ export default function BookAppointment() {
                 <select required value={selectedTime} onChange={(e) => setSelectedTime(e.target.value)}
                   className="w-full rounded-lg border bg-card px-4 py-2.5 text-sm text-foreground focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none">
                   <option value="">Select time</option>
-                  {timeSlots.map((slot) => (
+                  {config.timeSlots.map((slot) => (
                     <option key={slot.time} value={slot.time} disabled={!slot.available}>
                       {slot.time} {!slot.available ? "(Unavailable)" : ""}
                     </option>
@@ -178,7 +184,7 @@ export default function BookAppointment() {
               <select value={form.insuranceProvider} onChange={(e) => setForm({ ...form, insuranceProvider: e.target.value })}
                 className="w-full rounded-lg border bg-card px-4 py-2.5 text-sm text-foreground focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none">
                 <option value="">None / Self-pay</option>
-                {insuranceProviders.map((p) => (
+                {config.insuranceProviders.map((p) => (
                   <option key={p} value={p}>{p}</option>
                 ))}
               </select>
@@ -198,7 +204,7 @@ export default function BookAppointment() {
             </button>
 
             <p className="text-xs text-center text-muted-foreground">
-              Or call directly: <a href="tel:+919876543210" className="font-semibold text-primary">+91 98765 43210</a>
+              Or call directly: <a href={`tel:${config.phone}`} className="font-semibold text-primary">{phoneDisplay}</a>
             </p>
           </form>
         </div>
