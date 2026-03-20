@@ -156,7 +156,7 @@ Every field, image, and section across the site, classified by data source.
 | Image | Source | Location |
 |-------|--------|----------|
 | Hero / About doctor photo | ⚙️ Config (DB) with asset fallback | `config.heroImageUrl` → falls back to `src/assets/hero-doctor.jpg` |
-| Service category icons | 🟡 Mock | Emoji strings in `serviceCategories` from `mockData.ts` |
+| Service category icons | ⚙️ Config (DB) | Emoji strings in `config.serviceCategories` |
 | Favicon | 🔴 Hard-coded | `public/favicon.ico` |
 | Placeholder image | 🔴 Hard-coded | `public/placeholder.svg` |
 | Blog/service images | ❌ Not implemented | No image column or upload in blog_posts/services tables |
