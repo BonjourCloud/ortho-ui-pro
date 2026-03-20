@@ -532,10 +532,68 @@ export default function AdminDashboard() {
                   </div>
                 </div>
 
+                {/* Why Choose Items */}
                 <div className="border-t pt-5">
-                  <div className="flex items-center gap-2 mb-3">
-                    <Globe size={18} className="text-primary" />
-                    <label className="text-sm font-medium text-foreground">Enabled Languages</label>
+                  <div className="flex items-center justify-between mb-3">
+                    <div className="flex items-center gap-2">
+                      <Stethoscope size={18} className="text-primary" />
+                      <label className="text-sm font-medium text-foreground">"Why Choose" Section</label>
+                    </div>
+                    <button type="button" onClick={() => setConfigForm({ ...configForm, whyChoose: [...configForm.whyChoose, { icon: "Shield", title: "", desc: "" }] })}
+                      className="inline-flex items-center gap-1 text-xs text-primary hover:underline"><Plus size={14} /> Add</button>
+                  </div>
+                  <p className="text-xs text-muted-foreground mb-3">Icon options: Shield, Zap, Heart, Users</p>
+                  <div className="space-y-3">
+                    {configForm.whyChoose.map((item, i) => (
+                      <div key={i} className="bg-secondary/30 rounded-lg p-3 space-y-2">
+                        <div className="flex gap-2">
+                          <select value={item.icon} onChange={(e) => { const arr = [...configForm.whyChoose]; arr[i] = { ...arr[i], icon: e.target.value }; setConfigForm({ ...configForm, whyChoose: arr }); }}
+                            className="w-28 rounded-lg border bg-background px-3 py-2 text-sm text-foreground focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none">
+                            <option value="Shield">Shield</option>
+                            <option value="Zap">Zap</option>
+                            <option value="Heart">Heart</option>
+                            <option value="Users">Users</option>
+                          </select>
+                          <input placeholder="Title" value={item.title} onChange={(e) => { const arr = [...configForm.whyChoose]; arr[i] = { ...arr[i], title: e.target.value }; setConfigForm({ ...configForm, whyChoose: arr }); }}
+                            className="flex-1 rounded-lg border bg-background px-3 py-2 text-sm text-foreground focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none" />
+                          <button type="button" onClick={() => setConfigForm({ ...configForm, whyChoose: configForm.whyChoose.filter((_, j) => j !== i) })}
+                            className="text-destructive hover:text-destructive/80"><Trash2 size={14} /></button>
+                        </div>
+                        <input placeholder="Description" value={item.desc} onChange={(e) => { const arr = [...configForm.whyChoose]; arr[i] = { ...arr[i], desc: e.target.value }; setConfigForm({ ...configForm, whyChoose: arr }); }}
+                          className="w-full rounded-lg border bg-background px-3 py-2 text-sm text-foreground focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none" />
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Service Categories */}
+                <div className="border-t pt-5">
+                  <div className="flex items-center justify-between mb-3">
+                    <div className="flex items-center gap-2">
+                      <FileText size={18} className="text-primary" />
+                      <label className="text-sm font-medium text-foreground">Service Categories (Home Page)</label>
+                    </div>
+                    <button type="button" onClick={() => setConfigForm({ ...configForm, serviceCategories: [...configForm.serviceCategories, { name: "", icon: "🦴", slug: "", description: "" }] })}
+                      className="inline-flex items-center gap-1 text-xs text-primary hover:underline"><Plus size={14} /> Add</button>
+                  </div>
+                  <div className="space-y-3">
+                    {configForm.serviceCategories.map((cat, i) => (
+                      <div key={i} className="bg-secondary/30 rounded-lg p-3 space-y-2">
+                        <div className="flex gap-2">
+                          <input placeholder="Icon (emoji)" value={cat.icon} onChange={(e) => { const arr = [...configForm.serviceCategories]; arr[i] = { ...arr[i], icon: e.target.value }; setConfigForm({ ...configForm, serviceCategories: arr }); }}
+                            className="w-16 rounded-lg border bg-background px-3 py-2 text-sm text-foreground focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none text-center" />
+                          <input placeholder="Category name" value={cat.name} onChange={(e) => { const arr = [...configForm.serviceCategories]; arr[i] = { ...arr[i], name: e.target.value, slug: e.target.value.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "") }; setConfigForm({ ...configForm, serviceCategories: arr }); }}
+                            className="flex-1 rounded-lg border bg-background px-3 py-2 text-sm text-foreground focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none" />
+                          <button type="button" onClick={() => setConfigForm({ ...configForm, serviceCategories: configForm.serviceCategories.filter((_, j) => j !== i) })}
+                            className="text-destructive hover:text-destructive/80"><Trash2 size={14} /></button>
+                        </div>
+                        <input placeholder="Description" value={cat.description} onChange={(e) => { const arr = [...configForm.serviceCategories]; arr[i] = { ...arr[i], description: e.target.value }; setConfigForm({ ...configForm, serviceCategories: arr }); }}
+                          className="w-full rounded-lg border bg-background px-3 py-2 text-sm text-foreground focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none" />
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
                   </div>
                   <p className="text-xs text-muted-foreground mb-3">Toggle languages visitors can switch between. English is always enabled.</p>
                   <div className="flex flex-wrap gap-3">
