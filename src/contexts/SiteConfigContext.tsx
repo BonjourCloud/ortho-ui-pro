@@ -15,6 +15,11 @@ export interface AwardEntry {
   year: number;
 }
 
+export interface TimeSlotEntry {
+  time: string;
+  available: boolean;
+}
+
 export interface SiteConfig {
   doctorName: string;
   clinicName: string;
@@ -41,6 +46,8 @@ export interface SiteConfig {
   education: EducationEntry[];
   awards: AwardEntry[];
   memberships: string[];
+  insuranceProviders: string[];
+  timeSlots: TimeSlotEntry[];
 }
 
 const defaultConfig: SiteConfig = {
