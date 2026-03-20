@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { BarChart3, Users, Calendar, Settings, LogOut, TrendingUp, Phone, MessageCircle, Eye, FileText, Globe, Stethoscope, BookOpen, ClipboardList, Quote, Plus, Trash2 } from "lucide-react";
-import { useSiteConfig, SiteConfig, EducationEntry, AwardEntry } from "@/contexts/SiteConfigContext";
+import { useSiteConfig, SiteConfig, EducationEntry, AwardEntry, TimeSlotEntry } from "@/contexts/SiteConfigContext";
 import { useNavigate } from "react-router-dom";
 import { mockAnalytics } from "@/data/mockData";
 import { useLanguage, Language } from "@/contexts/LanguageContext";
@@ -482,7 +482,56 @@ export default function AdminDashboard() {
                     className="w-full rounded-lg border bg-background px-4 py-2.5 text-sm text-foreground focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none" />
                 </div>
 
-                {/* Language Settings */}
+                {/* Insurance Providers */}
+                <div className="border-t pt-5">
+                  <div className="flex items-center justify-between mb-3">
+                    <div className="flex items-center gap-2">
+                      <ClipboardList size={18} className="text-primary" />
+                      <label className="text-sm font-medium text-foreground">Insurance Providers</label>
+                    </div>
+                    <button type="button" onClick={() => setConfigForm({ ...configForm, insuranceProviders: [...configForm.insuranceProviders, ""] })}
+                      className="inline-flex items-center gap-1 text-xs text-primary hover:underline"><Plus size={14} /> Add</button>
+                  </div>
+                  <div className="space-y-2">
+                    {configForm.insuranceProviders.map((p, i) => (
+                      <div key={i} className="flex gap-2">
+                        <input value={p} onChange={(e) => { const arr = [...configForm.insuranceProviders]; arr[i] = e.target.value; setConfigForm({ ...configForm, insuranceProviders: arr }); }}
+                          placeholder="Provider name"
+                          className="flex-1 rounded-lg border bg-background px-3 py-2 text-sm text-foreground focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none" />
+                        <button type="button" onClick={() => setConfigForm({ ...configForm, insuranceProviders: configForm.insuranceProviders.filter((_, j) => j !== i) })}
+                          className="text-destructive hover:text-destructive/80"><Trash2 size={14} /></button>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Time Slots */}
+                <div className="border-t pt-5">
+                  <div className="flex items-center justify-between mb-3">
+                    <div className="flex items-center gap-2">
+                      <Calendar size={18} className="text-primary" />
+                      <label className="text-sm font-medium text-foreground">Appointment Time Slots</label>
+                    </div>
+                    <button type="button" onClick={() => setConfigForm({ ...configForm, timeSlots: [...configForm.timeSlots, { time: "", available: true }] })}
+                      className="inline-flex items-center gap-1 text-xs text-primary hover:underline"><Plus size={14} /> Add</button>
+                  </div>
+                  <div className="space-y-2">
+                    {configForm.timeSlots.map((slot, i) => (
+                      <div key={i} className="flex gap-2 items-center">
+                        <input value={slot.time} onChange={(e) => { const arr = [...configForm.timeSlots]; arr[i] = { ...arr[i], time: e.target.value }; setConfigForm({ ...configForm, timeSlots: arr }); }}
+                          placeholder="e.g. 09:00 AM"
+                          className="flex-1 rounded-lg border bg-background px-3 py-2 text-sm text-foreground focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none" />
+                        <label className="flex items-center gap-1 text-xs text-muted-foreground whitespace-nowrap">
+                          <input type="checkbox" checked={slot.available} onChange={(e) => { const arr = [...configForm.timeSlots]; arr[i] = { ...arr[i], available: e.target.checked }; setConfigForm({ ...configForm, timeSlots: arr }); }}
+                            className="rounded" /> Available
+                        </label>
+                        <button type="button" onClick={() => setConfigForm({ ...configForm, timeSlots: configForm.timeSlots.filter((_, j) => j !== i) })}
+                          className="text-destructive hover:text-destructive/80"><Trash2 size={14} /></button>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
                 <div className="border-t pt-5">
                   <div className="flex items-center gap-2 mb-3">
                     <Globe size={18} className="text-primary" />

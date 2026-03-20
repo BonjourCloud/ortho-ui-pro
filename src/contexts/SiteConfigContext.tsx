@@ -15,6 +15,11 @@ export interface AwardEntry {
   year: number;
 }
 
+export interface TimeSlotEntry {
+  time: string;
+  available: boolean;
+}
+
 export interface SiteConfig {
   doctorName: string;
   clinicName: string;
@@ -41,6 +46,8 @@ export interface SiteConfig {
   education: EducationEntry[];
   awards: AwardEntry[];
   memberships: string[];
+  insuranceProviders: string[];
+  timeSlots: TimeSlotEntry[];
 }
 
 const defaultConfig: SiteConfig = {
@@ -78,6 +85,25 @@ const defaultConfig: SiteConfig = {
   memberships: [
     "Indian Orthopaedic Association",
     "Telangana Orthopaedic Surgeons Society",
+  ],
+  insuranceProviders: [
+    "Star Health Insurance",
+    "ICICI Lombard",
+    "New India Assurance",
+    "Bajaj Allianz",
+    "HDFC Ergo",
+  ],
+  timeSlots: [
+    { time: "07:00 AM", available: true },
+    { time: "08:00 AM", available: true },
+    { time: "09:00 AM", available: true },
+    { time: "10:00 AM", available: false },
+    { time: "11:00 AM", available: false },
+    { time: "04:00 PM", available: true },
+    { time: "05:00 PM", available: true },
+    { time: "06:00 PM", available: true },
+    { time: "07:00 PM", available: true },
+    { time: "08:00 PM", available: true },
   ],
 };
 

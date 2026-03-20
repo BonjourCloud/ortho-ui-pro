@@ -80,11 +80,11 @@ Every field, image, and section across the site, classified by data source.
 |---------|--------|----------|
 | Page heading | 🔴 Hard-coded | `"Book Appointment"` in `BookAppointment.tsx` |
 | Appointment type options | 🔴 Hard-coded | `<option>` elements in `BookAppointment.tsx` (New, Follow Up, Post-Op, Emergency, Consultation) |
-| Service dropdown | 🟡 Mock | `services` array from `mockData.ts` (NOT from DB) |
-| Time slot options | 🟡 Mock | `timeSlots` from `mockData.ts` |
-| Insurance provider dropdown | 🟡 Mock | `insuranceProviders` from `mockData.ts` |
-| Success message WhatsApp link | 🔴 Hard-coded | `"https://wa.me/919876543210"` in `BookAppointment.tsx` |
-| Success message phone number | 🔴 Hard-coded | `"+91 98765 43210"` in `BookAppointment.tsx` |
+| Service dropdown | 🟢 DB | `useServices()` → `services` table |
+| Time slot options | ⚙️ Config (DB) | `config.timeSlots` in `site_config` JSONB |
+| Insurance provider dropdown | ⚙️ Config (DB) | `config.insuranceProviders` in `site_config` JSONB |
+| Success message WhatsApp link | ⚙️ Config (DB) | `config.whatsapp` |
+| Success message phone number | ⚙️ Config (DB) | `config.phone` |
 | Form submission | 🟢 DB | Inserts to `appointments` table |
 
 ---
@@ -178,10 +178,9 @@ Every field, image, and section across the site, classified by data source.
 | "Why Choose" cards | Edit `whyChoose` in `src/pages/Index.tsx` |
 | Service category cards | Edit `serviceCategories` in `src/data/mockData.ts` |
 | Appointment type options | Edit `<option>` in `src/pages/BookAppointment.tsx` |
-| Time slots | Edit `timeSlots` in `src/data/mockData.ts` |
-| Insurance providers | Edit `insuranceProviders` in `src/data/mockData.ts` |
+| Time slots | Admin Dashboard → Settings (Time Slots section) |
+| Insurance providers | Admin Dashboard → Settings (Insurance Providers section) |
 | Condition dropdown (2nd opinion) | Edit `conditionOptions` in `src/pages/SecondOpinion.tsx` |
 | Google Maps embed | Edit iframe `src` in `src/pages/Contact.tsx` |
 | Review badge ("4.9★ / 500+ Reviews") | Edit inline in `src/pages/Index.tsx` |
-| Hard-coded phone in BookAppointment | Edit `BookAppointment.tsx` lines 68 & 201 |
 | Translations / nav labels | Edit `src/data/translations.ts` |
