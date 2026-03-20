@@ -62,6 +62,8 @@ export interface SiteConfig {
   memberships: string[];
   insuranceProviders: string[];
   timeSlots: TimeSlotEntry[];
+  whyChoose: WhyChooseEntry[];
+  serviceCategories: ServiceCategoryEntry[];
 }
 
 const defaultConfig: SiteConfig = {
