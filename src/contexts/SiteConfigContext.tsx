@@ -20,6 +20,20 @@ export interface TimeSlotEntry {
   available: boolean;
 }
 
+export interface WhyChooseEntry {
+  icon: string;
+  title: string;
+  desc: string;
+}
+
+export interface ServiceCategoryEntry {
+  name: string;
+  icon: string;
+  slug: string;
+  description: string;
+}
+
+
 export interface SiteConfig {
   doctorName: string;
   clinicName: string;
@@ -48,6 +62,8 @@ export interface SiteConfig {
   memberships: string[];
   insuranceProviders: string[];
   timeSlots: TimeSlotEntry[];
+  whyChoose: WhyChooseEntry[];
+  serviceCategories: ServiceCategoryEntry[];
 }
 
 const defaultConfig: SiteConfig = {
@@ -104,6 +120,18 @@ const defaultConfig: SiteConfig = {
     { time: "06:00 PM", available: true },
     { time: "07:00 PM", available: true },
     { time: "08:00 PM", available: true },
+  ],
+  whyChoose: [
+    { icon: "Shield", title: "15+ Years of Expertise", desc: "Board-certified with fellowship training from Singapore General Hospital." },
+    { icon: "Zap", title: "Minimally Invasive", desc: "Smaller incisions, less pain, faster recovery with latest techniques." },
+    { icon: "Heart", title: "Patient-Centric Care", desc: "Every patient is treated like family with personalized treatment plans." },
+    { icon: "Users", title: "Insurance & EMI", desc: "Cashless insurance accepted. Affordable EMI options available." },
+  ],
+  serviceCategories: [
+    { name: "Joint Replacement", icon: "🦵", slug: "joint-replacement", description: "Advanced joint replacement surgeries for hip, knee, and shoulder using minimally invasive techniques." },
+    { name: "Sports Medicine", icon: "⚽", slug: "sports-medicine", description: "Specialized treatment for sports-related injuries including ACL reconstruction and rotator cuff surgery." },
+    { name: "Spine Surgery", icon: "🦴", slug: "spine-surgery", description: "Comprehensive care for spinal conditions including disc herniation, spinal stenosis, and fractures." },
+    { name: "Trauma & Fracture Care", icon: "🚑", slug: "trauma-care", description: "Emergency and scheduled treatment for all types of bone fractures and trauma injuries." },
   ],
 };
 

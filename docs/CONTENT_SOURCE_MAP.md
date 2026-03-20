@@ -38,9 +38,9 @@ Every field, image, and section across the site, classified by data source.
 | Hero image | ⚙️ Config (DB) | `config.heroImageUrl` (falls back to `hero-doctor.jpg` asset) |
 | Hero review badge ("4.9★ / 500+ Reviews") | 🔴 Hard-coded | Inline in `Index.tsx` |
 | Stats (Years, Patients, Surgeries, Branches) | ⚙️ Config (DB) | `config.yearsExperience`, `config.happyPatients`, `config.surgeriesCompleted`, `config.branches` |
-| Service category cards (4 cards) | 🟡 Mock | `serviceCategories` from `mockData.ts` |
+| Service category cards (4 cards) | ⚙️ Config (DB) | `config.serviceCategories` in `site_config` JSONB |
 | Featured procedures (top 3) | 🟢 DB | `useServices()` → `services` table |
-| "Why Choose" section (4 items) | 🔴 Hard-coded | `whyChoose` array in `Index.tsx` |
+| "Why Choose" section (4 items) | ⚙️ Config (DB) | `config.whyChoose` in `site_config` JSONB |
 | Testimonials | 🟢 DB | `useTestimonials()` → `testimonials` table |
 | CTA section text | 🔴 Hard-coded | `"Ready to Move Without Pain?"` in `Index.tsx` |
 | CTA doctor name | ⚙️ Config (DB) | `config.doctorName` |
@@ -69,7 +69,7 @@ Every field, image, and section across the site, classified by data source.
 | Element | Source | Location |
 |---------|--------|----------|
 | Page heading & subtitle | 🔴 Hard-coded | `"Our Services"`, `"Comprehensive orthopedic treatments..."` in `Services.tsx` |
-| Category filter tabs | 🟡 Mock | `serviceCategories` from `mockData.ts` |
+| Category filter tabs | ⚙️ Config (DB) | `config.serviceCategories` in `site_config` JSONB |
 | Service cards (name, description, stats) | 🟢 DB | `useServices()` → `services` table |
 
 ---
@@ -156,7 +156,7 @@ Every field, image, and section across the site, classified by data source.
 | Image | Source | Location |
 |-------|--------|----------|
 | Hero / About doctor photo | ⚙️ Config (DB) with asset fallback | `config.heroImageUrl` → falls back to `src/assets/hero-doctor.jpg` |
-| Service category icons | 🟡 Mock | Emoji strings in `serviceCategories` from `mockData.ts` |
+| Service category icons | ⚙️ Config (DB) | Emoji strings in `config.serviceCategories` |
 | Favicon | 🔴 Hard-coded | `public/favicon.ico` |
 | Placeholder image | 🔴 Hard-coded | `public/placeholder.svg` |
 | Blog/service images | ❌ Not implemented | No image column or upload in blog_posts/services tables |
@@ -175,8 +175,8 @@ Every field, image, and section across the site, classified by data source.
 | Blog posts | Admin Dashboard → Blog Posts tab |
 | Testimonials | Admin Dashboard → Testimonials tab |
 | Case studies | Admin Dashboard → Case Studies tab |
-| "Why Choose" cards | Edit `whyChoose` in `src/pages/Index.tsx` |
-| Service category cards | Edit `serviceCategories` in `src/data/mockData.ts` |
+| "Why Choose" cards | Admin Dashboard → Settings ("Why Choose" section) |
+| Service category cards | Admin Dashboard → Settings (Service Categories section) |
 | Appointment type options | Edit `<option>` in `src/pages/BookAppointment.tsx` |
 | Time slots | Admin Dashboard → Settings (Time Slots section) |
 | Insurance providers | Admin Dashboard → Settings (Insurance Providers section) |

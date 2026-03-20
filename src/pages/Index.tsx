@@ -2,16 +2,10 @@ import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
 import { Star, ArrowRight, Shield, Heart, Zap, Users } from "lucide-react";
 import heroImage from "@/assets/hero-doctor.jpg";
-import { serviceCategories } from "@/data/mockData";
 import { useSiteConfig } from "@/contexts/SiteConfigContext";
 import { useServices, useTestimonials } from "@/hooks/useContent";
 
-const whyChoose = [
-  { icon: Shield, title: "15+ Years of Expertise", desc: "Board-certified with fellowship training from Singapore General Hospital." },
-  { icon: Zap, title: "Minimally Invasive", desc: "Smaller incisions, less pain, faster recovery with latest techniques." },
-  { icon: Heart, title: "Patient-Centric Care", desc: "Every patient is treated like family with personalized treatment plans." },
-  { icon: Users, title: "Insurance & EMI", desc: "Cashless insurance accepted. Affordable EMI options available." },
-];
+const iconMap: Record<string, React.ElementType> = { Shield, Zap, Heart, Users };
 
 export default function Index() {
   const { config } = useSiteConfig();
@@ -90,8 +84,8 @@ export default function Index() {
             <h2 className="font-display text-3xl md:text-4xl font-bold text-foreground mt-2">Comprehensive Orthopedic Care</h2>
           </motion.div>
           <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6">
-            {serviceCategories.map((cat, i) => (
-              <motion.div key={cat.id} initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ delay: i * 0.1 }}>
+            {config.serviceCategories.map((cat, i) => (
+              <motion.div key={cat.slug} initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ delay: i * 0.1 }}>
                 <Link to="/services" className="block bg-card rounded-xl p-6 border hover:border-primary/30 hover:shadow-lg transition-all group h-full">
                   <div className="text-4xl mb-4">{cat.icon}</div>
                   <h3 className="font-display text-lg font-semibold text-foreground group-hover:text-primary transition-colors mb-2">{cat.name}</h3>
@@ -141,13 +135,16 @@ export default function Index() {
             <h2 className="font-display text-3xl md:text-4xl font-bold text-foreground mt-2">Why Choose {config.doctorName}?</h2>
           </div>
           <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6">
-            {whyChoose.map((item, i) => (
-              <motion.div key={item.title} initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ delay: i * 0.1 }} className="bg-card rounded-xl p-6 border text-center">
-                <div className="w-14 h-14 rounded-full bg-accent/10 flex items-center justify-center mx-auto mb-4"><item.icon className="text-accent" size={24} /></div>
-                <h3 className="font-display text-base font-semibold text-foreground mb-2">{item.title}</h3>
-                <p className="text-sm text-muted-foreground">{item.desc}</p>
-              </motion.div>
-            ))}
+            {config.whyChoose.map((item, i) => {
+              const IconComp = iconMap[item.icon] || Shield;
+              return (
+                <motion.div key={item.title} initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ delay: i * 0.1 }} className="bg-card rounded-xl p-6 border text-center">
+                  <div className="w-14 h-14 rounded-full bg-accent/10 flex items-center justify-center mx-auto mb-4"><IconComp className="text-accent" size={24} /></div>
+                  <h3 className="font-display text-base font-semibold text-foreground mb-2">{item.title}</h3>
+                  <p className="text-sm text-muted-foreground">{item.desc}</p>
+                </motion.div>
+              );
+            })}
           </div>
         </div>
       </section>
