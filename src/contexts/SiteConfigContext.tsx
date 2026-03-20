@@ -20,6 +20,20 @@ export interface TimeSlotEntry {
   available: boolean;
 }
 
+export interface WhyChooseEntry {
+  icon: string;
+  title: string;
+  desc: string;
+}
+
+export interface ServiceCategoryEntry {
+  name: string;
+  icon: string;
+  slug: string;
+  description: string;
+}
+
+
 export interface SiteConfig {
   doctorName: string;
   clinicName: string;
