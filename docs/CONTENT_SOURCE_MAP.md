@@ -175,8 +175,8 @@ Every field, image, and section across the site, classified by data source.
 | Blog posts | Admin Dashboard → Blog Posts tab |
 | Testimonials | Admin Dashboard → Testimonials tab |
 | Case studies | Admin Dashboard → Case Studies tab |
-| "Why Choose" cards | Edit `whyChoose` in `src/pages/Index.tsx` |
-| Service category cards | Edit `serviceCategories` in `src/data/mockData.ts` |
+| "Why Choose" cards | Admin Dashboard → Settings ("Why Choose" section) |
+| Service category cards | Admin Dashboard → Settings (Service Categories section) |
 | Appointment type options | Edit `<option>` in `src/pages/BookAppointment.tsx` |
 | Time slots | Admin Dashboard → Settings (Time Slots section) |
 | Insurance providers | Admin Dashboard → Settings (Insurance Providers section) |
