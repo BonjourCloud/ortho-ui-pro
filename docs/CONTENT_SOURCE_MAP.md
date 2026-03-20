@@ -178,10 +178,9 @@ Every field, image, and section across the site, classified by data source.
 | "Why Choose" cards | Edit `whyChoose` in `src/pages/Index.tsx` |
 | Service category cards | Edit `serviceCategories` in `src/data/mockData.ts` |
 | Appointment type options | Edit `<option>` in `src/pages/BookAppointment.tsx` |
-| Time slots | Edit `timeSlots` in `src/data/mockData.ts` |
-| Insurance providers | Edit `insuranceProviders` in `src/data/mockData.ts` |
+| Time slots | Admin Dashboard → Settings (Time Slots section) |
+| Insurance providers | Admin Dashboard → Settings (Insurance Providers section) |
 | Condition dropdown (2nd opinion) | Edit `conditionOptions` in `src/pages/SecondOpinion.tsx` |
 | Google Maps embed | Edit iframe `src` in `src/pages/Contact.tsx` |
 | Review badge ("4.9★ / 500+ Reviews") | Edit inline in `src/pages/Index.tsx` |
-| Hard-coded phone in BookAppointment | Edit `BookAppointment.tsx` lines 68 & 201 |
 | Translations / nav labels | Edit `src/data/translations.ts` |
