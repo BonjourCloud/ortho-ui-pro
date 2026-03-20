@@ -38,9 +38,9 @@ Every field, image, and section across the site, classified by data source.
 | Hero image | ⚙️ Config (DB) | `config.heroImageUrl` (falls back to `hero-doctor.jpg` asset) |
 | Hero review badge ("4.9★ / 500+ Reviews") | 🔴 Hard-coded | Inline in `Index.tsx` |
 | Stats (Years, Patients, Surgeries, Branches) | ⚙️ Config (DB) | `config.yearsExperience`, `config.happyPatients`, `config.surgeriesCompleted`, `config.branches` |
-| Service category cards (4 cards) | 🟡 Mock | `serviceCategories` from `mockData.ts` |
+| Service category cards (4 cards) | ⚙️ Config (DB) | `config.serviceCategories` in `site_config` JSONB |
 | Featured procedures (top 3) | 🟢 DB | `useServices()` → `services` table |
-| "Why Choose" section (4 items) | 🔴 Hard-coded | `whyChoose` array in `Index.tsx` |
+| "Why Choose" section (4 items) | ⚙️ Config (DB) | `config.whyChoose` in `site_config` JSONB |
 | Testimonials | 🟢 DB | `useTestimonials()` → `testimonials` table |
 | CTA section text | 🔴 Hard-coded | `"Ready to Move Without Pain?"` in `Index.tsx` |
 | CTA doctor name | ⚙️ Config (DB) | `config.doctorName` |

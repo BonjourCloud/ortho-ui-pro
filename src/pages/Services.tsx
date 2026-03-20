@@ -1,13 +1,14 @@
 import { motion } from "framer-motion";
 import { Link } from "react-router-dom";
 import { ArrowRight, Clock, Building2, CheckCircle, IndianRupee } from "lucide-react";
-import { serviceCategories } from "@/data/mockData";
+import { useSiteConfig } from "@/contexts/SiteConfigContext";
 import { useServices } from "@/hooks/useContent";
 import { useState } from "react";
 
 export default function Services() {
   const [activeCategory, setActiveCategory] = useState<string | null>(null);
   const { services, loading } = useServices();
+  const { config } = useSiteConfig();
 
   const filtered = activeCategory
     ? services.filter((s) => s.category === activeCategory)
@@ -34,8 +35,8 @@ export default function Services() {
               className={`rounded-full px-5 py-2 text-sm font-medium transition-all border ${!activeCategory ? "bg-primary text-primary-foreground border-primary" : "bg-card text-muted-foreground border-border hover:border-primary/30"}`}>
               All
             </button>
-            {serviceCategories.map((cat) => (
-              <button key={cat.id} onClick={() => setActiveCategory(cat.name)}
+            {config.serviceCategories.map((cat) => (
+              <button key={cat.slug} onClick={() => setActiveCategory(cat.name)}
                 className={`rounded-full px-5 py-2 text-sm font-medium transition-all border ${activeCategory === cat.name ? "bg-primary text-primary-foreground border-primary" : "bg-card text-muted-foreground border-border hover:border-primary/30"}`}>
                 {cat.icon} {cat.name}
               </button>

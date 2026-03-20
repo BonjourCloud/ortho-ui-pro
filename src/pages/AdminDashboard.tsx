@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { BarChart3, Users, Calendar, Settings, LogOut, TrendingUp, Phone, MessageCircle, Eye, FileText, Globe, Stethoscope, BookOpen, ClipboardList, Quote, Plus, Trash2 } from "lucide-react";
-import { useSiteConfig, SiteConfig, EducationEntry, AwardEntry, TimeSlotEntry } from "@/contexts/SiteConfigContext";
+import { useSiteConfig, SiteConfig, EducationEntry, AwardEntry, TimeSlotEntry, WhyChooseEntry, ServiceCategoryEntry } from "@/contexts/SiteConfigContext";
 import { useNavigate } from "react-router-dom";
 import { mockAnalytics } from "@/data/mockData";
 import { useLanguage, Language } from "@/contexts/LanguageContext";
