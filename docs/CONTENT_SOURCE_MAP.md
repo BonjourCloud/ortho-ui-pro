@@ -69,7 +69,7 @@ Every field, image, and section across the site, classified by data source.
 | Element | Source | Location |
 |---------|--------|----------|
 | Page heading & subtitle | 🔴 Hard-coded | `"Our Services"`, `"Comprehensive orthopedic treatments..."` in `Services.tsx` |
-| Category filter tabs | 🟡 Mock | `serviceCategories` from `mockData.ts` |
+| Category filter tabs | ⚙️ Config (DB) | `config.serviceCategories` in `site_config` JSONB |
 | Service cards (name, description, stats) | 🟢 DB | `useServices()` → `services` table |
 
 ---
