@@ -20,7 +20,7 @@ serve(async (req) => {
     const { email } = await req.json();
 
     // Only allow bootstrapping for the designated admin email
-    const ADMIN_EMAIL = "itsrahgiv@gmail.com";
+    const ADMIN_EMAIL = "itsrajivv@gmail.com";
     if (email !== ADMIN_EMAIL) {
       return new Response(JSON.stringify({ error: "Not authorized" }), {
         status: 403,
