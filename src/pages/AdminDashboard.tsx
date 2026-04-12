@@ -64,6 +64,7 @@ export default function AdminDashboard() {
   const [configForm, setConfigForm] = useState<SiteConfig>({ ...config });
   const [langSettings, setLangSettings] = useState<Language[]>([...enabledLanguages]);
   const [saved, setSaved] = useState(false);
+  const [saving, setSaving] = useState(false);
   const [appointments, setAppointments] = useState<any[]>([]);
 
   useEffect(() => {
@@ -72,6 +73,17 @@ export default function AdminDashboard() {
         .then(({ data }) => { if (data) setAppointments(data); });
     }
   }, [isAdmin, activeTab]);
+
+  // Sync configForm with latest config from context
+  useEffect(() => {
+    setConfigForm({ ...config });
+  }, [config]);
+
+  useEffect(() => {
+    if (!isAuthLoading && !isAdmin) {
+      navigate("/admin/login");
+    }
+  }, [isAdmin, isAuthLoading, navigate]);
 
   if (isAuthLoading) {
     return (
@@ -82,17 +94,26 @@ export default function AdminDashboard() {
   }
 
   if (!isAdmin) {
-    navigate("/admin/login");
     return null;
   }
 
   const handleLogout = async () => { await adminLogout(); navigate("/"); };
 
   const handleSaveConfig = async () => {
-    await updateConfig(configForm);
-    setEnabledLanguages(langSettings);
-    setSaved(true);
-    setTimeout(() => setSaved(false), 2000);
+    setSaving(true);
+    setSaved(false);
+    try {
+      await updateConfig(configForm);
+      setEnabledLanguages(langSettings);
+      setSaved(true);
+      console.log('✅ Settings saved successfully!');
+      setTimeout(() => setSaved(false), 3000);
+    } catch (error: any) {
+      console.error("Save failed:", error);
+      alert(`Failed to save settings: ${error.message || 'Unknown error'}`);
+    } finally {
+      setSaving(false);
+    }
   };
 
   const tabs: { id: Tab; label: string; icon: React.ElementType }[] = [
@@ -635,9 +656,19 @@ export default function AdminDashboard() {
                   </div>
                 </div>
 
-                <button onClick={handleSaveConfig}
-                  className="w-full rounded-lg bg-primary px-6 py-3 text-sm font-semibold text-primary-foreground hover:opacity-90 transition-all">
-                  Save Configuration
+                <button 
+                  type="button"
+                  onClick={handleSaveConfig}
+                  disabled={saving}
+                  className="w-full rounded-lg bg-primary px-6 py-3 text-sm font-semibold text-primary-foreground hover:opacity-90 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2">
+                  {saving ? (
+                    <>
+                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-primary-foreground" />
+                      Saving...
+                    </>
+                  ) : (
+                    'Save Configuration'
+                  )}
                 </button>
               </div>
             </div>

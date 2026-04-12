@@ -200,14 +200,23 @@ export default function Layout({ children }: { children: React.ReactNode }) {
             <div>
               <h4 className="font-display text-lg font-semibold mb-4">{t("footer.contact")}</h4>
               <div className="flex flex-col gap-3 text-sm text-primary-foreground/70">
-                <span className="flex items-start gap-2"><MapPin size={16} className="mt-0.5 shrink-0" /> {config.location}</span>
-                <span className="flex items-center gap-2"><Phone size={16} className="shrink-0" /> {formatPhone(config.phone)}</span>
-                <span className="flex items-center gap-2"><Mail size={16} className="shrink-0" /> {config.email}</span>
+                <div className="flex items-start gap-2">
+                  <MapPin size={16} className="mt-0.5 shrink-0" />
+                  <span>{config.location}</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Phone size={16} className="shrink-0" />
+                  <span>{formatPhone(config.phone)}</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Mail size={16} className="shrink-0" />
+                  <span>{config.email}</span>
+                </div>
               </div>
             </div>
           </div>
           <div className="border-t border-primary-foreground/20 mt-10 pt-6 text-center text-xs text-primary-foreground/50">
-            © {new Date().getFullYear()} {config.doctorName} {config.clinicName}. {t("footer.rights")}
+            © 2026 {config.doctorName} {config.clinicName}. {t("footer.rights")}
           </div>
         </div>
       </footer>
