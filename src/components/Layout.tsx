@@ -23,7 +23,6 @@ export default function Layout({ children }: { children: React.ReactNode }) {
     { to: "/services", label: t("nav.services") },
     { to: "/case-studies", label: t("nav.caseStudies") },
     { to: "/blog", label: t("nav.blog") },
-    { to: "/second-opinion", label: t("nav.secondOpinion") },
     { to: "/contact", label: t("nav.contact") },
   ];
 

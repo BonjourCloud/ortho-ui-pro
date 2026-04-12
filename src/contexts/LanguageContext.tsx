@@ -18,7 +18,7 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
 
   const [enabledLanguages, setEnabledLangsState] = useState<Language[]>(() => {
     const saved = localStorage.getItem("enabledLanguages");
-    return saved ? JSON.parse(saved) : ["en", "hi", "te"];
+    return saved ? JSON.parse(saved) : ["en"];
   });
 
   useEffect(() => {
