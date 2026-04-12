@@ -1,6 +1,6 @@
 import { Link, useLocation } from "react-router-dom";
 import WhatsAppFloat from "./WhatsAppFloat";
-import { Phone, Mail, MapPin, Clock, Menu, X, Shield, Globe } from "lucide-react";
+import { Phone, Mail, MapPin, Clock, Menu, X, Shield, Globe, Facebook, Instagram } from "lucide-react";
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useSiteConfig } from "@/contexts/SiteConfigContext";
@@ -213,6 +213,27 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                   <span>{config.email}</span>
                 </div>
               </div>
+              {(config.facebook || config.instagram) && (
+                <div className="mt-4">
+                  <h5 className="text-sm font-semibold mb-3">Follow Us</h5>
+                  <div className="flex gap-3">
+                    {config.facebook && (
+                      <a href={config.facebook} target="_blank" rel="noopener noreferrer" 
+                         className="w-10 h-10 rounded-full bg-primary-foreground/10 hover:bg-primary-foreground/20 flex items-center justify-center transition-colors"
+                         aria-label="Facebook">
+                        <Facebook size={18} />
+                      </a>
+                    )}
+                    {config.instagram && (
+                      <a href={config.instagram} target="_blank" rel="noopener noreferrer"
+                         className="w-10 h-10 rounded-full bg-primary-foreground/10 hover:bg-primary-foreground/20 flex items-center justify-center transition-colors"
+                         aria-label="Instagram">
+                        <Instagram size={18} />
+                      </a>
+                    )}
+                  </div>
+                </div>
+              )}
             </div>
           </div>
           <div className="border-t border-primary-foreground/20 mt-10 pt-6 text-center text-xs text-primary-foreground/50">

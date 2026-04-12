@@ -25,6 +25,8 @@ export interface SiteConfig {
   whatsappFloatEnabled: boolean;
   languages: string[];
   registrationNumber: string;
+  facebook?: string;
+  instagram?: string;
   education: any[];
   awards: any[];
   memberships: string[];
@@ -57,6 +59,8 @@ const defaultConfig: SiteConfig = {
   whatsappFloatEnabled: true,
   languages: ["English", "Hindi", "Telugu"],
   registrationNumber: "TSMC/FMR/12345",
+  facebook: "",
+  instagram: "",
   education: [],
   awards: [],
   memberships: [],

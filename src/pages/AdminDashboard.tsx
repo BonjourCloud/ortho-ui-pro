@@ -389,6 +389,18 @@ export default function AdminDashboard() {
                 </div>
                 <div className="grid sm:grid-cols-2 gap-4">
                   <div>
+                    <label className="block text-sm font-medium text-foreground mb-1.5">Facebook URL</label>
+                    <input value={configForm.facebook || ""} onChange={(e) => setConfigForm({ ...configForm, facebook: e.target.value })} placeholder="https://facebook.com/yourpage"
+                      className="w-full rounded-lg border bg-background px-4 py-2.5 text-sm text-foreground focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none" />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-foreground mb-1.5">Instagram URL</label>
+                    <input value={configForm.instagram || ""} onChange={(e) => setConfigForm({ ...configForm, instagram: e.target.value })} placeholder="https://instagram.com/yourprofile"
+                      className="w-full rounded-lg border bg-background px-4 py-2.5 text-sm text-foreground focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none" />
+                  </div>
+                </div>
+                <div className="grid sm:grid-cols-2 gap-4">
+                  <div>
                     <label className="block text-sm font-medium text-foreground mb-1.5">Location</label>
                     <input value={configForm.location} onChange={(e) => setConfigForm({ ...configForm, location: e.target.value })}
                       className="w-full rounded-lg border bg-background px-4 py-2.5 text-sm text-foreground focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none" />
