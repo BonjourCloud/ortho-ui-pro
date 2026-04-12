@@ -1,15 +1,19 @@
 # 🚀 Launch & Deployment Guide — Dr. Ortho Clinic Website
 
+> **Deployment target:** Self-hosted Supabase + Vercel with custom domain.
+> The Lovable Cloud backend will NOT be used in production.
+
 ## Table of Contents
 
 1. [Admin Access & First Login](#1-admin-access--first-login)
 2. [What You Can Edit from Admin Dashboard](#2-what-you-can-edit-from-admin-dashboard)
 3. [Mock Data vs Real Data — Full Audit](#3-mock-data-vs-real-data--full-audit)
 4. [Pre-Launch Checklist](#4-pre-launch-checklist)
-5. [Local Development Setup](#5-local-development-setup)
-6. [Vercel Deployment with Custom Domain](#6-vercel-deployment-with-custom-domain)
-7. [Backend / API Architecture](#7-backend--api-architecture)
-8. [What Needs to Be Extended for Full Production](#8-what-needs-to-be-extended-for-full-production)
+5. [Setting Up Your Own Supabase Project](#5-setting-up-your-own-supabase-project)
+6. [Local Development Setup](#6-local-development-setup)
+7. [Vercel Deployment with Custom Domain](#7-vercel-deployment-with-custom-domain)
+8. [Backend / API Architecture](#8-backend--api-architecture)
+9. [What Needs to Be Extended for Full Production](#9-what-needs-to-be-extended-for-full-production)
 
 ---
 
@@ -17,12 +21,12 @@
 
 ### Your Admin Email: `itsrajivv@gmail.com`
 
-The system uses role-based access control. Only the email above is authorized for admin role assignment.
+The system uses role-based access control. Only the email above is authorized for admin role assignment (hardcoded in `supabase/functions/assign-admin-role/index.ts`).
 
 ### First-Time Setup Steps
 
 1. **Go to** `/admin/login`
-2. **Enable sign-ups** (one-time): You'll need sign-ups enabled first. If not already done, use the Lovable preview to access the admin dashboard and toggle "Allow New Sign Ups" under Settings.
+2. **Enable sign-ups** (one-time): Toggle "Allow New Sign Ups" in Dashboard → Settings → Feature Toggles. (First time you'll need to insert the `app_settings` row manually — see Section 5.)
 3. **Sign up** with `itsrajivv@gmail.com` — this triggers the `assign-admin-role` edge function which grants you admin access.
 4. **Confirm your email** by clicking the link sent to your inbox.
 5. **Log in** at `/admin/login` — you'll be redirected to `/admin`.
@@ -123,7 +127,7 @@ These are **live** and fully functional:
 | Data | Location | Impact |
 |------|----------|--------|
 | **Analytics numbers** (visitors, pageviews, bounce rate) | `src/data/mockData.ts` → `mockAnalytics` | Admin Overview tab shows fake numbers |
-| **Unused mock exports** (doctorProfile, services, testimonials, blogPosts, caseStudies, insuranceProviders, timeSlots, serviceCategories) | `src/data/mockData.ts` | **Not used by any page** — legacy leftovers, safe to delete |
+| **Unused mock exports** (doctorProfile, services, testimonials, blogPosts, caseStudies, etc.) | `src/data/mockData.ts` | **Not used by any page** — legacy leftovers, safe to delete |
 
 ### 🔴 Hard-Coded in JSX (requires code change)
 
@@ -146,12 +150,13 @@ These are **live** and fully functional:
 
 ### Must Do Before Going Live
 
+- [ ] **Set up your own Supabase project** (see Section 5)
 - [ ] **Sign up & get admin access** (see Section 1)
 - [ ] **Update doctor info** in Admin → Settings:
   - Doctor name, credentials, specialization
   - Phone number, WhatsApp, email
   - Clinic address, hours
-  - Profile photo URL (upload to any image host, paste URL)
+  - Profile photo URL (upload to any image host or Supabase Storage, paste URL)
   - Registration number
   - Education, awards, memberships
   - Stats (years of experience, patients, surgeries, branches)
@@ -178,12 +183,142 @@ These are **live** and fully functional:
 
 ---
 
-## 5. Local Development Setup
+## 5. Setting Up Your Own Supabase Project
+
+Since you're using your own Supabase project instead of Lovable Cloud, you need to replicate the database schema, auth config, storage, and edge functions.
+
+### Step 1: Create a Supabase Project
+
+1. Go to [supabase.com/dashboard](https://supabase.com/dashboard)
+2. Create a new project
+3. Note your **Project URL** and **anon (public) key** from Settings → API
+
+### Step 2: Run Database Migrations
+
+All migrations are in `supabase/migrations/`. Run them in order against your new project.
+
+**Option A — Supabase CLI (recommended):**
+
+```bash
+# Install Supabase CLI
+npm install -g supabase
+
+# Link to your project
+supabase link --project-ref YOUR_PROJECT_REF
+
+# Push all migrations
+supabase db push
+```
+
+**Option B — Manual SQL:**
+
+Go to Supabase Dashboard → SQL Editor and run each migration file in `supabase/migrations/` in chronological order (files are named with timestamps).
+
+### Step 3: Required Database Objects
+
+After migrations, verify these exist:
+
+**Tables:**
+- `app_settings` — feature toggles (signup_enabled)
+- `appointments` — booking submissions
+- `blog_posts` — blog content
+- `case_studies` — patient case studies
+- `contact_messages` — contact form submissions
+- `second_opinions` — second opinion requests
+- `services` — medical procedures
+- `site_config` — all site settings (JSONB)
+- `testimonials` — patient reviews
+- `user_roles` — admin role assignments
+
+**Enum:**
+- `app_role` — values: `admin`, `moderator`, `user`
+
+**Functions:**
+- `has_role(uuid, app_role)` — SECURITY DEFINER function for RLS
+- `update_updated_at_column()` — trigger function for timestamps
+
+**RLS Policies:** All tables have RLS enabled. Public tables allow SELECT for everyone, admin-only tables require `has_role(auth.uid(), 'admin')` for write operations. See `DEVELOPER_GUIDE.md` for the full policy list.
+
+### Step 4: Seed Initial Data
+
+Run these SQL statements in your Supabase SQL Editor:
+
+```sql
+-- Seed app_settings (signup toggle)
+INSERT INTO app_settings (key, value)
+VALUES ('signup_enabled', 'true'::jsonb)
+ON CONFLICT (key) DO NOTHING;
+
+-- Seed initial site_config (empty config — defaults come from code)
+INSERT INTO site_config (config)
+VALUES ('{}'::jsonb);
+```
+
+### Step 5: Create Storage Bucket
+
+```sql
+-- In SQL Editor:
+INSERT INTO storage.buckets (id, name, public)
+VALUES ('second-opinion-reports', 'second-opinion-reports', false);
+```
+
+Then create the storage RLS policies for file uploads (see migration files for exact policies).
+
+### Step 6: Deploy Edge Functions
+
+```bash
+# From project root
+supabase functions deploy assign-admin-role --project-ref YOUR_PROJECT_REF
+```
+
+The edge function needs these secrets set in your Supabase project:
+- `SUPABASE_URL` — auto-set by Supabase
+- `SUPABASE_SERVICE_ROLE_KEY` — auto-set by Supabase
+
+### Step 7: Configure Auth
+
+In Supabase Dashboard → Authentication → URL Configuration:
+- **Site URL**: `https://yourdomain.com` (or `http://localhost:5173` for dev)
+- **Redirect URLs**: Add:
+  - `http://localhost:5173`
+  - `http://localhost:5173/reset-password`
+  - `https://yourdomain.com`
+  - `https://yourdomain.com/reset-password`
+
+In Authentication → Email Templates:
+- Customize the password reset email template if desired
+
+### Step 8: Update .env
+
+Create `.env` in the project root with YOUR Supabase credentials:
+
+```env
+VITE_SUPABASE_PROJECT_ID="YOUR_PROJECT_REF"
+VITE_SUPABASE_PUBLISHABLE_KEY="YOUR_ANON_KEY"
+VITE_SUPABASE_URL="https://YOUR_PROJECT_REF.supabase.co"
+```
+
+### Step 9: Update the Supabase Client
+
+The file `src/integrations/supabase/client.ts` reads from env vars (`VITE_SUPABASE_URL` and `VITE_SUPABASE_PUBLISHABLE_KEY`), so it will automatically connect to whichever Supabase project you configure in `.env`. **No code change needed** — just update the `.env` file.
+
+### Step 10: Regenerate TypeScript Types (Optional)
+
+If you modify the schema, regenerate types:
+
+```bash
+supabase gen types typescript --project-id YOUR_PROJECT_REF > src/integrations/supabase/types.ts
+```
+
+---
+
+## 6. Local Development Setup
 
 ### Prerequisites
 
 - Node.js 18+ (or Bun)
 - Git
+- Supabase CLI (for edge function deployment)
 
 ### Steps
 
@@ -196,11 +331,11 @@ cd <PROJECT_FOLDER>
 npm install
 # or: bun install
 
-# 3. Create .env file (copy from Lovable or use these values)
+# 3. Create .env file with YOUR Supabase credentials
 cat > .env << 'EOF'
-VITE_SUPABASE_PROJECT_ID="pttlppeqnhaohaavdzsv"
-VITE_SUPABASE_PUBLISHABLE_KEY="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InB0dGxwcGVxbmhhb2hhYXZkenN2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzE0MDgxODQsImV4cCI6MjA4Njk4NDE4NH0.tJ_fbOsHDuOA5ElnLidwrE87aGgdd1fiWO3m1L2G7Q8"
-VITE_SUPABASE_URL="https://pttlppeqnhaohaavdzsv.supabase.co"
+VITE_SUPABASE_PROJECT_ID="YOUR_PROJECT_REF"
+VITE_SUPABASE_PUBLISHABLE_KEY="YOUR_ANON_KEY"
+VITE_SUPABASE_URL="https://YOUR_PROJECT_REF.supabase.co"
 EOF
 
 # 4. Start dev server
@@ -211,9 +346,9 @@ npm run dev
 ### Important Notes for Local Dev
 
 - The `.env` file is **not committed** to Git (it's in `.gitignore`). You must create it manually.
-- The backend (database, auth, edge functions, storage) is hosted on Lovable Cloud — your local app connects to the same cloud backend.
-- You do NOT need to run Supabase locally. All API calls go to the hosted instance.
-- Edge functions are deployed automatically by Lovable Cloud.
+- The backend (database, auth, edge functions, storage) is hosted on **your Supabase project** — the local app connects to it remotely.
+- You do NOT need to run Supabase locally unless you want to (optional: `supabase start` for local dev).
+- Edge functions must be deployed to your Supabase project via `supabase functions deploy`.
 
 ### Build for Production
 
@@ -224,7 +359,7 @@ npm run build
 
 ---
 
-## 6. Vercel Deployment with Custom Domain
+## 7. Vercel Deployment with Custom Domain
 
 ### Step 1: Connect GitHub Repo to Vercel
 
@@ -240,13 +375,13 @@ In Vercel → Project Settings → Environment Variables, add:
 
 | Variable | Value |
 |----------|-------|
-| `VITE_SUPABASE_PROJECT_ID` | `pttlppeqnhaohaavdzsv` |
-| `VITE_SUPABASE_PUBLISHABLE_KEY` | `eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InB0dGxwcGVxbmhhb2hhYXZkenN2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzE0MDgxODQsImV4cCI6MjA4Njk4NDE4NH0.tJ_fbOsHDuOA5ElnLidwrE87aGgdd1fiWO3m1L2G7Q8` |
-| `VITE_SUPABASE_URL` | `https://pttlppeqnhaohaavdzsv.supabase.co` |
+| `VITE_SUPABASE_PROJECT_ID` | Your Supabase project ref |
+| `VITE_SUPABASE_PUBLISHABLE_KEY` | Your Supabase anon key |
+| `VITE_SUPABASE_URL` | `https://YOUR_PROJECT_REF.supabase.co` |
 
 ### Step 3: SPA Routing Fix
 
-Create `vercel.json` in the project root to handle client-side routing:
+The `vercel.json` file is already created in the project root:
 
 ```json
 {
@@ -267,25 +402,27 @@ Without this, refreshing on `/about` or `/admin` will show a 404.
    - **CNAME**: `www` → `cname.vercel-dns.com`
 4. Vercel auto-provisions SSL
 
-### Step 5: Update Auth Redirect URLs
+### Step 5: Update Supabase Auth Redirect URLs
 
-After deploying to your custom domain, update the password reset redirect URL. In `src/pages/AdminLogin.tsx`, the redirect is already dynamic (`window.location.origin`), so it will automatically use your custom domain.
+After deploying to your custom domain, go to Supabase Dashboard → Authentication → URL Configuration and add:
+- **Site URL**: `https://yourdomain.com`
+- **Redirect URLs**:
+  - `https://yourdomain.com`
+  - `https://yourdomain.com/reset-password`
 
-However, you need to add your custom domain to the **allowed redirect URLs** in Lovable Cloud's auth settings. Contact Lovable support or use the auth configuration to add:
-- `https://yourdomain.com/reset-password`
-- `https://yourdomain.com`
+The code already uses `window.location.origin` for redirects, so it adapts automatically.
 
 ---
 
-## 7. Backend / API Architecture
+## 8. Backend / API Architecture
 
 ### Overview
 
-The app is a **client-side React SPA** that connects to a hosted backend (Lovable Cloud, powered by Supabase).
+The app is a **client-side React SPA** that connects to your self-hosted **Supabase** backend.
 
 ```
 ┌──────────────────────┐       ┌────────────────────────────────┐
-│   React SPA (Vite)   │──────▶│   Lovable Cloud Backend        │
+│   React SPA (Vite)   │──────▶│   Your Supabase Project        │
 │   - Vercel / local   │       │   ┌─────────────────────────┐  │
 │   - Static files     │       │   │  PostgreSQL Database     │  │
 │                      │◀──────│   │  (tables, RLS, functions)│  │
@@ -302,11 +439,24 @@ The app is a **client-side React SPA** that connects to a hosted backend (Lovabl
 ### API Client
 
 All database/auth/storage calls use the Supabase JS client at:
-- `src/integrations/supabase/client.ts` (auto-generated, DO NOT edit)
+- `src/integrations/supabase/client.ts` — reads `VITE_SUPABASE_URL` and `VITE_SUPABASE_PUBLISHABLE_KEY` from env
 
 ### Database Tables
 
-See `DEVELOPER_GUIDE.md` for full table list with RLS policies.
+| Table | Purpose | Public Read? | Admin Write? |
+|-------|---------|-------------|-------------|
+| `site_config` | All site settings (JSONB) | ✅ | ✅ |
+| `services` | Medical procedures | ✅ | ✅ CRUD |
+| `blog_posts` | Blog articles | ✅ | ✅ CRUD |
+| `case_studies` | Patient case studies | ✅ | ✅ CRUD |
+| `testimonials` | Patient reviews | ✅ | ✅ CRUD |
+| `appointments` | Booking submissions | ❌ | ✅ Read |
+| `contact_messages` | Contact form | ❌ | ✅ Read |
+| `second_opinions` | 2nd opinion requests | ❌ | ✅ Read + Update |
+| `app_settings` | Feature toggles | ✅ | ✅ |
+| `user_roles` | Admin role assignments | Own only | ❌ |
+
+See `DEVELOPER_GUIDE.md` for full RLS policy details.
 
 ### Edge Functions
 
@@ -324,12 +474,19 @@ See `DEVELOPER_GUIDE.md` for full table list with RLS policies.
 
 1. Email/password authentication via Supabase Auth
 2. JWT tokens stored in browser (handled by Supabase client)
-3. Admin role checked via `has_role()` database function
+3. Admin role checked via `has_role()` database function (SECURITY DEFINER)
 4. All admin write operations protected by RLS policies requiring admin role
+
+### Key Database Functions
+
+| Function | Type | Purpose |
+|----------|------|---------|
+| `has_role(_user_id uuid, _role app_role)` | SECURITY DEFINER | Checks if user has a role — used in ALL admin RLS policies |
+| `update_updated_at_column()` | Trigger function | Auto-updates `updated_at` on row changes |
 
 ---
 
-## 8. What Needs to Be Extended for Full Production
+## 9. What Needs to Be Extended for Full Production
 
 ### 🔴 Critical — Must Address
 
@@ -338,7 +495,7 @@ See `DEVELOPER_GUIDE.md` for full table list with RLS policies.
 | **Real Analytics** | Mock numbers in admin overview | Integrate Google Analytics, Plausible, or build custom tracking with a `page_views` table |
 | **Email Notifications** | None | Edge functions to send appointment confirmations, second opinion acknowledgements, contact form auto-replies |
 | **Google Maps** | Placeholder embed | Replace with real Google Maps embed URL in `Contact.tsx` |
-| **Profile Photo** | Empty URL (falls back to placeholder) | Upload doctor's photo and set URL in Admin → Settings |
+| **Profile Photo** | Empty URL (falls back to placeholder) | Upload doctor's photo to Supabase Storage or any CDN, set URL in Admin → Settings |
 
 ### 🟡 Recommended
 
@@ -346,8 +503,8 @@ See `DEVELOPER_GUIDE.md` for full table list with RLS policies.
 |---------|---------------|
 | **SEO Meta Tags** | Add `react-helmet-async` for per-page `<title>` and `<meta description>` |
 | **Blog/Service Images** | Add `image_url` column to `blog_posts` and `services` tables; add upload UI in admin |
-| **Appointment Status Management** | Add ability for admin to update appointment status (confirmed, completed, cancelled) |
-| **Contact Message Read Status** | Add ability for admin to mark messages as read/unread |
+| **Appointment Status Management** | Add ability for admin to update appointment status (confirmed, completed, cancelled) — needs UPDATE RLS policy on `appointments` |
+| **Contact Message Read Status** | Add ability for admin to mark messages as read/unread — needs UPDATE RLS policy on `contact_messages` |
 | **Sitemap.xml** | Generate a sitemap for SEO (can be static or dynamic) |
 
 ### 🟢 Nice-to-Have
@@ -355,20 +512,20 @@ See `DEVELOPER_GUIDE.md` for full table list with RLS policies.
 | Feature | What's Needed |
 |---------|---------------|
 | **WhatsApp Business API** | Replace simple `wa.me` links with WhatsApp Business API for automated responses |
-| **Appointment Reminders** | Scheduled edge function to send SMS/email reminders |
+| **Appointment Reminders** | Scheduled edge function (or cron) to send SMS/email reminders |
 | **Patient Portal** | Authenticated area for patients to view their appointments and reports |
 | **Multi-doctor Support** | Expand schema for multiple doctors with separate profiles |
 | **Blog Rich Text Editor** | Replace textarea with a WYSIWYG editor (TipTap, Quill) |
 | **Image Upload in Admin** | Storage bucket + upload UI for doctor photo, blog images, service images |
 
-### API Endpoints That Don't Exist Yet (need Edge Functions)
+### Edge Functions That Don't Exist Yet
 
-| Endpoint | Purpose |
-|----------|---------|
-| `send-appointment-confirmation` | Email patient after booking |
-| `send-contact-reply` | Auto-acknowledge contact form submissions |
-| `send-second-opinion-ack` | Acknowledge second opinion submission |
-| `generate-sitemap` | Dynamic sitemap generation |
+| Function | Purpose | Notes |
+|----------|---------|-------|
+| `send-appointment-confirmation` | Email patient after booking | Use Supabase with Resend, SendGrid, or Mailgun |
+| `send-contact-reply` | Auto-acknowledge contact form | Same email provider |
+| `send-second-opinion-ack` | Acknowledge second opinion submission | Same email provider |
+| `generate-sitemap` | Dynamic sitemap generation | Or use a static `public/sitemap.xml` |
 
 ---
 
@@ -376,13 +533,33 @@ See `DEVELOPER_GUIDE.md` for full table list with RLS policies.
 
 | What | Where |
 |------|-------|
+| Supabase client (reads from env) | `src/integrations/supabase/client.ts` |
+| DB TypeScript types | `src/integrations/supabase/types.ts` |
 | Site config types & defaults | `src/contexts/SiteConfigContext.tsx` |
 | Mock data (mostly unused) | `src/data/mockData.ts` |
 | Content source map | `docs/CONTENT_SOURCE_MAP.md` |
 | Developer guide | `DEVELOPER_GUIDE.md` |
 | This document | `docs/LAUNCH_GUIDE.md` |
 | Translations | `src/data/translations.ts` |
-| DB types (auto-generated) | `src/integrations/supabase/types.ts` |
-| Supabase client (auto-generated) | `src/integrations/supabase/client.ts` |
 | Edge functions | `supabase/functions/` |
-| Vercel config | `vercel.json` (create before deploying) |
+| DB migrations | `supabase/migrations/` |
+| Vercel config (SPA routing) | `vercel.json` |
+| Environment variables template | `.env` (not committed) |
+
+---
+
+## Migrating Away from Lovable Cloud — Summary
+
+The app currently points to a Lovable-managed Supabase instance. To switch to your own:
+
+1. **Create your Supabase project** at supabase.com
+2. **Run all migrations** from `supabase/migrations/` (use `supabase db push`)
+3. **Deploy edge functions** (use `supabase functions deploy`)
+4. **Create storage bucket** (`second-opinion-reports`)
+5. **Seed initial data** (`app_settings`, `site_config`)
+6. **Update `.env`** with your project's URL and anon key
+7. **Update Vercel env vars** to match
+8. **Configure auth redirect URLs** in Supabase Dashboard
+9. **Sign up as admin** and verify the flow works
+
+The frontend code needs **zero changes** — it reads Supabase credentials from env vars.
