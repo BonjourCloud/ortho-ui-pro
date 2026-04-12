@@ -210,7 +210,7 @@ The signup toggle is stored in the `app_settings` table (`key: 'signup_enabled'`
 
 | Function | Purpose | Auth |
 |----------|---------|------|
-| `assign-admin-role` | Assigns admin role to designated email (`itsrahgiv@gmail.com`) | No JWT required (hardcoded email check) |
+| `assign-admin-role` | Assigns admin role to designated email (`itsrajivv@gmail.com`) | No JWT required (hardcoded email check) |
 
 ---
 
