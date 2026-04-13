@@ -4,6 +4,7 @@ import { Star, ArrowRight, Shield, Heart, Zap, Users } from "lucide-react";
 import heroImage from "@/assets/hero-doctor.jpg";
 import { useSiteConfig } from "@/contexts/SiteConfigContext";
 import { useServices, useTestimonials } from "@/hooks/useContent";
+import SEO from "@/components/SEO";
 
 const iconMap: Record<string, React.ElementType> = { Shield, Zap, Heart, Users };
 
@@ -21,6 +22,12 @@ export default function Index() {
 
   return (
     <>
+      <SEO
+        title="Home"
+        description={`${config.doctorName} - Expert Orthopedic Surgeon in Hyderabad. ${config.specialization}. ${config.yearsExperience}+ years experience. Book your consultation today.`}
+        keywords={`orthopedic surgeon hyderabad, ${config.doctorName}, joint replacement, sports medicine, knee replacement, hip replacement, orthopedic doctor`}
+        url="/"
+      />
       {/* Hero */}
       <section className="relative overflow-hidden bg-hero-gradient">
         <div className="container relative z-10 py-16 md:py-24">

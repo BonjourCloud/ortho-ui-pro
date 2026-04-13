@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import { ArrowRight, TrendingUp, TrendingDown } from "lucide-react";
 import { useCaseStudies } from "@/hooks/useContent";
 import { useSiteConfig } from "@/contexts/SiteConfigContext";
+import SEO from "@/components/SEO";
 
 export default function CaseStudies() {
   const { config } = useSiteConfig();
@@ -10,6 +11,12 @@ export default function CaseStudies() {
 
   return (
     <>
+      <SEO
+        title="Case Studies"
+        description={`Real patient success stories and treatment outcomes from ${config.doctorName}. See documented results of orthopedic procedures and treatments.`}
+        keywords="orthopedic case studies, patient success stories, treatment outcomes, surgery results, patient testimonials"
+        url="/case-studies"
+      />
       <section className="bg-hero-gradient py-14 md:py-20">
         <div className="container text-center">
           <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>

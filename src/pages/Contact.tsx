@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useSiteConfig } from "@/contexts/SiteConfigContext";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import SEO from "@/components/SEO";
 
 export default function Contact() {
   const [sent, setSent] = useState(false);
@@ -43,6 +44,12 @@ export default function Contact() {
 
   return (
     <>
+      <SEO
+        title="Contact Us"
+        description={`Get in touch with ${config.doctorName} at ${config.clinicName}. Book an appointment, ask questions, or visit our clinic. ${config.location}. Phone: ${config.phone}`}
+        keywords="contact orthopedic surgeon, book appointment, clinic location, orthopedic consultation, medical inquiry"
+        url="/contact"
+      />
       <section className="bg-hero-gradient py-14 md:py-20">
         <div className="container text-center">
           <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>

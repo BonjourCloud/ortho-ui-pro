@@ -5,6 +5,7 @@ import { useServices } from "@/hooks/useContent";
 import { useSiteConfig } from "@/contexts/SiteConfigContext";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import SEO from "@/components/SEO";
 
 export default function BookAppointment() {
   const [submitted, setSubmitted] = useState(false);
@@ -86,6 +87,12 @@ export default function BookAppointment() {
 
   return (
     <>
+      <SEO
+        title="Book Appointment"
+        description={`Book an appointment with ${config.doctorName}. Easy online booking, flexible scheduling, insurance accepted. Get expert orthopedic care at ${config.clinicName}.`}
+        keywords="book orthopedic appointment, schedule consultation, online booking, orthopedic appointment, doctor appointment"
+        url="/book"
+      />
       <section className="bg-hero-gradient py-14 md:py-20">
         <div className="container text-center">
           <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>

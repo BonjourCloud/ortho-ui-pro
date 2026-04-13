@@ -4,6 +4,7 @@ import { ArrowLeft, Clock, Eye, Heart, Share2, Calendar } from "lucide-react";
 import { useBlogPost, useBlogPosts } from "@/hooks/useContent";
 import { useSiteConfig } from "@/contexts/SiteConfigContext";
 import DOMPurify from "dompurify";
+import SEO from "@/components/SEO";
 
 export default function BlogPost() {
   const { slug } = useParams();
@@ -30,6 +31,13 @@ export default function BlogPost() {
 
   return (
     <>
+      <SEO
+        title={post.title}
+        description={post.excerpt}
+        keywords={`${post.category}, orthopedic blog, ${config.doctorName}, health tips`}
+        url={`/blog/${post.slug}`}
+        type="article"
+      />
       <section className="bg-hero-gradient py-14 md:py-20">
         <div className="container max-w-3xl">
           <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>

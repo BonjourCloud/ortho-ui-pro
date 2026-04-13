@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import { Clock, Eye, Heart, ArrowRight } from "lucide-react";
 import { useBlogPosts } from "@/hooks/useContent";
 import { useSiteConfig } from "@/contexts/SiteConfigContext";
+import SEO from "@/components/SEO";
 
 export default function Blog() {
   const { config } = useSiteConfig();
@@ -12,6 +13,12 @@ export default function Blog() {
 
   return (
     <>
+      <SEO
+        title="Blog & Health Tips"
+        description={`Expert orthopedic insights, health tips, and medical advice from ${config.doctorName}. Learn about joint health, injury prevention, and treatment options.`}
+        keywords="orthopedic blog, health tips, joint health, injury prevention, medical advice, bone health, orthopedic news"
+        url="/blog"
+      />
       <section className="bg-hero-gradient py-14 md:py-20">
         <div className="container text-center">
           <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>

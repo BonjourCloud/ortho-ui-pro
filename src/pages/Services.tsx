@@ -4,6 +4,7 @@ import { ArrowRight, Clock, Building2, CheckCircle, IndianRupee } from "lucide-r
 import { useSiteConfig } from "@/contexts/SiteConfigContext";
 import { useServices } from "@/hooks/useContent";
 import { useState } from "react";
+import SEO from "@/components/SEO";
 
 export default function Services() {
   const [activeCategory, setActiveCategory] = useState<string | null>(null);
@@ -16,6 +17,12 @@ export default function Services() {
 
   return (
     <>
+      <SEO
+        title="Services"
+        description={`Comprehensive orthopedic services including joint replacement, sports medicine, arthroscopy, trauma care, and more. Expert treatment by ${config.doctorName}.`}
+        keywords="orthopedic services, joint replacement, knee replacement, hip replacement, sports medicine, arthroscopy, trauma care, spine surgery"
+        url="/services"
+      />
       <section className="bg-hero-gradient py-16 md:py-20">
         <div className="container text-center">
           <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>

@@ -5,6 +5,7 @@ import { useSiteConfig } from "@/contexts/SiteConfigContext";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import SEO from "@/components/SEO";
 
 const conditionOptions = [
   "Joint Replacement Recommendation",
@@ -112,6 +113,12 @@ export default function SecondOpinion() {
 
   return (
     <>
+      <SEO
+        title="Second Opinion"
+        description={`Get a second medical opinion from ${config.doctorName}. Expert review of your diagnosis, treatment plan, and surgical recommendations. Confidential and thorough evaluation.`}
+        keywords="second opinion, medical review, orthopedic consultation, treatment review, surgical opinion"
+        url="/second-opinion"
+      />
       {/* Hero */}
       <section className="bg-hero-gradient py-14 md:py-20">
         <div className="container max-w-3xl text-center">

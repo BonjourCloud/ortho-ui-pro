@@ -3,6 +3,7 @@ import { motion } from "framer-motion";
 import { ArrowLeft, TrendingDown, TrendingUp, CheckCircle, Quote } from "lucide-react";
 import { useCaseStudy } from "@/hooks/useContent";
 import { useSiteConfig } from "@/contexts/SiteConfigContext";
+import SEO from "@/components/SEO";
 
 interface Milestone {
   day: number;
@@ -34,6 +35,13 @@ export default function CaseStudyDetail() {
 
   return (
     <>
+      <SEO
+        title={cs.title}
+        description={`${cs.condition} case study: ${cs.patient_age} year old ${cs.patient_gender}. Treatment: ${cs.treatment}. ${cs.summary}`}
+        keywords={`${cs.condition}, ${cs.treatment}, case study, patient outcome, orthopedic surgery`}
+        url={`/case-studies/${cs.slug}`}
+        type="article"
+      />
       <section className="bg-hero-gradient py-14 md:py-20">
         <div className="container max-w-3xl">
           <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>

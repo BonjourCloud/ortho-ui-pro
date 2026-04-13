@@ -2,12 +2,19 @@ import { motion } from "framer-motion";
 import { Award, BookOpen, GraduationCap, Stethoscope } from "lucide-react";
 import heroImage from "@/assets/hero-doctor.jpg";
 import { useSiteConfig } from "@/contexts/SiteConfigContext";
+import SEO from "@/components/SEO";
 
 export default function About() {
   const { config } = useSiteConfig();
 
   return (
     <>
+      <SEO
+        title="About"
+        description={`Learn about ${config.doctorName}, ${config.title}. ${config.yearsExperience}+ years of experience in ${config.specialization}. Dedicated to providing exceptional orthopedic care.`}
+        keywords={`about ${config.doctorName}, orthopedic surgeon profile, doctor credentials, medical education, orthopedic specialist`}
+        url="/about"
+      />
       {/* Hero */}
       <section className="bg-hero-gradient py-16 md:py-24">
         <div className="container">
