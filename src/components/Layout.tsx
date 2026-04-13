@@ -77,8 +77,8 @@ export default function Layout({ children }: { children: React.ReactNode }) {
           </div>
           <div className="flex items-center gap-4">
             <span className="flex items-center gap-1.5"><Clock size={14} /> {config.hours}</span>
-            {/* Language switcher */}
-            {enabledLanguages.length > 1 && (
+            {/* Language switcher - Hidden for now */}
+            {/* {enabledLanguages.length > 1 && (
               <div className="relative">
                 <button onClick={() => setLangOpen(!langOpen)} className="flex items-center gap-1 text-primary-foreground/80 hover:text-primary-foreground transition-colors">
                   <Globe size={14} /> {languageLabels[language]}
@@ -97,7 +97,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                   </div>
                 )}
               </div>
-            )}
+            )} */}
             {isAdmin && (
               <Link to="/admin" className="flex items-center gap-1 text-accent hover:text-accent/80 transition-colors">
                 <Shield size={12} /> Admin
@@ -213,7 +213,8 @@ export default function Layout({ children }: { children: React.ReactNode }) {
 
           {/* Mobile menu toggle */}
           <div className="flex items-center gap-2 lg:hidden">
-            {enabledLanguages.length > 1 && (
+            {/* Language switcher - Hidden for now */}
+            {/* {enabledLanguages.length > 1 && (
               <div className="relative">
                 <button onClick={() => setLangOpen(!langOpen)} className="p-2 text-muted-foreground">
                   <Globe size={20} />
@@ -232,7 +233,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                   </div>
                 )}
               </div>
-            )}
+            )} */}
             <button className="p-2" onClick={() => setMenuOpen(!menuOpen)}>
               {menuOpen ? <X size={24} /> : <Menu size={24} />}
             </button>
