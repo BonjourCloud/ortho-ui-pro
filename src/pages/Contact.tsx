@@ -5,6 +5,7 @@ import { useSiteConfig } from "@/contexts/SiteConfigContext";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import SEO from "@/components/SEO";
+import { trackContactFormSubmission } from "@/lib/analytics";
 
 export default function Contact() {
   const [sent, setSent] = useState(false);
@@ -38,6 +39,9 @@ export default function Contact() {
       toast({ title: "Error", description: "Failed to send message. Please try again.", variant: "destructive" });
       return;
     }
+
+    // Track contact form submission in Google Analytics
+    trackContactFormSubmission();
 
     setSent(true);
   };

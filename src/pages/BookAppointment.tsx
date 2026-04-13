@@ -6,6 +6,7 @@ import { useSiteConfig } from "@/contexts/SiteConfigContext";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import SEO from "@/components/SEO";
+import { trackAppointmentBooking } from "@/lib/analytics";
 
 export default function BookAppointment() {
   const [submitted, setSubmitted] = useState(false);
@@ -77,6 +78,9 @@ export default function BookAppointment() {
       toast({ title: "Error", description: "Failed to submit appointment. Please try again.", variant: "destructive" });
       return;
     }
+    
+    // Track appointment booking in Google Analytics
+    trackAppointmentBooking(form.appointmentType);
     
     // Send email notification
     try {
