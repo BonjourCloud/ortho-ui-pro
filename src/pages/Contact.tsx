@@ -92,16 +92,27 @@ export default function Contact() {
                 <MessageCircle size={16} /> Chat on WhatsApp
               </a>
 
-              <div className="mt-8 rounded-xl overflow-hidden border">
-                <iframe
-                  title="Clinic Location"
-                  src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3806.7!2d78.4!3d17.4!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x0%3A0x0!2zMTfCsDI0JzAwLjAiTiA3OMKwMjQnMDAuMCJF!5e0!3m2!1sen!2sin!4v1"
-                  width="100%"
-                  height="250"
-                  style={{ border: 0 }}
-                  allowFullScreen
-                  loading="lazy"
-                />
+              <div className="mt-8 space-y-3">
+                <div className="rounded-xl overflow-hidden border">
+                  <iframe
+                    title="Clinic Location"
+                    src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3806.598654789155!2d78.48445287516892!3d17.431472983471!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x3bcb9a1c3c3c3c3d%3A0x1234567890abcdef!2sDr.%20Srivanth's%20Orthopedic%20Clinic!5e0!3m2!1sen!2sin!4v1234567890"
+                    width="100%"
+                    height="250"
+                    style={{ border: 0 }}
+                    allowFullScreen
+                    loading="lazy"
+                  />
+                </div>
+                <a 
+                  href="https://maps.app.goo.gl/LsTEZt9UvBoZVYUF6"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-2 text-sm font-medium text-primary hover:text-accent transition-colors"
+                >
+                  <MapPin size={16} />
+                  Open in Maps
+                </a>
               </div>
             </div>
 
