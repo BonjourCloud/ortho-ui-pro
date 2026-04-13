@@ -33,51 +33,45 @@ BEGIN
       'Advanced total knee replacement surgery for severe knee pain and arthritis', 
       2,
       1,
-      '<h2>Total Knee Replacement Surgery in Hyderabad - Restore Mobility and Improve Quality of Life at Dr. Srivanth''s Orthopedic Clinic (Chikkadpally & Nearby Areas)</h2>
+      '<div class="medical-content">
+  <p class="text-lg mb-6">Severe knee pain and stiffness caused by osteoarthritis or other joint conditions can significantly impact your mobility and quality of life. Total knee replacement surgery can be a life-changing option for patients who have exhausted non-surgical treatments. At Dr. Srivanth''s Orthopedic Clinic, conveniently located in Chikkadpally, we offer advanced total knee replacement surgery in Hyderabad to patients residing in Chikkadpally, RTC Cross Roads, Vidhya Nagar, Tilak Nagar, Bagh Lingampally, Narayanguda, Himayath Nagar, Basheerbagh, Ashok Nagar, Kavadiguda, Musheerabad, Ram Nagar, Warasiguda, Koranti, and Barkathpura.</p>
 
-<p>Severe knee pain and stiffness caused by osteoarthritis or other joint conditions can significantly impact your mobility and quality of life. Total knee replacement surgery can be a life-changing option for patients who have exhausted non-surgical treatments. At Dr. Srivanth''s Orthopedic Clinic, conveniently located in Chikkadpally, we offer advanced total knee replacement surgery in Hyderabad to patients residing in Chikkadpally, RTC Cross Roads, Vidhya Nagar, Tilak Nagar, Bagh Lingampally, Narayanguda, Himayath Nagar, Basheerbagh, Ashok Nagar, Kavadiguda, Musheerabad, Ram Nagar, Warasiguda, Koranti, and Barkathpura.</p>
+  <p class="mb-6">Led by Dr. Dasari Srivanth, a highly qualified and experienced orthopedic surgeon with advanced training in joint replacement surgery, our team is dedicated to providing exceptional care throughout your total knee replacement journey.</p>
 
-<p>Led by Dr. Dasari Srivanth, a highly qualified and experienced orthopedic surgeon with advanced training in joint replacement surgery, our team is dedicated to providing exceptional care throughout your total knee replacement journey.</p>
+  <h2 class="text-2xl font-bold mt-8 mb-4">What is Total Knee Replacement Surgery?</h2>
+  <p class="mb-6">Total knee replacement surgery is a surgical procedure where the damaged knee joint is replaced with an artificial implant. This surgery can significantly improve your pain, stiffness, and function, allowing you to resume daily activities with greater ease.</p>
 
-<h3>What is Total Knee Replacement Surgery?</h3>
+  <h2 class="text-2xl font-bold mt-8 mb-4">Who is a Candidate for Total Knee Replacement?</h2>
+  <p class="mb-4">Total knee replacement may be recommended for patients with:</p>
+  <ul class="list-disc pl-6 mb-6 space-y-2">
+    <li>Severe osteoarthritis of the knee</li>
+    <li>Significant pain and stiffness that limits daily activities</li>
+    <li>Ineffectiveness of non-surgical treatments like medications, physical therapy, and injections</li>
+  </ul>
 
-<p>Total knee replacement surgery is a surgical procedure where the damaged knee joint is replaced with an artificial implant. This surgery can significantly improve your pain, stiffness, and function, allowing you to resume daily activities with greater ease.</p>
+  <h2 class="text-2xl font-bold mt-8 mb-4">Total Knee Replacement at Dr. Srivanth''s Orthopedic Clinic:</h2>
+  <ul class="list-disc pl-6 mb-6 space-y-2">
+    <li><strong>Pre-Operative Consultation:</strong> Dr. Srivanth will thoroughly evaluate your condition, discuss your concerns, and determine if total knee replacement is the right option for you.</li>
+    <li><strong>Advanced Surgical Techniques:</strong> Dr. Srivanth utilizes minimally invasive surgical techniques whenever possible to promote faster recovery and less scarring.</li>
+    <li><strong>Computer-Assisted Surgery:</strong> We may utilize computer-assisted surgery for improved implant positioning and alignment, leading to better long-term outcomes.</li>
+    <li><strong>Pain Management:</strong> We prioritize effective pain management before, during, and after surgery to ensure your comfort throughout the recovery process.</li>
+    <li><strong>Patient Education:</strong> Our team will provide comprehensive education and guidance to prepare you for surgery and recovery.</li>
+    <li><strong>Rehabilitation:</strong> We work closely with our experienced rehabilitation team to develop a personalized recovery plan to help you regain strength, mobility, and function.</li>
+  </ul>
 
-<h3>Who is a Candidate for Total Knee Replacement?</h3>
+  <h2 class="text-2xl font-bold mt-8 mb-4">Why Choose Dr. Srivanth''s Orthopedic Clinic for Total Knee Replacement Surgery in Hyderabad?</h2>
+  <ul class="list-disc pl-6 mb-6 space-y-2">
+    <li><strong>Dr. Srivanth''s Expertise:</strong> Dr. Srivanth''s extensive experience and advanced training in joint replacement surgery make him highly qualified to perform complex knee replacement procedures.</li>
+    <li><strong>Minimally Invasive Techniques:</strong> We prioritize minimally invasive surgical approaches for faster recovery times and less scarring.</li>
+    <li><strong>Compassionate Care:</strong> Our team is dedicated to providing personalized and compassionate care throughout your journey, addressing your individual needs and concerns.</li>
+    <li><strong>Advanced Technology:</strong> We utilize advanced surgical techniques and technology to ensure optimal outcomes.</li>
+    <li><strong>Comprehensive Rehabilitation:</strong> We collaborate with experienced rehabilitation specialists to develop a personalized recovery plan for a successful outcome.</li>
+    <li><strong>Convenient Location:</strong> We are conveniently located in Chikkadpally to serve patients in Hyderabad and surrounding areas.</li>
+  </ul>
 
-<p>Total knee replacement may be recommended for patients with:</p>
-
-<ul>
-  <li>Severe osteoarthritis of the knee</li>
-  <li>Significant pain and stiffness that limits daily activities</li>
-  <li>Ineffectiveness of non-surgical treatments like medications, physical therapy, and injections</li>
-</ul>
-
-<h3>Total Knee Replacement at Dr. Srivanth''s Orthopedic Clinic:</h3>
-
-<ul>
-  <li><strong>Pre-Operative Consultation:</strong> Dr. Srivanth will thoroughly evaluate your condition, discuss your concerns, and determine if total knee replacement is the right option for you.</li>
-  <li><strong>Advanced Surgical Techniques:</strong> Dr. Srivanth utilizes minimally invasive surgical techniques whenever possible to promote faster recovery and less scarring.</li>
-  <li><strong>Computer-Assisted Surgery:</strong> We may utilize computer-assisted surgery for improved implant positioning and alignment, leading to better long-term outcomes.</li>
-  <li><strong>Pain Management:</strong> We prioritize effective pain management before, during, and after surgery to ensure your comfort throughout the recovery process.</li>
-  <li><strong>Patient Education:</strong> Our team will provide comprehensive education and guidance to prepare you for surgery and recovery.</li>
-  <li><strong>Rehabilitation:</strong> We work closely with our experienced rehabilitation team to develop a personalized recovery plan to help you regain strength, mobility, and function.</li>
-</ul>
-
-<h3>Why Choose Dr. Srivanth''s Orthopedic Clinic for Total Knee Replacement Surgery in Hyderabad?</h3>
-
-<ul>
-  <li><strong>Dr. Srivanth''s Expertise:</strong> Dr. Srivanth''s extensive experience and advanced training in joint replacement surgery make him highly qualified to perform complex knee replacement procedures.</li>
-  <li><strong>Minimally Invasive Techniques:</strong> We prioritize minimally invasive surgical approaches for faster recovery times and less scarring.</li>
-  <li><strong>Compassionate Care:</strong> Our team is dedicated to providing personalized and compassionate care throughout your journey, addressing your individual needs and concerns.</li>
-  <li><strong>Advanced Technology:</strong> We utilize advanced surgical techniques and technology to ensure optimal outcomes.</li>
-  <li><strong>Comprehensive Rehabilitation:</strong> We collaborate with experienced rehabilitation specialists to develop a personalized recovery plan for a successful outcome.</li>
-  <li><strong>Convenient Location:</strong> We are conveniently located in Chikkadpally to serve patients in Hyderabad and surrounding areas.</li>
-</ul>
-
-<h3>Schedule an Appointment Today!</h3>
-
-<p>Don''t let knee pain limit your life. Contact Dr. Srivanth''s Orthopedic Clinic today to schedule an appointment and discuss if total knee replacement surgery in Hyderabad is right for you. We are committed to helping you regain your mobility and improve your quality of life.</p>',
+  <h2 class="text-2xl font-bold mt-8 mb-4">Schedule an Appointment Today!</h2>
+  <p class="mb-6">Don''t let knee pain limit your life. Contact Dr. Srivanth''s Orthopedic Clinic today to schedule an appointment and discuss if total knee replacement surgery in Hyderabad is right for you. We are committed to helping you regain your mobility and improve your quality of life.</p>
+</div>',
       'Expert total knee replacement surgery in Hyderabad at Dr. Srivanth''s Orthopedic Clinic, Chikkadpally. Advanced techniques, minimally invasive surgery, comprehensive rehabilitation.'
     )
     ON CONFLICT (section_id, slug) 
