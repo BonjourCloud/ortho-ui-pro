@@ -27,6 +27,32 @@ export default function BookAppointment() {
   const { services } = useServices();
   const { config } = useSiteConfig();
 
+  // Fallback services if database is empty
+  const serviceOptions = services.length > 0 ? services : [
+    { id: '1', name: 'Knee Pain & Arthritis' },
+    { id: '2', name: 'Sports Injuries' },
+    { id: '3', name: 'Shoulder Conditions' },
+    { id: '4', name: 'Back & Spine Disorders' },
+    { id: '5', name: 'Joint Replacement' },
+    { id: '6', name: 'Fractures & Trauma Care' },
+    { id: '7', name: 'Physiotherapy & Rehabilitation' },
+    { id: '8', name: 'Chronic Pain Management' },
+  ];
+
+  // Fallback time slots if config is empty
+  const timeSlotOptions = config.timeSlots?.length > 0 ? config.timeSlots : [
+    { time: "09:00 AM", available: true },
+    { time: "10:00 AM", available: true },
+    { time: "11:00 AM", available: true },
+    { time: "12:00 PM", available: true },
+    { time: "02:00 PM", available: true },
+    { time: "03:00 PM", available: true },
+    { time: "04:00 PM", available: true },
+    { time: "05:00 PM", available: true },
+    { time: "06:00 PM", available: true },
+    { time: "07:00 PM", available: true },
+  ];
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
@@ -185,7 +211,7 @@ export default function BookAppointment() {
                 <select value={form.service} onChange={(e) => setForm({ ...form, service: e.target.value })}
                   className="w-full rounded-lg border bg-card px-4 py-2.5 text-sm text-foreground focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none">
                   <option value="">Select service</option>
-                  {services.map((s) => (
+                  {serviceOptions.map((s) => (
                     <option key={s.id} value={s.name}>{s.name}</option>
                   ))}
                 </select>
@@ -207,7 +233,7 @@ export default function BookAppointment() {
                 <select required value={selectedTime} onChange={(e) => setSelectedTime(e.target.value)}
                   className="w-full rounded-lg border bg-card px-4 py-2.5 text-sm text-foreground focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none">
                   <option value="">Select time</option>
-                  {config.timeSlots.map((slot) => (
+                  {timeSlotOptions.map((slot) => (
                     <option key={slot.time} value={slot.time} disabled={!slot.available}>
                       {slot.time} {!slot.available ? "(Unavailable)" : ""}
                     </option>
