@@ -41,6 +41,10 @@ BEGIN
   <h2 class="text-2xl font-bold mt-8 mb-4">What is Total Knee Replacement Surgery?</h2>
   <p class="mb-6">Total knee replacement surgery is a surgical procedure where the damaged knee joint is replaced with an artificial implant. This surgery can significantly improve your pain, stiffness, and function, allowing you to resume daily activities with greater ease.</p>
 
+  <div class="my-8 rounded-xl overflow-hidden border shadow-lg">
+    <img src="/images/treatments/total-knee-replacement-process.jpg" alt="Process of Total Knee Replacement Surgery - 6 Steps" class="w-full h-auto" />
+  </div>
+
   <h2 class="text-2xl font-bold mt-8 mb-4">Who is a Candidate for Total Knee Replacement?</h2>
   <p class="mb-4">Total knee replacement may be recommended for patients with:</p>
   <ul class="list-disc pl-6 mb-6 space-y-2">
