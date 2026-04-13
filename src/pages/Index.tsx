@@ -161,24 +161,65 @@ export default function Index() {
         <div className="container">
           <div className="text-center mb-12">
             <span className="text-accent text-sm font-semibold uppercase tracking-wider">Testimonials</span>
-            <h2 className="font-display text-3xl md:text-4xl font-bold text-primary-foreground mt-2">Patient Stories</h2>
+            <h2 className="font-display text-3xl md:text-4xl font-bold text-primary-foreground mt-2">Trusted by Patients Across Hyderabad</h2>
+            <div className="flex items-center justify-center gap-2 mt-3">
+              <div className="flex gap-0.5">
+                {[...Array(5)].map((_, i) => (
+                  <Star key={i} size={18} className="fill-accent text-accent" />
+                ))}
+              </div>
+              <span className="text-primary-foreground/80 text-sm font-medium">4.8 / 5 based on Google reviews</span>
+            </div>
           </div>
-          <div className="grid md:grid-cols-3 gap-6">
+          <div className="grid md:grid-cols-2 gap-6 max-w-5xl mx-auto">
             {testimonials.map((t, i) => (
-              <motion.div key={t.id} initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ delay: i * 0.1 }} className="bg-card/10 backdrop-blur-md rounded-xl p-6 border border-primary-foreground/10">
-                <div className="flex gap-1 mb-3">
-                  {[...Array(t.rating)].map((_, j) => (<Star key={j} size={16} className="fill-accent text-accent" />))}
+              <motion.div 
+                key={t.id} 
+                initial={{ opacity: 0, y: 20 }} 
+                whileInView={{ opacity: 1, y: 0 }} 
+                viewport={{ once: true }} 
+                transition={{ delay: i * 0.1 }} 
+                className="bg-card/10 backdrop-blur-md rounded-xl p-6 border border-primary-foreground/10 shadow-lg hover:shadow-xl transition-shadow"
+              >
+                <div className="flex items-start justify-between mb-3">
+                  <div className="flex gap-1">
+                    {[...Array(t.rating)].map((_, j) => (
+                      <Star key={j} size={16} className="fill-accent text-accent" />
+                    ))}
+                  </div>
+                  <span className="text-xs bg-blue-500/20 text-blue-300 rounded-full px-2 py-1 font-medium">
+                    ✓ Verified Google Review
+                  </span>
                 </div>
-                <p className="text-sm text-primary-foreground/90 leading-relaxed mb-4 italic">"{t.text}"</p>
+                <p className="text-sm text-primary-foreground/90 leading-relaxed mb-4">"{t.text}"</p>
+                {t.response && (
+                  <div className="bg-primary-foreground/10 rounded-lg p-3 mb-4 border-l-2 border-accent">
+                    <p className="text-xs font-semibold text-accent mb-1">Doctor's Response:</p>
+                    <p className="text-xs text-primary-foreground/80 italic">"{t.response}"</p>
+                  </div>
+                )}
                 <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-full bg-accent/20 flex items-center justify-center text-accent text-sm font-bold">{t.initials}</div>
+                  <div className="w-10 h-10 rounded-full bg-accent/20 flex items-center justify-center text-accent text-sm font-bold">
+                    {t.name.split(' ').map(n => n[0]).join('').slice(0, 2)}
+                  </div>
                   <div>
-                    <div className="text-sm font-semibold text-primary-foreground">{t.patient_name}</div>
-                    <div className="text-xs text-primary-foreground/60">{t.condition} • {t.location}</div>
+                    <div className="text-sm font-semibold text-primary-foreground">{t.name}</div>
+                    <div className="text-xs text-primary-foreground/60">Google Review</div>
                   </div>
                 </div>
               </motion.div>
             ))}
+          </div>
+          <div className="text-center mt-10">
+            <a 
+              href="https://www.google.com/search?sca_esv=d690ffcb785891a9&rlz=1C1CHBF_enIN1200IN1200&sxsrf=ANbL-n5bLYuWTqgTdnXqXVm5swn_UzIYWg:1776066514357&si=AL3DRZEsmMGCryMMFSHJ3StBhOdZ2-6yYkXd_doETEE1OR-qOYNrsMxMPmGX9vtn8fier-d1Po5lvx8z6EqgmGszRX2582iYKwohcjweNlaDkXEt6g7jZ2ainFVfIaf8fzIiOuNfHjuZxZZ3jeJ4qe3MJiUNFdv5X7zJk23BcW6x12yl0KuiLRg%3D&q=Dr.+Srivanth%27s+Orthopedic+%26+Speciality+Hospital+Reviews&sa=X&ved=2ahUKEwi_7r2tq-qTAxViRmwGHfq5OfEQ0bkNegQINxAH&biw=1521&bih=721&dpr=1.26" 
+              target="_blank" 
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-2 rounded-lg bg-card/20 backdrop-blur-sm border border-primary-foreground/20 px-6 py-3 text-sm font-semibold text-primary-foreground transition-all hover:bg-card/30"
+            >
+              Read all reviews on Google
+              <ArrowRight size={16} />
+            </a>
           </div>
         </div>
       </section>

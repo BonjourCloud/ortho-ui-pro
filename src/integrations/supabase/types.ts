@@ -10,7 +10,32 @@ export type Database = {
   // Allows to automatically instantiate createClient with right options
   // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
   __InternalSupabase: {
-    PostgrestVersion: "14.1"
+    PostgrestVersion: "14.5"
+  }
+  graphql_public: {
+    Tables: {
+      [_ in never]: never
+    }
+    Views: {
+      [_ in never]: never
+    }
+    Functions: {
+      graphql: {
+        Args: {
+          extensions?: Json
+          operationName?: string
+          query?: string
+          variables?: Json
+        }
+        Returns: Json
+      }
+    }
+    Enums: {
+      [_ in never]: never
+    }
+    CompositeTypes: {
+      [_ in never]: never
+    }
   }
   public: {
     Tables: {
@@ -377,49 +402,58 @@ export type Database = {
       testimonials: {
         Row: {
           age: number | null
-          condition: string
+          condition: string | null
           created_at: string | null
           gender: string | null
           id: string
-          initials: string
+          initials: string | null
           is_featured: boolean | null
+          is_published: boolean | null
           location: string | null
+          name: string
           occupation: string | null
-          patient_name: string
           rating: number
+          response: string | null
           sort_order: number | null
+          source: string | null
           text: string
           updated_at: string | null
         }
         Insert: {
           age?: number | null
-          condition: string
+          condition?: string | null
           created_at?: string | null
           gender?: string | null
           id?: string
-          initials: string
+          initials?: string | null
           is_featured?: boolean | null
+          is_published?: boolean | null
           location?: string | null
+          name: string
           occupation?: string | null
-          patient_name: string
           rating?: number
+          response?: string | null
           sort_order?: number | null
+          source?: string | null
           text: string
           updated_at?: string | null
         }
         Update: {
           age?: number | null
-          condition?: string
+          condition?: string | null
           created_at?: string | null
           gender?: string | null
           id?: string
-          initials?: string
+          initials?: string | null
           is_featured?: boolean | null
+          is_published?: boolean | null
           location?: string | null
+          name?: string
           occupation?: string | null
-          patient_name?: string
           rating?: number
+          response?: string | null
           sort_order?: number | null
+          source?: string | null
           text?: string
           updated_at?: string | null
         }
@@ -583,6 +617,9 @@ export type CompositeTypes<
     : never
 
 export const Constants = {
+  graphql_public: {
+    Enums: {},
+  },
   public: {
     Enums: {
       app_role: ["admin", "moderator", "user"],

@@ -73,10 +73,16 @@ export function useTestimonials() {
   const [testimonials, setTestimonials] = useState<Testimonial[]>([]);
   const [loading, setLoading] = useState(true);
   useEffect(() => {
-    supabase.from("testimonials").select("*").eq("is_featured", true).order("sort_order").then(({ data }) => {
-      if (data) setTestimonials(data);
-      setLoading(false);
-    });
+    supabase
+      .from("testimonials")
+      .select("*")
+      .eq("is_published", true)
+      .eq("is_featured", true)
+      .order("sort_order")
+      .then(({ data }) => {
+        if (data) setTestimonials(data);
+        setLoading(false);
+      });
   }, []);
   return { testimonials, loading };
 }
