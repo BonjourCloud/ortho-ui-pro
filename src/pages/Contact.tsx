@@ -96,12 +96,13 @@ export default function Contact() {
                 <div className="rounded-xl overflow-hidden border">
                   <iframe
                     title="Clinic Location"
-                    src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3806.598654789155!2d78.48445287516892!3d17.431472983471!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x3bcb9a1c3c3c3c3d%3A0x1234567890abcdef!2sDr.%20Srivanth's%20Orthopedic%20Clinic!5e0!3m2!1sen!2sin!4v1234567890"
+                    src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3807.123163789908!2d78.4890164!3d17.405876!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x3bcb994a0c5f14bd%3A0x8293995c456b8bb0!2sDr.%20Srivanth's%20Orthopedic%20%26%20Speciality%20Hospital!5e0!3m2!1sen!2sin!4v1776072256363!5m2!1sen!2sin"
                     width="100%"
                     height="250"
                     style={{ border: 0 }}
                     allowFullScreen
                     loading="lazy"
+                    referrerPolicy="no-referrer-when-downgrade"
                   />
                 </div>
                 <a 
