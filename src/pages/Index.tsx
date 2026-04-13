@@ -1,12 +1,12 @@
 import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
-import { Star, ArrowRight, Shield, Heart, Zap, Users } from "lucide-react";
+import { Star, ArrowRight, Shield, Heart, Zap, Users, Award, Clock, Target, Stethoscope, Activity, TrendingUp } from "lucide-react";
 import heroImage from "@/assets/hero-doctor.jpg";
 import { useSiteConfig } from "@/contexts/SiteConfigContext";
 import { useServices, useTestimonials } from "@/hooks/useContent";
 import SEO from "@/components/SEO";
 
-const iconMap: Record<string, React.ElementType> = { Shield, Zap, Heart, Users };
+const iconMap: Record<string, React.ElementType> = { Shield, Zap, Heart, Users, Award, Clock, Target, Stethoscope, Activity, TrendingUp };
 
 export default function Index() {
   const { config } = useSiteConfig();
@@ -37,17 +37,20 @@ export default function Index() {
                 Orthopedic Excellence in Hyderabad
               </span>
               <h1 className="font-display text-4xl md:text-5xl lg:text-6xl font-bold text-primary-foreground leading-tight mb-5">
-                Move Freely.<br /><span className="text-gradient-gold">Live Fully.</span>
+                Advanced Orthopedic Care for <span className="text-gradient-gold">Pain-Free Living</span>
               </h1>
-              <p className="text-primary-foreground/80 text-base md:text-lg max-w-lg mb-8 font-body leading-relaxed">
-                {config.shortBio}
+              <p className="text-primary-foreground/80 text-base md:text-lg max-w-lg mb-4 font-body leading-relaxed">
+                Expert diagnosis, minimally invasive treatments, and personalized care for joint pain, sports injuries, and spine conditions.
+              </p>
+              <p className="text-primary-foreground/70 text-sm max-w-lg mb-8 font-body leading-relaxed">
+                Trusted by patients across Hyderabad for knee replacement, ACL reconstruction, and sports medicine.
               </p>
               <div className="flex flex-wrap gap-3">
                 <Link to="/book" className="inline-flex items-center gap-2 rounded-lg bg-accent px-6 py-3 text-sm font-semibold text-accent-foreground transition-all hover:opacity-90 shadow-lg">
                   Book Appointment <ArrowRight size={16} />
                 </Link>
-                <Link to="/services" className="inline-flex items-center gap-2 rounded-lg border border-primary-foreground/30 px-6 py-3 text-sm font-semibold text-primary-foreground transition-all hover:bg-primary-foreground/10">
-                  Our Services
+                <Link to="/contact" className="inline-flex items-center gap-2 rounded-lg border border-primary-foreground/30 px-6 py-3 text-sm font-semibold text-primary-foreground transition-all hover:bg-primary-foreground/10">
+                  Get Second Opinion
                 </Link>
               </div>
             </motion.div>
@@ -111,23 +114,53 @@ export default function Index() {
             <span className="text-accent text-sm font-semibold uppercase tracking-wider">Popular Treatments</span>
             <h2 className="font-display text-3xl md:text-4xl font-bold text-foreground mt-2">Featured Procedures</h2>
           </div>
-          <div className="grid md:grid-cols-3 gap-6">
-            {services.slice(0, 3).map((svc, i) => (
-              <motion.div key={svc.id} initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ delay: i * 0.1 }} className="bg-card rounded-xl overflow-hidden border shadow-sm hover:shadow-lg transition-all">
-                <div className="p-6">
-                  <span className="text-xs font-medium text-accent bg-accent/10 rounded-full px-3 py-1">{svc.category}</span>
-                  <h3 className="font-display text-xl font-semibold text-foreground mt-3 mb-2">{svc.name}</h3>
-                  <p className="text-sm text-muted-foreground leading-relaxed mb-4">{svc.short_description}</p>
-                  <div className="grid grid-cols-2 gap-3 text-xs text-muted-foreground mb-4">
-                    <div><span className="font-semibold text-foreground">Time:</span> {svc.procedure_time}</div>
-                    <div><span className="font-semibold text-foreground">Stay:</span> {svc.hospital_stay}</div>
-                    <div><span className="font-semibold text-foreground">Success:</span> {svc.success_rate}</div>
-                    <div><span className="font-semibold text-foreground">Cost:</span> {svc.cost_range}</div>
-                  </div>
-                  <Link to="/services" className="inline-flex items-center gap-1 text-sm font-semibold text-primary hover:text-accent transition-colors">
-                    Learn More <ArrowRight size={14} />
-                  </Link>
-                </div>
+          <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
+            {[
+              {
+                title: "Total Knee Replacement",
+                description: "Advanced joint replacement surgery for severe knee arthritis, restoring mobility and eliminating pain with proven techniques.",
+                icon: "🦵"
+              },
+              {
+                title: "ACL Reconstruction",
+                description: "Minimally invasive arthroscopic surgery to repair torn ACL ligaments, helping athletes return to peak performance.",
+                icon: "⚽"
+              },
+              {
+                title: "Arthroscopy (Keyhole Surgery)",
+                description: "State-of-the-art minimally invasive procedures for joint problems with faster recovery and minimal scarring.",
+                icon: "🔬"
+              },
+              {
+                title: "Shoulder Pain Treatment",
+                description: "Comprehensive care for rotator cuff injuries, frozen shoulder, and other shoulder conditions using advanced techniques.",
+                icon: "💪"
+              },
+              {
+                title: "Spine & Back Pain Care",
+                description: "Expert diagnosis and treatment for herniated discs, sciatica, and chronic back pain with non-surgical and surgical options.",
+                icon: "🦴"
+              },
+              {
+                title: "Sports Injury Management",
+                description: "Specialized treatment for sports-related injuries including ligament tears, fractures, and overuse injuries.",
+                icon: "🏃"
+              }
+            ].map((procedure, i) => (
+              <motion.div 
+                key={procedure.title} 
+                initial={{ opacity: 0, y: 20 }} 
+                whileInView={{ opacity: 1, y: 0 }} 
+                viewport={{ once: true }} 
+                transition={{ delay: i * 0.1 }} 
+                className="bg-card rounded-xl overflow-hidden border shadow-sm hover:shadow-lg transition-all p-6"
+              >
+                <div className="text-4xl mb-4">{procedure.icon}</div>
+                <h3 className="font-display text-xl font-semibold text-foreground mb-3">{procedure.title}</h3>
+                <p className="text-sm text-muted-foreground leading-relaxed mb-4">{procedure.description}</p>
+                <Link to="/book" className="inline-flex items-center gap-1 text-sm font-semibold text-primary hover:text-accent transition-colors">
+                  Book Consultation <ArrowRight size={14} />
+                </Link>
               </motion.div>
             ))}
           </div>
@@ -139,16 +172,56 @@ export default function Index() {
         <div className="container">
           <div className="text-center mb-12">
             <span className="text-accent text-sm font-semibold uppercase tracking-wider">Why Us</span>
-            <h2 className="font-display text-3xl md:text-4xl font-bold text-foreground mt-2">Why Choose {config.doctorName}?</h2>
+            <h2 className="font-display text-3xl md:text-4xl font-bold text-foreground mt-2">Why Choose Dr. Srivanth Dasari?</h2>
           </div>
-          <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6">
-            {config.whyChoose.map((item, i) => {
+          <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
+            {[
+              {
+                icon: "Award",
+                title: "Expert Care",
+                description: "Highly qualified orthopedic surgeon with extensive experience in complex joint and spine procedures."
+              },
+              {
+                icon: "Clock",
+                title: "Faster Recovery",
+                description: "Minimally invasive techniques and advanced surgical methods ensure quicker healing and return to normal life."
+              },
+              {
+                icon: "Target",
+                title: "Accurate Diagnosis",
+                description: "State-of-the-art diagnostic equipment and thorough evaluation for precise treatment planning."
+              },
+              {
+                icon: "Heart",
+                title: "Personalized Treatment",
+                description: "Customized care plans tailored to your specific condition, lifestyle, and recovery goals."
+              },
+              {
+                icon: "Stethoscope",
+                title: "Comprehensive Services",
+                description: "Complete orthopedic care from diagnosis to surgery to rehabilitation under one roof."
+              },
+              {
+                icon: "TrendingUp",
+                title: "Proven Results",
+                description: "High success rates and thousands of satisfied patients with restored mobility and pain-free living."
+              }
+            ].map((item, i) => {
               const IconComp = iconMap[item.icon] || Shield;
               return (
-                <motion.div key={item.title} initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ delay: i * 0.1 }} className="bg-card rounded-xl p-6 border text-center">
-                  <div className="w-14 h-14 rounded-full bg-accent/10 flex items-center justify-center mx-auto mb-4"><IconComp className="text-accent" size={24} /></div>
+                <motion.div 
+                  key={item.title} 
+                  initial={{ opacity: 0, y: 20 }} 
+                  whileInView={{ opacity: 1, y: 0 }} 
+                  viewport={{ once: true }} 
+                  transition={{ delay: i * 0.1 }} 
+                  className="bg-card rounded-xl p-6 border text-center hover:shadow-lg transition-shadow"
+                >
+                  <div className="w-14 h-14 rounded-full bg-accent/10 flex items-center justify-center mx-auto mb-4">
+                    <IconComp className="text-accent" size={24} />
+                  </div>
                   <h3 className="font-display text-base font-semibold text-foreground mb-2">{item.title}</h3>
-                  <p className="text-sm text-muted-foreground">{item.desc}</p>
+                  <p className="text-sm text-muted-foreground leading-relaxed">{item.description}</p>
                 </motion.div>
               );
             })}
