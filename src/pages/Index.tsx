@@ -1,12 +1,12 @@
 import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
-import { Star, ArrowRight, Shield, Heart, Zap, Users, Award, Clock, Target, Stethoscope, Activity, TrendingUp } from "lucide-react";
+import { Star, ArrowRight, Shield, Heart, Zap, Users, Award, Clock, Target, Stethoscope, Activity, TrendingUp, Bone, Footprints, Dumbbell, Sparkles, Siren, HeartPulse } from "lucide-react";
 import heroImage from "@/assets/hero-doctor.jpg";
 import { useSiteConfig } from "@/contexts/SiteConfigContext";
 import { useServices, useTestimonials } from "@/hooks/useContent";
 import SEO from "@/components/SEO";
 
-const iconMap: Record<string, React.ElementType> = { Shield, Zap, Heart, Users, Award, Clock, Target, Stethoscope, Activity, TrendingUp };
+const iconMap: Record<string, React.ElementType> = { Shield, Zap, Heart, Users, Award, Clock, Target, Stethoscope, Activity, TrendingUp, Bone, Footprints, Dumbbell, Sparkles, Siren, HeartPulse };
 
 export default function Index() {
   const { config } = useSiteConfig();
@@ -93,16 +93,71 @@ export default function Index() {
             <span className="text-accent text-sm font-semibold uppercase tracking-wider">Our Specialties</span>
             <h2 className="font-display text-3xl md:text-4xl font-bold text-foreground mt-2">Comprehensive Orthopedic Care</h2>
           </motion.div>
-          <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6">
-            {config.serviceCategories.map((cat, i) => (
-              <motion.div key={cat.slug} initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ delay: i * 0.1 }}>
-                <Link to="/services" className="block bg-card rounded-xl p-6 border hover:border-primary/30 hover:shadow-lg transition-all group h-full">
-                  <div className="text-4xl mb-4">{cat.icon}</div>
-                  <h3 className="font-display text-lg font-semibold text-foreground group-hover:text-primary transition-colors mb-2">{cat.name}</h3>
-                  <p className="text-sm text-muted-foreground leading-relaxed">{cat.description}</p>
-                </Link>
-              </motion.div>
-            ))}
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
+            {[
+              {
+                icon: "Bone",
+                title: "Knee Pain & Arthritis",
+                description: "Expert management of knee pain, osteoarthritis, and ligament injuries with both surgical and non-surgical solutions."
+              },
+              {
+                icon: "Activity",
+                title: "Sports Injuries",
+                description: "Treatment for ACL tears, meniscus injuries, and sports-related conditions to help patients return to activity safely."
+              },
+              {
+                icon: "Dumbbell",
+                title: "Shoulder Conditions",
+                description: "Care for rotator cuff injuries, frozen shoulder, dislocations, and chronic shoulder pain."
+              },
+              {
+                icon: "Sparkles",
+                title: "Back & Spine Disorders",
+                description: "Diagnosis and treatment of slip disc, sciatica, and chronic back pain with personalized care plans."
+              },
+              {
+                icon: "Footprints",
+                title: "Joint Replacement",
+                description: "Advanced knee and joint replacement surgeries designed for long-term relief and improved mobility."
+              },
+              {
+                icon: "Siren",
+                title: "Fractures & Trauma Care",
+                description: "Comprehensive treatment for fractures, accidents, and complex bone injuries."
+              },
+              {
+                icon: "HeartPulse",
+                title: "Physiotherapy & Rehabilitation",
+                description: "Structured rehabilitation programs to restore strength, mobility, and function after injury or surgery."
+              },
+              {
+                icon: "Target",
+                title: "Chronic Pain Management",
+                description: "Holistic approach to managing long-standing joint and musculoskeletal pain effectively."
+              }
+            ].map((specialty, i) => {
+              const IconComp = iconMap[specialty.icon] || Stethoscope;
+              return (
+                <motion.div 
+                  key={specialty.title} 
+                  initial={{ opacity: 0, y: 20 }} 
+                  whileInView={{ opacity: 1, y: 0 }} 
+                  viewport={{ once: true }} 
+                  transition={{ delay: i * 0.05 }}
+                  className="bg-card rounded-xl p-5 md:p-6 border hover:border-primary/30 hover:shadow-xl transition-all duration-300 group"
+                >
+                  <div className="w-12 h-12 md:w-14 md:h-14 rounded-full bg-accent/10 flex items-center justify-center mb-4 group-hover:bg-accent/20 transition-colors">
+                    <IconComp className="text-accent" size={24} />
+                  </div>
+                  <h3 className="font-display text-base md:text-lg font-semibold text-foreground group-hover:text-primary transition-colors mb-2">
+                    {specialty.title}
+                  </h3>
+                  <p className="text-xs md:text-sm text-muted-foreground leading-relaxed">
+                    {specialty.description}
+                  </p>
+                </motion.div>
+              );
+            })}
           </div>
         </div>
       </section>
