@@ -24,7 +24,6 @@ BEGIN
       level,
       sort_order,
       content,
-      meta_title,
       meta_description
     ) VALUES (
       ortho_id, 
@@ -79,7 +78,6 @@ BEGIN
 <h3>Schedule an Appointment Today!</h3>
 
 <p>Don''t let knee pain limit your life. Contact Dr. Srivanth''s Orthopedic Clinic today to schedule an appointment and discuss if total knee replacement surgery in Hyderabad is right for you. We are committed to helping you regain your mobility and improve your quality of life.</p>',
-      'Total Knee Replacement Surgery in Hyderabad | Dr. Srivanth''s Orthopedic Clinic',
       'Expert total knee replacement surgery in Hyderabad at Dr. Srivanth''s Orthopedic Clinic, Chikkadpally. Advanced techniques, minimally invasive surgery, comprehensive rehabilitation.'
     )
     ON CONFLICT (section_id, slug) 
@@ -87,7 +85,6 @@ BEGIN
       name = EXCLUDED.name,
       description = EXCLUDED.description,
       content = EXCLUDED.content,
-      meta_title = EXCLUDED.meta_title,
       meta_description = EXCLUDED.meta_description,
       parent_id = EXCLUDED.parent_id,
       level = EXCLUDED.level,
