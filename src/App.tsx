@@ -17,6 +17,8 @@ import BlogPost from "./pages/BlogPost";
 import CaseStudies from "./pages/CaseStudies";
 import CaseStudyDetail from "./pages/CaseStudyDetail";
 import SecondOpinion from "./pages/SecondOpinion";
+import MedicalSection from "./pages/MedicalSection";
+import MedicalSubsection from "./pages/MedicalSubsection";
 import AdminLogin from "./pages/AdminLogin";
 import AdminDashboard from "./pages/AdminDashboard";
 import ResetPassword from "./pages/ResetPassword";
@@ -37,14 +39,23 @@ const App = () => (
                 <Routes>
                   <Route path="/" element={<Index />} />
                   <Route path="/about" element={<About />} />
+                  {/* New medical sections */}
+                  <Route path="/orthopaedics" element={<MedicalSection />} />
+                  <Route path="/orthopaedics/:subsection" element={<MedicalSubsection />} />
+                  <Route path="/physiotherapy" element={<MedicalSection />} />
+                  <Route path="/physiotherapy/:subsection" element={<MedicalSubsection />} />
+                  <Route path="/rehabilitation" element={<MedicalSection />} />
+                  <Route path="/rehabilitation/:subsection" element={<MedicalSubsection />} />
+                  {/* Hidden but still accessible */}
                   <Route path="/services" element={<Services />} />
-                  <Route path="/book" element={<BookAppointment />} />
-                  <Route path="/contact" element={<Contact />} />
                   <Route path="/blog" element={<Blog />} />
                   <Route path="/blog/:slug" element={<BlogPost />} />
                   <Route path="/case-studies" element={<CaseStudies />} />
                   <Route path="/case-studies/:slug" element={<CaseStudyDetail />} />
                   <Route path="/second-opinion" element={<SecondOpinion />} />
+                  {/* Other routes */}
+                  <Route path="/book" element={<BookAppointment />} />
+                  <Route path="/contact" element={<Contact />} />
                   <Route path="/admin/login" element={<AdminLogin />} />
                   <Route path="/admin" element={<AdminDashboard />} />
                   <Route path="/reset-password" element={<ResetPassword />} />

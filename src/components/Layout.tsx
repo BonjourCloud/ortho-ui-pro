@@ -1,18 +1,37 @@
 import { Link, useLocation } from "react-router-dom";
 import WhatsAppFloat from "./WhatsAppFloat";
-import { Phone, Mail, MapPin, Clock, Menu, X, Shield, Globe, Facebook, Instagram } from "lucide-react";
+import { Phone, Mail, MapPin, Clock, Menu, X, Shield, Globe, Facebook, Instagram, ChevronDown } from "lucide-react";
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useSiteConfig } from "@/contexts/SiteConfigContext";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { languageLabels, Language } from "@/data/translations";
+import { useMedicalSections } from "@/hooks/useMedicalSections";
 
 export default function Layout({ children }: { children: React.ReactNode }) {
   const [menuOpen, setMenuOpen] = useState(false);
   const [langOpen, setLangOpen] = useState(false);
+  const [activeDropdown, setActiveDropdown] = useState<string | null>(null);
+  const [dropdownTimeout, setDropdownTimeout] = useState<NodeJS.Timeout | null>(null);
   const location = useLocation();
   const { config, isAdmin } = useSiteConfig();
   const { language, setLanguage, t, enabledLanguages } = useLanguage();
+  const { sections } = useMedicalSections();
+
+  const handleDropdownEnter = (key: string) => {
+    if (dropdownTimeout) {
+      clearTimeout(dropdownTimeout);
+      setDropdownTimeout(null);
+    }
+    setActiveDropdown(key);
+  };
+
+  const handleDropdownLeave = () => {
+    const timeout = setTimeout(() => {
+      setActiveDropdown(null);
+    }, 200); // 200ms delay before closing
+    setDropdownTimeout(timeout);
+  };
 
   const isAdminRoute = location.pathname.startsWith("/admin");
   if (isAdminRoute) return <>{children}</>;
@@ -20,9 +39,24 @@ export default function Layout({ children }: { children: React.ReactNode }) {
   const navLinks = [
     { to: "/", label: t("nav.home") },
     { to: "/about", label: t("nav.about") },
-    { to: "/services", label: t("nav.services") },
-    { to: "/case-studies", label: t("nav.caseStudies") },
-    { to: "/blog", label: t("nav.blog") },
+    { 
+      to: "/orthopaedics", 
+      label: "Orthopaedics",
+      hasDropdown: true,
+      dropdownKey: "orthopaedics"
+    },
+    { 
+      to: "/physiotherapy", 
+      label: "Physiotherapy",
+      hasDropdown: true,
+      dropdownKey: "physiotherapy"
+    },
+    { 
+      to: "/rehabilitation", 
+      label: "Rehabilitation",
+      hasDropdown: true,
+      dropdownKey: "rehabilitation"
+    },
     { to: "/contact", label: t("nav.contact") },
   ];
 
@@ -89,13 +123,85 @@ export default function Layout({ children }: { children: React.ReactNode }) {
           {/* Desktop nav */}
           <nav className="hidden lg:flex items-center gap-5">
             {navLinks.map((l) => (
-              <Link
-                key={l.to}
-                to={l.to}
-                className={`text-sm font-medium transition-colors hover:text-primary ${location.pathname === l.to || (l.to !== "/" && location.pathname.startsWith(l.to)) ? "text-primary" : "text-muted-foreground"}`}
-              >
-                {l.label}
-              </Link>
+              l.hasDropdown ? (
+                <div 
+                  key={l.to}
+                  className="relative"
+                  onMouseEnter={() => handleDropdownEnter(l.dropdownKey!)}
+                  onMouseLeave={handleDropdownLeave}
+                >
+                  <Link
+                    to={l.to}
+                    className={`text-sm font-medium transition-colors hover:text-primary flex items-center gap-1 ${
+                      location.pathname === l.to || location.pathname.startsWith(l.to + "/")
+                        ? "text-primary"
+                        : "text-muted-foreground"
+                    }`}
+                  >
+                    {l.label}
+                    <ChevronDown size={14} />
+                  </Link>
+                  {activeDropdown === l.dropdownKey && (
+                    <div 
+                      className="absolute top-full left-0 mt-1 bg-card rounded-lg shadow-xl border py-2 min-w-[260px] z-50 max-h-[500px] overflow-y-auto"
+                      onMouseEnter={() => handleDropdownEnter(l.dropdownKey!)}
+                      onMouseLeave={handleDropdownLeave}
+                    >
+                      {sections
+                        .find((s) => s.slug === l.dropdownKey)
+                        ?.subsections.map((sub) => (
+                          <div key={sub.id}>
+                            {sub.children && sub.children.length > 0 ? (
+                              // Has children - show as expandable group
+                              <div className="px-4 py-2 border-b border-border/50 last:border-0">
+                                <Link
+                                  to={`/${l.dropdownKey}/${sub.slug}`}
+                                  className="font-semibold text-foreground hover:text-primary text-sm block mb-2"
+                                  onClick={() => setActiveDropdown(null)}
+                                >
+                                  {sub.name}
+                                </Link>
+                                <div className="pl-3 space-y-1">
+                                  {sub.children.map((child) => (
+                                    <Link
+                                      key={child.id}
+                                      to={`/${l.dropdownKey}/${child.slug}`}
+                                      className="block text-xs text-muted-foreground hover:text-primary py-1.5 transition-colors"
+                                      onClick={() => setActiveDropdown(null)}
+                                    >
+                                      • {child.name}
+                                    </Link>
+                                  ))}
+                                </div>
+                              </div>
+                            ) : (
+                              // No children - regular link
+                              <Link
+                                to={`/${l.dropdownKey}/${sub.slug}`}
+                                className="block px-4 py-2 text-sm text-foreground hover:bg-secondary transition-colors"
+                                onClick={() => setActiveDropdown(null)}
+                              >
+                                {sub.name}
+                              </Link>
+                            )}
+                          </div>
+                        ))}
+                    </div>
+                  )}
+                </div>
+              ) : (
+                <Link
+                  key={l.to}
+                  to={l.to}
+                  className={`text-sm font-medium transition-colors hover:text-primary ${
+                    location.pathname === l.to || (l.to !== "/" && location.pathname.startsWith(l.to))
+                      ? "text-primary"
+                      : "text-muted-foreground"
+                  }`}
+                >
+                  {l.label}
+                </Link>
+              )
             ))}
             <Link
               to="/book"
@@ -144,14 +250,70 @@ export default function Layout({ children }: { children: React.ReactNode }) {
             >
               <div className="container py-4 flex flex-col gap-3">
                 {navLinks.map((l) => (
-                  <Link
-                    key={l.to}
-                    to={l.to}
-                    onClick={() => setMenuOpen(false)}
-                    className={`text-sm font-medium py-2 ${location.pathname === l.to ? "text-primary" : "text-muted-foreground"}`}
-                  >
-                    {l.label}
-                  </Link>
+                  l.hasDropdown ? (
+                    <div key={l.to} className="space-y-2">
+                      <Link
+                        to={l.to}
+                        onClick={() => setMenuOpen(false)}
+                        className={`text-sm font-medium py-2 flex items-center gap-1 ${
+                          location.pathname === l.to ? "text-primary" : "text-muted-foreground"
+                        }`}
+                      >
+                        {l.label}
+                        <ChevronDown size={14} />
+                      </Link>
+                      <div className="pl-4 space-y-2">
+                        {sections
+                          .find((s) => s.slug === l.dropdownKey)
+                          ?.subsections.map((sub) => (
+                            <div key={sub.id}>
+                              {sub.children && sub.children.length > 0 ? (
+                                <div className="space-y-1">
+                                  <Link
+                                    to={`/${l.dropdownKey}/${sub.slug}`}
+                                    onClick={() => setMenuOpen(false)}
+                                    className="block text-xs font-medium py-1 text-foreground"
+                                  >
+                                    {sub.name}
+                                  </Link>
+                                  <div className="pl-3 space-y-1">
+                                    {sub.children.map((child) => (
+                                      <Link
+                                        key={child.id}
+                                        to={`/${l.dropdownKey}/${child.slug}`}
+                                        onClick={() => setMenuOpen(false)}
+                                        className="block text-xs py-1 text-muted-foreground hover:text-foreground"
+                                      >
+                                        {child.name}
+                                      </Link>
+                                    ))}
+                                  </div>
+                                </div>
+                              ) : (
+                                <Link
+                                  to={`/${l.dropdownKey}/${sub.slug}`}
+                                  onClick={() => setMenuOpen(false)}
+                                  className="block text-xs py-1.5 text-muted-foreground hover:text-foreground"
+                                >
+                                  {sub.name}
+                                </Link>
+                              )}
+                            </div>
+                          ))}
+                      </div>
+                    </div>
+                  ) : (
+                    <Link
+                      key={l.to}
+                      to={l.to}
+                      onClick={() => setMenuOpen(false)}
+                      className={`text-sm font-medium py-2 ${
+                        location.pathname === l.to ? "text-primary" : "text-muted-foreground"
+                      }`}
+                    >
+                      {l.label}
+                    </Link>
+                  )
                 ))}
                 <Link
                   to="/book"
