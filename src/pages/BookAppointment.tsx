@@ -31,6 +31,7 @@ export default function BookAppointment() {
     e.preventDefault();
     setLoading(true);
     
+    // Save to database
     const { error } = await supabase.from("appointments").insert({
       first_name: form.firstName,
       last_name: form.lastName,
@@ -45,13 +46,48 @@ export default function BookAppointment() {
       emi_interest: form.emiInterest,
     });
 
-    setLoading(false);
-    
     if (error) {
+      setLoading(false);
       toast({ title: "Error", description: "Failed to submit appointment. Please try again.", variant: "destructive" });
       return;
     }
     
+    // Send email notification
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      const response = await fetch(
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/send-appointment-email`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "Authorization": `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
+          },
+          body: JSON.stringify({
+            firstName: form.firstName,
+            lastName: form.lastName,
+            phone: form.phone,
+            email: form.email,
+            appointmentType: form.appointmentType,
+            service: form.service,
+            preferredDate: selectedDate,
+            preferredTime: selectedTime,
+            symptoms: form.symptoms,
+            insuranceProvider: form.insuranceProvider,
+            emiInterest: form.emiInterest,
+          }),
+        }
+      );
+      
+      if (!response.ok) {
+        console.error("Email notification failed, but appointment was saved");
+      }
+    } catch (emailError) {
+      console.error("Email notification error:", emailError);
+      // Don't fail the appointment if email fails
+    }
+    
+    setLoading(false);
     setSubmitted(true);
   };
 
