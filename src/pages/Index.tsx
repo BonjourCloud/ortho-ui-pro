@@ -297,7 +297,7 @@ export default function Index() {
                   <Star key={i} size={18} className="fill-accent text-accent" />
                 ))}
               </div>
-              <span className="text-primary-foreground/80 text-sm font-medium">4.8 / 5 based on Google reviews</span>
+              <span className="text-primary-foreground/80 text-sm font-medium">4.9 / 5 based on Google reviews</span>
             </div>
           </div>
           <div className="grid md:grid-cols-2 gap-6 max-w-5xl mx-auto">
