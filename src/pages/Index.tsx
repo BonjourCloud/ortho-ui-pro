@@ -365,7 +365,7 @@ export default function Index() {
               <Link to="/book" className="inline-flex items-center gap-2 rounded-lg bg-accent px-6 py-3 text-sm font-semibold text-accent-foreground shadow-lg hover:opacity-90">
                 Book Appointment <ArrowRight size={16} />
               </Link>
-              <a href={`https://wa.me/${config.whatsapp?.replace(/\D/g, "") || "919876543210"}`} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2 rounded-lg bg-primary px-6 py-3 text-sm font-semibold text-primary-foreground hover:opacity-90">
+              <a href={`https://wa.me/${config.whatsapp?.replace(/\D/g, "") || "919441824999"}`} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2 rounded-lg bg-primary px-6 py-3 text-sm font-semibold text-primary-foreground hover:opacity-90">
                 WhatsApp Us
               </a>
             </div>

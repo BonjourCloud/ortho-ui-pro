@@ -124,7 +124,7 @@ export default function MedicalSubsection() {
                 Book Appointment <ArrowRight size={16} />
               </Link>
               <a
-                href={`https://wa.me/${config.whatsapp?.replace(/\D/g, "") || "919876543210"}`}
+                href={`https://wa.me/${config.whatsapp?.replace(/\D/g, "") || "919441824999"}`}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="inline-flex items-center gap-2 rounded-lg bg-primary px-6 py-3 text-sm font-semibold text-primary-foreground hover:opacity-90"

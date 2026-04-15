@@ -62,11 +62,11 @@ serve(async (req) => {
       </ul>
       <p><strong>What's Next?</strong></p>
       <p>We will confirm your appointment within 2 hours via WhatsApp at ${appointmentData.phone}.</p>
-      <p>If you have any urgent questions, please call us at +91 98765 43210.</p>
+      <p>If you have any urgent questions, please call us at +91-9441824999.</p>
       <hr>
       <p><strong>Dr. Srivanth's Orthopedic Clinic</strong><br>
       Ashok Nagar, Hyderabad<br>
-      Phone: +91 98765 43210</p>
+      Phone: +91-9441824999</p>
     `;
 
     const emails = [];

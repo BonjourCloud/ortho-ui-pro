@@ -12,8 +12,8 @@ export const doctorProfile = {
   languages: ["English", "Hindi", "Telugu"],
   registrationNumber: "TSMC/FMR/12345",
   consultationFee: 800,
-  emergencyContact: "+919876543210",
-  whatsappNumber: "+919876543210",
+  emergencyContact: "+91-9441824999",
+  whatsappNumber: "+91-9441824999",
   email: "consult@drortho.com",
   education: [
     { degree: "MBBS", institution: "Osmania Medical College, Hyderabad", yearStart: 2000, yearEnd: 2004 },
