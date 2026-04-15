@@ -65,7 +65,7 @@ serve(async (req) => {
       <p>If you have any urgent questions, please call us at +91 98765 43210.</p>
       <hr>
       <p><strong>Dr. Srivanth's Orthopedic Clinic</strong><br>
-      Chikkadpally, Hyderabad<br>
+      Ashok Nagar, Hyderabad<br>
       Phone: +91 98765 43210</p>
     `;
 

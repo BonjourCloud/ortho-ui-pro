@@ -3,7 +3,7 @@
 UPDATE public.medical_subsections 
 SET 
   content = '<div class="medical-content">
-  <p class="text-lg mb-6">Bicipital tendinitis is a common condition that causes pain and inflammation in the tendons that connect the biceps muscle to the shoulder joint. If you''re experiencing bicipital tendinitis pain in Hyderabad, look no further than Dr. Srivanth''s Orthopedic Clinic, conveniently located in Chikkadpally. We offer comprehensive treatment for bicipital tendinitis, helping patients residing in Chikkadpally, RTC Cross Roads, Vidhya Nagar, Tilak Nagar, Bagh Lingampally, Narayanguda, Himayath Nagar, Basheerbagh, Ashok Nagar, Kavadiguda, Musheerabad, Ram Nagar, Warasiguda, Koranti, and Barkathpura regain their shoulder function and live pain-free.</p>
+  <p class="text-lg mb-6">Bicipital tendinitis is a common condition that causes pain and inflammation in the tendons that connect the biceps muscle to the shoulder joint. If you''re experiencing bicipital tendinitis pain in Hyderabad, look no further than Dr. Srivanth''s Orthopedic Clinic, conveniently located in Ashok Nagar. We offer comprehensive treatment for bicipital tendinitis, helping patients residing in Ashok Nagar, RTC Cross Roads, Vidhya Nagar, Tilak Nagar, Bagh Lingampally, Narayanguda, Himayath Nagar, Basheerbagh, Chikkadpally, Kavadiguda, Musheerabad, Ram Nagar, Warasiguda, Koranti, and Barkathpura regain their shoulder function and live pain-free.</p>
 
   <p class="mb-6">Led by Dr. Dasari Srivanth, a highly qualified orthopedic surgeon with extensive experience in shoulder conditions, our team is dedicated to providing accurate diagnosis and effective treatment plans for bicipital tendinitis.</p>
 
@@ -35,12 +35,12 @@ SET
     <li><strong>Advanced Diagnostics:</strong> We utilize the latest diagnostic tools to ensure an accurate diagnosis and personalized treatment plan.</li>
     <li><strong>Minimally Invasive Techniques:</strong> Whenever possible, Dr. Srivanth prioritizes minimally invasive arthroscopic surgery for faster recovery and less scarring.</li>
     <li><strong>Compassionate Care:</strong> Our team is dedicated to providing personalized and compassionate care throughout your treatment journey.</li>
-    <li><strong>Convenient Location:</strong> We are conveniently located in Chikkadpally to serve patients in Hyderabad and surrounding areas.</li>
+    <li><strong>Convenient Location:</strong> We are conveniently located in Ashok Nagar to serve patients in Hyderabad and surrounding areas.</li>
   </ul>
 
   <h2 class="text-2xl font-bold mt-8 mb-4">Schedule an Appointment Today!</h2>
   <p class="mb-6">Don''t let bicipital tendinitis pain limit your activities. Contact Dr. Srivanth''s Orthopedic Clinic today to schedule an appointment and discuss your treatment options. We are committed to helping you get back to living a pain-free and active life.</p>
 </div>',
-  meta_description = 'Expert Bicipital Tendinitis treatment in Hyderabad at Dr. Srivanth''s Orthopedic Clinic, Chikkadpally. Comprehensive care for shoulder pain and inflammation.',
+  meta_description = 'Expert Bicipital Tendinitis treatment in Hyderabad at Dr. Srivanth''s Orthopedic Clinic, Ashok Nagar. Comprehensive care for shoulder pain and inflammation.',
   description = 'Inflammation of the biceps tendon causing shoulder pain'
 WHERE slug = 'bicipital-tendinitis';
