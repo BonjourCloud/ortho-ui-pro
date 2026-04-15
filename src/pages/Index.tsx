@@ -56,7 +56,7 @@ export default function Index() {
             </motion.div>
             <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} transition={{ duration: 0.7, delay: 0.2 }} className="hidden md:block">
               <div className="relative">
-                <img src={config.heroImageUrl || heroImage} alt={`${config.doctorName} - Orthopedic Surgeon`} className="rounded-2xl shadow-2xl w-full object-cover object-center aspect-[4/3]" style={{ objectPosition: 'center 30%' }} />
+                <img src={config.heroImageUrl || heroImage} alt={`${config.doctorName} - Orthopedic Surgeon`} className="rounded-2xl shadow-2xl w-full object-cover object-center aspect-[4/3]" style={{ objectPosition: 'center 20%' }} />
                 {/* Review badge - Hidden for now */}
                 {/* <div className="absolute -bottom-4 -left-4 bg-card rounded-xl p-4 shadow-xl">
                   <div className="flex items-center gap-3">
