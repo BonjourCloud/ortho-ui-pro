@@ -1,4 +1,3 @@
-import { MessageCircle } from "lucide-react";
 import { useSiteConfig } from "@/contexts/SiteConfigContext";
 
 export default function WhatsAppFloat() {
@@ -12,9 +11,16 @@ export default function WhatsAppFloat() {
       target="_blank"
       rel="noopener noreferrer"
       aria-label="Chat on WhatsApp"
-      className="fixed bottom-6 right-6 z-50 flex items-center justify-center w-14 h-14 rounded-full bg-[#25D366] text-white shadow-lg hover:scale-110 transition-transform"
+      className="fixed bottom-6 right-6 z-50 flex items-center justify-center w-16 h-16 rounded-full bg-[#25D366] text-white shadow-xl hover:scale-110 transition-transform duration-300"
     >
-      <MessageCircle size={28} fill="white" strokeWidth={0} />
+      <svg
+        viewBox="0 0 32 32"
+        className="w-10 h-10"
+        fill="white"
+      >
+        <path d="M16 0C7.164 0 0 7.164 0 16c0 2.825.738 5.488 2.031 7.794L0 32l8.394-2.031C10.7 31.262 13.363 32 16 32c8.836 0 16-7.164 16-16S24.836 0 16 0zm0 29.333c-2.544 0-4.944-.706-6.981-1.931l-.5-.3-5.181 1.256 1.256-5.181-.3-.5C2.706 20.944 2 18.544 2 16 2 8.28 8.28 2 16 2s14 6.28 14 14-6.28 13.333-14 13.333z" />
+        <path d="M23.738 19.425c-.4-.2-2.363-1.169-2.731-1.3-.369-.131-.637-.2-.906.2-.269.4-1.038 1.3-1.275 1.569-.237.269-.475.3-.875.1-.4-.2-1.688-.625-3.213-1.988-1.188-1.063-1.988-2.375-2.219-2.775-.231-.4-.025-.619.175-.819.181-.181.4-.475.6-.713.2-.237.269-.4.4-.669.131-.269.069-.5-.031-.7-.1-.2-.906-2.188-1.244-2.994-.331-.788-.669-.681-.906-.694-.237-.013-.506-.019-.775-.019s-.713.1-1.081.5c-.369.4-1.406 1.375-1.406 3.356s1.438 3.894 1.638 4.163c.2.269 2.825 4.313 6.844 6.05.956.413 1.7.656 2.281.844.963.306 1.838.263 2.531.163.775-.119 2.363-.969 2.7-1.906.337-.938.337-1.738.237-1.906-.1-.169-.369-.269-.769-.469z" />
+      </svg>
     </a>
   );
 }
