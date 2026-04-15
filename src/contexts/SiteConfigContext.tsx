@@ -23,6 +23,8 @@ export interface SiteConfig {
   logoInitials: string;
   heroImageUrl: string;
   whatsappFloatEnabled: boolean;
+  googleRating: number;
+  googleReviewCount: number;
   languages: string[];
   registrationNumber: string;
   facebook?: string;
@@ -57,6 +59,8 @@ const defaultConfig: SiteConfig = {
   logoInitials: "DO",
   heroImageUrl: "",
   whatsappFloatEnabled: true,
+  googleRating: 4.9,
+  googleReviewCount: 500,
   languages: ["English", "Hindi", "Telugu"],
   registrationNumber: "TSMC/FMR/12345",
   facebook: "",
