@@ -1,7 +1,7 @@
-# Update Tennis Elbow Content
+# Add Tennis Elbow Content
 
 ## Overview
-Updated the existing Tennis Elbow page under Orthopaedics → Elbow Pain with comprehensive content.
+Added Tennis Elbow page under Orthopaedics → Elbow Pain with comprehensive content.
 
 ## Content Details
 
@@ -65,7 +65,7 @@ git push
 1. Go to Supabase SQL Editor: https://supabase.com/dashboard/project/lbcnvyrzzhwcstlomlbs/sql/new
 2. Copy the contents of `supabase/migrations/20260416010000_update_tennis_elbow_content.sql`
 3. Paste and run the SQL
-4. Verify success message: "✓ Tennis Elbow content updated successfully"
+4. Verify success message: "✓ Tennis Elbow content added/updated successfully"
 
 ### Step 3: Verify on Website
 Visit: https://orthocarehub.in/orthopaedics/tennis-elbow
@@ -80,7 +80,8 @@ Visit: https://orthocarehub.in/orthopaedics/tennis-elbow
 - ✅ Location: Ashok Nagar (primary), Chikkadpally in areas served
 
 ## Key Features
-- Updates existing page (no duplicates created)
+- Creates new Tennis Elbow page under Elbow Pain (Level 2)
+- Uses INSERT with ON CONFLICT to handle duplicates
 - Comprehensive tennis elbow information
 - Clear treatment progression: conservative → injections → surgery
 - Detailed non-surgical treatment options

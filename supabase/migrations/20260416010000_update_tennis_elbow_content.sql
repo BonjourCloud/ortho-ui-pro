@@ -1,4 +1,4 @@
--- Update existing Tennis Elbow page under Orthopaedics -> Elbow Pain with full content
+-- Add Tennis Elbow page under Orthopaedics -> Elbow Pain with full content
 
 DO $$
 DECLARE
@@ -15,10 +15,21 @@ BEGIN
   WHERE section_id = ortho_id AND slug = 'elbow-pain';
   
   IF ortho_id IS NOT NULL AND elbow_pain_id IS NOT NULL THEN
-    -- Update existing Tennis Elbow page
-    UPDATE public.medical_subsections
-    SET 
-      content = '<div class="medical-content">
+    -- Insert Tennis Elbow page under Elbow Pain
+    INSERT INTO public.medical_subsections (
+      section_id,
+      parent_id,
+      name,
+      slug,
+      content,
+      level,
+      sort_order
+    ) VALUES (
+      ortho_id,
+      elbow_pain_id,
+      'Tennis Elbow',
+      'tennis-elbow',
+      '<div class="medical-content">
   <h2 class="text-2xl font-bold mt-8 mb-4">Best Tennis Elbow Treatment in Hyderabad - Find Relief at Dr. Srivanth''s Orthopedic Clinic</h2>
   
   <p class="text-lg mb-6">Tennis elbow, also known as lateral epicondylitis, is a common condition that causes pain on the outer side of the elbow. It''s typically caused by overuse of the forearm muscles involved in gripping and extending the wrist. While tennis players are susceptible, anyone who performs repetitive hand and wrist motions can develop tennis elbow.</p>
@@ -64,18 +75,23 @@ BEGIN
   <h2 class="text-2xl font-bold mt-8 mb-4">Schedule an Appointment Today!</h2>
   <p class="mb-6">Don''t let tennis elbow sideline you from your activities. Contact Dr. Srivanth''s Orthopedic Clinic today to schedule an appointment and discuss your treatment options. We are committed to helping you get back to living a pain-free and active life.</p>
 </div>',
+      2,
+      1
+    )
+    ON CONFLICT (section_id, slug)
+    DO UPDATE SET
+      name = EXCLUDED.name,
+      content = EXCLUDED.content,
+      parent_id = EXCLUDED.parent_id,
+      level = EXCLUDED.level,
+      sort_order = EXCLUDED.sort_order,
       updated_at = NOW()
-    WHERE section_id = ortho_id
-      AND parent_id = elbow_pain_id
-      AND slug = 'tennis-elbow'
     RETURNING id INTO tennis_elbow_id;
     
     IF tennis_elbow_id IS NOT NULL THEN
-      RAISE NOTICE '✓ Tennis Elbow content updated successfully with ID: %', tennis_elbow_id;
+      RAISE NOTICE '✓ Tennis Elbow content added/updated successfully with ID: %', tennis_elbow_id;
       RAISE NOTICE 'Location: Orthopaedics → Elbow Pain → Tennis Elbow';
       RAISE NOTICE 'URL: /orthopaedics/tennis-elbow';
-    ELSE
-      RAISE NOTICE '✗ Tennis Elbow page not found';
     END IF;
   ELSE
     RAISE NOTICE '✗ Orthopaedics or Elbow Pain section not found';
