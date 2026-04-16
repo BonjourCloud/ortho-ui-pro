@@ -1,4 +1,5 @@
 -- Merge duplicate Extracorporeal Shockwave Therapy pages under Physiotherapy
+-- Handles both slug variations: 'extracorporeal-shock-wave-therapy' and 'extracorporeal-shockwave-therapy'
 
 DO $$
 DECLARE
@@ -11,28 +12,29 @@ BEGIN
   SELECT id INTO physio_id FROM public.medical_sections WHERE slug = 'physiotherapy';
   
   IF physio_id IS NOT NULL THEN
-    -- Find the ESWT page with content (longer content length)
+    -- Find the ESWT page with content (longer content length) from either slug variation
     SELECT id INTO eswt_with_content_id
     FROM public.medical_subsections
     WHERE section_id = physio_id
-      AND slug = 'extracorporeal-shockwave-therapy'
+      AND (slug = 'extracorporeal-shockwave-therapy' OR slug = 'extracorporeal-shock-wave-therapy')
       AND LENGTH(COALESCE(content, '')) > 100
     ORDER BY LENGTH(COALESCE(content, '')) DESC
     LIMIT 1;
     
-    -- Delete any duplicate ESWT pages (empty or with less content)
+    -- Delete any duplicate ESWT pages (both slug variations, except the one with content)
     DELETE FROM public.medical_subsections
     WHERE section_id = physio_id
-      AND slug = 'extracorporeal-shockwave-therapy'
+      AND (slug = 'extracorporeal-shockwave-therapy' OR slug = 'extracorporeal-shock-wave-therapy')
       AND id != COALESCE(eswt_with_content_id, '00000000-0000-0000-0000-000000000000'::UUID);
     
     GET DIAGNOSTICS deleted_count = ROW_COUNT;
     
-    -- If we found a page with content, update it to ensure it has the latest content
+    -- If we found a page with content, update it to ensure it has the latest content and correct slug
     IF eswt_with_content_id IS NOT NULL THEN
       UPDATE public.medical_subsections
       SET 
         name = 'Extracorporeal Shockwave Therapy',
+        slug = 'extracorporeal-shockwave-therapy',
         parent_id = NULL,
         level = 1,
         sort_order = 1,
