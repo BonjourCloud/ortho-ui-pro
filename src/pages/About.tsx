@@ -47,8 +47,8 @@ export default function About() {
         </div>
       </section>
 
-      {/* Education */}
-      <section className="bg-teal-light py-16 md:py-24">
+      {/* Education - HIDDEN */}
+      {/* <section className="bg-teal-light py-16 md:py-24">
         <div className="container max-w-3xl">
           <div className="text-center mb-10">
             <GraduationCap className="mx-auto text-accent mb-3" size={32} />
@@ -68,10 +68,10 @@ export default function About() {
             ))}
           </div>
         </div>
-      </section>
+      </section> */}
 
-      {/* Awards */}
-      <section className="py-16 md:py-24">
+      {/* Awards - HIDDEN */}
+      {/* <section className="py-16 md:py-24">
         <div className="container max-w-3xl">
           <div className="text-center mb-10">
             <Award className="mx-auto text-accent mb-3" size={32} />
@@ -90,7 +90,7 @@ export default function About() {
             ))}
           </div>
         </div>
-      </section>
+      </section> */}
 
       {/* Memberships */}
       <section className="bg-gold-light py-16">
