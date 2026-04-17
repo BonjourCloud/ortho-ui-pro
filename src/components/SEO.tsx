@@ -22,7 +22,7 @@ export default function SEO({
 
   const siteTitle = `${config.doctorName} - ${config.clinicName}`;
   const defaultDescription = `${config.doctorName}, ${config.title}. ${config.specialization}. Book your appointment today at ${config.clinicName}.`;
-  const defaultKeywords = `orthopedic surgeon, ${config.doctorName}, ${config.clinicName}, joint replacement, sports medicine, orthopedic doctor, bone specialist, Hyderabad orthopedic`;
+  const defaultKeywords = `orthopedic doctor near me, best knee replacement surgeon near me, best fracture care near me, best hip replacement surgeon near me, best orthopedic doctor in Hyderabad, ${config.doctorName}, ${config.clinicName}, joint replacement, sports medicine, orthopedic surgeon Hyderabad, bone specialist, trauma care`;
   const siteUrl = "https://orthocarehub.in";
   const defaultImage = `${siteUrl}/og-image.svg`;
 

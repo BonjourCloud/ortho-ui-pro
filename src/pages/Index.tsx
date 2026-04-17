@@ -25,7 +25,7 @@ export default function Index() {
       <SEO
         title="Home"
         description={`${config.doctorName} - Expert Orthopedic Surgeon in Hyderabad. ${config.specialization}. ${config.yearsExperience}+ years experience. Book your consultation today.`}
-        keywords={`orthopedic surgeon hyderabad, ${config.doctorName}, joint replacement, sports medicine, knee replacement, hip replacement, orthopedic doctor`}
+        keywords={`orthopedic doctor near me, best knee replacement surgeon near me, best fracture care near me, best hip replacement surgeon near me, best orthopedic doctor in Hyderabad, orthopedic surgeon Hyderabad, ${config.doctorName}, joint replacement, sports medicine, knee replacement, hip replacement, trauma care, bone specialist`}
         url="/"
       />
       {/* Hero */}
