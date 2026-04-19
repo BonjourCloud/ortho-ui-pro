@@ -16,7 +16,8 @@ BEGIN
       ortho_id,
       elbow_pain_id,
       'Golfer''s Elbow',
-      'golfers-elbow',<div class="medical-content">
+      'golfers-elbow',
+      '<div class="medical-content">
   <h2 class="text-2xl font-bold mt-8 mb-4">Golfer''s Elbow Treatment in Hyderabad - Find Relief at Dr. Srivanth''s Orthopedic Clinic</h2>
 
   <p class="text-lg mb-6">Golfer''s elbow, also known as medial epicondylitis, is a common condition that causes pain on the inner side of the elbow. It''s often caused by overuse of the forearm muscles involved in gripping and wrist bending. While golfers are susceptible to this condition, it can affect anyone who performs repetitive motions with their hand and wrist.</p>
@@ -69,10 +70,10 @@ BEGIN
     RETURNING id INTO page_id;
 
     IF page_id IS NOT NULL THEN
-      RAISE NOTICE '✓ Golfer''s Elbow content added successfully';
+      RAISE NOTICE '✓ Golfers Elbow content added successfully';
       RAISE NOTICE 'URL: /orthopaedics/golfers-elbow';
     ELSE
-      RAISE NOTICE '✗ Failed to insert Golfer''s Elbow page';
+      RAISE NOTICE '✗ Failed to insert Golfers Elbow page';
     END IF;
   ELSE
     RAISE NOTICE '✗ Orthopaedics or Elbow Pain section not found';
