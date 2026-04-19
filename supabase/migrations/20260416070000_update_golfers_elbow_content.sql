@@ -1,26 +1,22 @@
--- Update existing Golfer's Elbow page under Orthopaedics -> Elbow Pain
+-- Insert new Golfer's Elbow page under Orthopaedics -> Elbow Pain
 
 DO $$
 DECLARE
   ortho_id UUID;
   elbow_pain_id UUID;
   page_id UUID;
-  r RECORD;
 BEGIN
   SELECT id INTO ortho_id FROM public.medical_sections WHERE slug = 'orthopaedics';
   SELECT id INTO elbow_pain_id FROM public.medical_subsections WHERE section_id = ortho_id AND slug = 'elbow-pain';
 
-  -- Print all pages under Elbow Pain so we can confirm the slug
-  RAISE NOTICE 'Pages under Elbow Pain:';
-  FOR r IN SELECT name, slug FROM public.medical_subsections WHERE section_id = ortho_id AND parent_id = elbow_pain_id
-  LOOP
-    RAISE NOTICE '  name: % | slug: %', r.name, r.slug;
-  END LOOP;
-
   IF ortho_id IS NOT NULL AND elbow_pain_id IS NOT NULL THEN
-    UPDATE public.medical_subsections
-    SET
-      content = '<div class="medical-content">
+    INSERT INTO public.medical_subsections (
+      section_id, parent_id, name, slug, content, level, sort_order
+    ) VALUES (
+      ortho_id,
+      elbow_pain_id,
+      'Golfer''s Elbow',
+      'golfers-elbow',<div class="medical-content">
   <h2 class="text-2xl font-bold mt-8 mb-4">Golfer''s Elbow Treatment in Hyderabad - Find Relief at Dr. Srivanth''s Orthopedic Clinic</h2>
 
   <p class="text-lg mb-6">Golfer''s elbow, also known as medial epicondylitis, is a common condition that causes pain on the inner side of the elbow. It''s often caused by overuse of the forearm muscles involved in gripping and wrist bending. While golfers are susceptible to this condition, it can affect anyone who performs repetitive motions with their hand and wrist.</p>
@@ -60,17 +56,25 @@ BEGIN
   <h2 class="text-2xl font-bold mt-8 mb-4">Schedule an Appointment Today!</h2>
   <p class="mb-6">Don''t let golfer''s elbow pain limit your activities. Contact Dr. Srivanth''s Orthopedic Clinic today to schedule an appointment and discuss your treatment options. We are committed to helping you get back to living a pain-free and active life.</p>
 </div>',
+      2,
+      2
+    )
+    ON CONFLICT (section_id, slug)
+    DO UPDATE SET
+      name = EXCLUDED.name,
+      content = EXCLUDED.content,
+      parent_id = EXCLUDED.parent_id,
+      level = EXCLUDED.level,
       updated_at = NOW()
-    WHERE section_id = ortho_id
-      AND parent_id = elbow_pain_id
-      AND (slug = 'golfers-elbow' OR slug = 'golfer-s-elbow' OR slug = 'golfer''s-elbow' OR name ILIKE '%golfer%')
     RETURNING id INTO page_id;
 
     IF page_id IS NOT NULL THEN
-      RAISE NOTICE '✓ Golfer''s Elbow content updated successfully';
+      RAISE NOTICE '✓ Golfer''s Elbow content added successfully';
       RAISE NOTICE 'URL: /orthopaedics/golfers-elbow';
     ELSE
-      RAISE NOTICE '✗ Golfer''s Elbow page not found - check slugs printed above';
+      RAISE NOTICE '✗ Failed to insert Golfer''s Elbow page';
     END IF;
+  ELSE
+    RAISE NOTICE '✗ Orthopaedics or Elbow Pain section not found';
   END IF;
 END $$;
