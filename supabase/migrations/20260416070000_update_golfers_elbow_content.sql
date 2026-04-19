@@ -26,6 +26,8 @@ BEGIN
 
   <p class="mb-6">Led by Dr. Dasari Srivanth, a highly qualified orthopedic surgeon, our team is dedicated to providing accurate diagnosis and personalized treatment plans to get you back to your daily activities pain-free.</p>
 
+  <img src="/images/treatments/golfers-elbow/golfers-elbow-anatomy.jpg" alt="Medial Epicondylitis (Golfer''s Elbow) anatomy showing lateral epicondyle, medial epicondyle and humerus" class="w-full h-auto rounded-xl border shadow-lg my-8" />
+
   <h2 class="text-2xl font-bold mt-8 mb-4">Symptoms of Golfer''s Elbow:</h2>
   <ul class="list-disc pl-6 mb-6 space-y-2">
     <li>Pain on the inner side of the elbow, especially when gripping or bending the wrist.</li>
@@ -44,6 +46,10 @@ BEGIN
     <li><strong>Corticosteroid injections:</strong> In some cases, Dr. Srivanth may recommend a corticosteroid injection to reduce inflammation and pain.</li>
     <li><strong>Surgery:</strong> In rare cases, surgery may be necessary to repair a torn tendon.</li>
   </ul>
+
+  <img src="/images/treatments/golfers-elbow/golfers-elbow-exercises.jpg" alt="Medial Epicondylitis rehabilitation exercises including wrist flexion, extension, forearm pronation, grip strengthening" class="w-full h-auto rounded-xl border shadow-lg my-8" />
+
+  <img src="/images/treatments/golfers-elbow/medial-epicondylitis-anatomy.jpg" alt="Medial Epicondylitis anatomy showing triceps, biceps, humerus, capitellum, extensor muscles and tendon pain location" class="w-full h-auto rounded-xl border shadow-lg my-8" />
 
   <h2 class="text-2xl font-bold mt-8 mb-4">Why Choose Dr. Srivanth''s Orthopedic Clinic for Golfer''s Elbow Treatment?</h2>
   <ul class="list-disc pl-6 mb-6 space-y-2">
