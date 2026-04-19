@@ -17,6 +17,10 @@ BEGIN
   <p class="mb-4">A SLAP lesion (Superior Labrum Anterior to Posterior tear) is an injury to the top (superior) part of the labrum — the cartilage rim surrounding the shoulder socket. This area is where the biceps tendon attaches, making it especially vulnerable to injury.</p>
   <p class="mb-6">The tear occurs from front (anterior) to back (posterior), leading to pain, instability, and reduced shoulder function.</p>
 
+  <img src="/images/treatments/slap-lesion/slap-tear-anatomy.jpg" alt="SLAP Tear diagram showing Superior Labrum Anterior and Posterior Tear - anterior view with normal labrum and labrum tears comparison" class="w-full h-auto rounded-xl border shadow-lg my-8" />
+
+  <img src="/images/treatments/slap-lesion/slap-tear-anatomy.jpg" alt="SLAP Tear diagram showing Superior Labrum Anterior and Posterior Tear - anterior view with normal labrum and labrum tears comparison" class="w-full h-auto rounded-xl border shadow-lg my-8" />
+
   <h2 class="text-2xl font-bold mt-8 mb-4">Common Causes of SLAP Tears</h2>
   <p class="mb-3">SLAP lesions can develop due to:</p>
   <ul class="list-disc pl-6 mb-6 space-y-2">
