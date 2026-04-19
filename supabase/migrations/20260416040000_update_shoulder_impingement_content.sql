@@ -13,9 +13,6 @@ BEGIN
     UPDATE public.medical_subsections
     SET
       content = '<div class="medical-content">
-  <h2 class="text-2xl font-bold mt-8 mb-4">Shoulder Impingement &amp; Impingement Syndrome Treatment</h2>
-  <p class="text-xl text-muted-foreground mb-6">Expert Care for Lasting Shoulder Relief</p>
-
   <h2 class="text-2xl font-bold mt-8 mb-4">What is Shoulder Impingement?</h2>
   <p class="mb-6">Shoulder impingement (also called impingement syndrome) occurs when the tendons of the rotator cuff get compressed between the bones of the shoulder — particularly under the acromion (part of the shoulder blade). This repeated compression leads to pain, inflammation, and restricted movement.</p>
   <p class="mb-6">It''s one of the most common causes of shoulder pain, especially in people who frequently lift their arms overhead.</p>
