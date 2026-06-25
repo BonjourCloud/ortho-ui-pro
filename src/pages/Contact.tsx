@@ -15,7 +15,7 @@ export default function Contact() {
   const { toast } = useToast();
 
   const contactInfo = [
-    { icon: MapPin, label: "Location", value: config.location },
+    { icon: MapPin, label: "Location", value: config.location, href: "https://maps.app.goo.gl/KQzg4FnBZ2bbBxwh8" },
     { icon: Phone, label: "Phone", value: config.phone, href: `tel:${config.phone}` },
     { icon: Mail, label: "Email", value: config.email, href: `mailto:${config.email}` },
     { icon: Clock, label: "Hours", value: config.hours },

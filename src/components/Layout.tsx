@@ -362,10 +362,10 @@ export default function Layout({ children }: { children: React.ReactNode }) {
             <div>
               <h4 className="font-display text-lg font-semibold mb-4">{t("footer.contact")}</h4>
               <div className="flex flex-col gap-3 text-sm text-primary-foreground/70">
-                <div className="flex items-start gap-2">
+                <a href="https://maps.app.goo.gl/KQzg4FnBZ2bbBxwh8" target="_blank" rel="noopener noreferrer" className="flex items-start gap-2 hover:text-primary-foreground transition-colors">
                   <MapPin size={16} className="mt-0.5 shrink-0" />
                   <span>{config.location}</span>
-                </div>
+                </a>
                 <div className="flex items-center gap-2">
                   <Phone size={16} className="shrink-0" />
                   <span>{formatPhone(config.phone)}</span>
