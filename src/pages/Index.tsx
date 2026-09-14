@@ -301,19 +301,19 @@ export default function Index() {
             </div>
           </div>
 
-          {/* Video testimonial */}
+          {/* Video testimonial (portrait) */}
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
-            className="max-w-3xl mx-auto mb-12"
+            className="max-w-[280px] sm:max-w-[320px] mx-auto mb-12"
           >
             <div className="rounded-2xl overflow-hidden border border-primary-foreground/10 shadow-2xl bg-card/10 backdrop-blur-md">
               <video
                 controls
                 playsInline
                 preload="metadata"
-                className="w-full h-auto block"
+                className="w-full h-auto max-h-[70vh] block mx-auto"
                 aria-label="Patient video testimonial"
               >
                 <source src="/videos/testimonial1.mp4" type="video/mp4" />
