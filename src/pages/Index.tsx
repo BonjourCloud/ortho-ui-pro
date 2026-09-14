@@ -300,6 +300,31 @@ export default function Index() {
               <span className="text-primary-foreground/80 text-sm font-medium">{config.googleRating} / 5 based on {config.googleReviewCount}+ Google reviews</span>
             </div>
           </div>
+
+          {/* Video testimonial */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            className="max-w-3xl mx-auto mb-12"
+          >
+            <div className="rounded-2xl overflow-hidden border border-primary-foreground/10 shadow-2xl bg-card/10 backdrop-blur-md">
+              <video
+                controls
+                playsInline
+                preload="metadata"
+                className="w-full h-auto block"
+                aria-label="Patient video testimonial"
+              >
+                <source src="/videos/testimonial1.mp4" type="video/mp4" />
+                Your browser does not support the video tag.
+              </video>
+            </div>
+            <p className="text-center text-primary-foreground/70 text-sm mt-3">
+              Hear from one of our patients
+            </p>
+          </motion.div>
+
           <div className="grid md:grid-cols-2 gap-6 max-w-5xl mx-auto">
             {testimonials.map((t, i) => (
               <motion.div 
