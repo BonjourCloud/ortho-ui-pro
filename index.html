@@ -9,6 +9,10 @@
     
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="theme-color" content="#0f766e" />
+
+    <!-- Google Search Console verification. Replace REPLACE_WITH_GSC_TOKEN with the
+         content value from Search Console → Settings → Ownership verification → HTML tag. -->
+    <meta name="google-site-verification" content="REPLACE_WITH_GSC_TOKEN" />
     
     <!-- TODO: Set the document title to the name of your application -->
     <title>Dr. Srivanth Ortho | Orthopedic Surgeon in Hyderabad</title>
@@ -36,6 +40,35 @@
       function gtag(){dataLayer.push(arguments);}
       gtag('js', new Date());
       gtag('config', 'G-XM4W5D4RRL');
+    </script>
+
+    <!-- Structured data: Physician -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "Physician",
+      "name": "Dr. Srivanth Dasari",
+      "description": "Best orthopedic surgeon in Hyderabad. Expert in knee replacement, hip replacement, ACL reconstruction, sports injuries, shoulder surgery, and fracture care. 15+ years experience, 5000+ patients. International fellowship training in South Korea.",
+      "url": "https://orthocarehub.in",
+      "telephone": "+91-81067-92903",
+      "image": "https://orthocarehub.in/og-image.jpg",
+      "medicalSpecialty": "Orthopedic Surgery",
+      "hasCredential": [
+        { "@type": "EducationalOccupationalCredential", "credentialCategory": "degree", "name": "MBBS" },
+        { "@type": "EducationalOccupationalCredential", "credentialCategory": "degree", "name": "MS Orthopaedics" },
+        { "@type": "EducationalOccupationalCredential", "credentialCategory": "fellowship", "name": "Shoulder & Elbow Surgery Fellowship, South Korea — under Dr. Young Rae Moon, President of the Korean Shoulder and Elbow Society" }
+      ],
+      "address": {
+        "@type": "PostalAddress",
+        "streetAddress": "Chikkadpally",
+        "addressLocality": "Hyderabad",
+        "addressRegion": "Telangana",
+        "postalCode": "500020",
+        "addressCountry": "IN"
+      },
+      "geo": { "@type": "GeoCoordinates", "latitude": "17.4036", "longitude": "78.4958" },
+      "openingHours": "Mo-Sa 09:00-18:00"
+    }
     </script>
   </head>
 

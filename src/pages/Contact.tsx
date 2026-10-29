@@ -6,6 +6,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import SEO from "@/components/SEO";
 import { trackContactFormSubmission } from "@/lib/analytics";
+import { trackClick } from "@/utils/analytics";
 
 export default function Contact() {
   const [sent, setSent] = useState(false);
@@ -78,7 +79,19 @@ export default function Contact() {
                     <div>
                       <div className="text-sm font-semibold text-foreground">{item.label}</div>
                       {item.href ? (
-                        <a href={item.href} className="text-sm text-muted-foreground hover:text-primary transition-colors">{item.value}</a>
+                        <a
+                          href={item.href}
+                          onClick={() => {
+                            if (item.href?.startsWith("tel:")) {
+                              trackClick("phone_click", {
+                                event_label: "contact_page",
+                                page_location:
+                                  typeof window !== "undefined" ? window.location.pathname : "",
+                              });
+                            }
+                          }}
+                          className="text-sm text-muted-foreground hover:text-primary transition-colors"
+                        >{item.value}</a>
                       ) : (
                         <div className="text-sm text-muted-foreground">{item.value}</div>
                       )}
@@ -91,6 +104,13 @@ export default function Contact() {
                 href={`https://wa.me/${config.whatsapp?.replace(/\D/g, "") || config.phone.replace(/\D/g, "")}`}
                 target="_blank"
                 rel="noopener noreferrer"
+                onClick={() =>
+                  trackClick("whatsapp_click", {
+                    event_label: "contact_page",
+                    page_location:
+                      typeof window !== "undefined" ? window.location.pathname : "",
+                  })
+                }
                 className="inline-flex items-center gap-2 rounded-lg bg-primary px-5 py-2.5 text-sm font-semibold text-primary-foreground hover:opacity-90"
               >
                 <MessageCircle size={16} /> Chat on WhatsApp

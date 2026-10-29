@@ -7,6 +7,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import SEO from "@/components/SEO";
 import { trackAppointmentBooking } from "@/lib/analytics";
+import { trackClick } from "@/utils/analytics";
 
 export default function BookAppointment() {
   const [submitted, setSubmitted] = useState(false);
@@ -141,6 +142,13 @@ export default function BookAppointment() {
               href={whatsappLink}
               target="_blank"
               rel="noopener noreferrer"
+              onClick={() =>
+                trackClick("whatsapp_click", {
+                  event_label: "book_confirmation",
+                  page_location:
+                    typeof window !== "undefined" ? window.location.pathname : "",
+                })
+              }
               className="inline-flex items-center gap-2 rounded-lg bg-primary px-6 py-3 text-sm font-semibold text-primary-foreground"
             >
               <Phone size={16} /> Chat on WhatsApp
@@ -277,7 +285,16 @@ export default function BookAppointment() {
             </button>
 
             <p className="text-xs text-center text-muted-foreground">
-              Or call directly: <a href={`tel:${config.phone}`} className="font-semibold text-primary">{phoneDisplay}</a>
+              Or call directly: <a
+                href={`tel:${config.phone}`}
+                onClick={() =>
+                  trackClick("phone_click", {
+                    event_label: "book_page",
+                    page_location:
+                      typeof window !== "undefined" ? window.location.pathname : "",
+                  })
+                }
+                className="font-semibold text-primary">{phoneDisplay}</a>
             </p>
           </form>
         </div>

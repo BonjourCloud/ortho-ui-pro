@@ -1,4 +1,5 @@
 import { useSiteConfig } from "@/contexts/SiteConfigContext";
+import { trackClick } from "@/utils/analytics";
 
 export default function WhatsAppFloat() {
   const { config } = useSiteConfig();
@@ -12,6 +13,13 @@ export default function WhatsAppFloat() {
       <a
         href={`tel:${phoneNumber}`}
         aria-label="Call us"
+        onClick={() =>
+          trackClick("phone_click", {
+            event_label: "floating_button",
+            page_location:
+              typeof window !== "undefined" ? window.location.pathname : "",
+          })
+        }
         className="flex items-center justify-center w-16 h-16 rounded-full bg-[#0088cc] text-white shadow-xl hover:scale-110 transition-transform duration-300"
       >
         <svg
@@ -29,6 +37,13 @@ export default function WhatsAppFloat() {
         target="_blank"
         rel="noopener noreferrer"
         aria-label="Chat on WhatsApp"
+        onClick={() =>
+          trackClick("whatsapp_click", {
+            event_label: "floating_button",
+            page_location:
+              typeof window !== "undefined" ? window.location.pathname : "",
+          })
+        }
         className="flex items-center justify-center w-16 h-16 rounded-full bg-[#25D366] text-white shadow-xl hover:scale-110 transition-transform duration-300"
       >
         <svg

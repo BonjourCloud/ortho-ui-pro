@@ -6,6 +6,7 @@ import { useLanguage } from "@/contexts/LanguageContext";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import SEO from "@/components/SEO";
+import { trackClick } from "@/utils/analytics";
 
 const conditionOptions = [
   "Joint Replacement Recommendation",
@@ -101,6 +102,13 @@ export default function SecondOpinion() {
               href={`https://wa.me/${config.whatsapp?.replace(/\D/g, "") || config.phone.replace(/\D/g, "")}`}
               target="_blank"
               rel="noopener noreferrer"
+              onClick={() =>
+                trackClick("whatsapp_click", {
+                  event_label: "second_opinion_confirmation",
+                  page_location:
+                    typeof window !== "undefined" ? window.location.pathname : "",
+                })
+              }
               className="inline-flex items-center gap-2 rounded-lg bg-primary px-6 py-3 text-sm font-semibold text-primary-foreground hover:opacity-90"
             >
               <MessageCircle size={16} /> {t("secondOpinion.whatsapp")}

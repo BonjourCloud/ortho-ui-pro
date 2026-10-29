@@ -71,3 +71,32 @@ Yes, you can!
 To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
 
 Read more here: [Setting up a custom domain](https://docs.lovable.dev/features/custom-domain#custom-domain)
+
+## Analytics & Tracking
+
+### GA4 Setup
+
+- Measurement ID: `G-XM4W5D4RRL` (in `index.html` — do not change)
+- Custom events tracked:
+  - `phone_click` — fired on any tel: link click
+  - `whatsapp_click` — fired on any wa.me link click
+  - Both include `event_label` (location) and `page_location`
+
+### How to check click data in GA4
+
+1. Go to https://analytics.google.com
+2. Reports → Engagement → Events
+3. Look for `phone_click` and `whatsapp_click`
+
+### Monthly trend check (Google Search Console)
+
+1. Go to https://search.google.com/search-console
+2. Performance → Search results
+3. Date range: Custom, 3 months back
+4. Click "Compare" → "Compare by month"
+5. Check Clicks + Impressions for Aug / Sep / Oct
+
+### Offline action items (NOT code changes)
+
+- Old Yola site (srivanthsorthopedicclinics-site.yolasite.com) still live → must be deleted from Yola by Dr. Srivanth
+- Directory inconsistency: update "15+ years experience" on Practo, JustDial, ClinicSpots, Google Business Profile

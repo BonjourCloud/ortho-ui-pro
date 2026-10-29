@@ -92,6 +92,31 @@ export default function About() {
         </div>
       </section> */}
 
+      {/* International Fellowship — South Korea */}
+      <section className="py-12 md:py-16">
+        <div className="container max-w-3xl">
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            className="rounded-2xl border-2 border-accent/40 bg-card shadow-lg p-6 md:p-8 flex items-start gap-5"
+          >
+            <div className="text-4xl md:text-5xl shrink-0" aria-hidden="true">🇰🇷</div>
+            <div>
+              <h3 className="font-display text-xl md:text-2xl font-bold text-foreground mb-2">
+                International Fellowship — South Korea
+              </h3>
+              <p className="text-muted-foreground leading-relaxed">
+                Advanced training in Shoulder &amp; Elbow Surgery under{" "}
+                <span className="font-semibold text-foreground">Dr. Young Rae Moon</span>,
+                President of the Korean Shoulder and Elbow Society. One of the very few
+                orthopaedic surgeons in Hyderabad with international fellowship training.
+              </p>
+            </div>
+          </motion.div>
+        </div>
+      </section>
+
       {/* Memberships */}
       <section className="bg-gold-light py-16">
         <div className="container max-w-3xl text-center">
