@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/contexts/AuthContext";
 import { Plus, Pencil, Trash2, X } from "lucide-react";
 import type { Tables } from "@/integrations/supabase/types";
 
@@ -18,6 +19,7 @@ export default function AdminServices() {
   const [editing, setEditing] = useState<Partial<Service> | null>(null);
   const [isNew, setIsNew] = useState(false);
   const { toast } = useToast();
+  const { can } = useAuth();
 
   const load = async () => {
     const { data } = await supabase.from("services").select("*").order("sort_order");
@@ -158,7 +160,7 @@ export default function AdminServices() {
             </div>
             <div className="flex gap-2">
               <button onClick={() => setEditing({ ...svc })} className="p-2 text-muted-foreground hover:text-primary"><Pencil size={16} /></button>
-              <button onClick={() => handleDelete(svc.id)} className="p-2 text-muted-foreground hover:text-destructive"><Trash2 size={16} /></button>
+              {can("content.delete") && (<button onClick={() => handleDelete(svc.id)} className="p-2 text-muted-foreground hover:text-destructive"><Trash2 size={16} /></button>)}
             </div>
           </div>
         ))}

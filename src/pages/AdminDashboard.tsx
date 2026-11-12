@@ -3,17 +3,17 @@ import { motion } from "framer-motion";
 import { BarChart3, Users, Calendar, Settings, LogOut, TrendingUp, Phone, MessageCircle, Eye, FileText, Globe, Stethoscope, BookOpen, ClipboardList, Quote, Plus, Trash2 } from "lucide-react";
 import { useSiteConfig, SiteConfig, EducationEntry, AwardEntry, TimeSlotEntry, WhyChooseEntry, ServiceCategoryEntry } from "@/contexts/SiteConfigContext";
 import { useNavigate } from "react-router-dom";
-import { mockAnalytics } from "@/data/mockData";
 import { useLanguage, Language } from "@/contexts/LanguageContext";
 import { languageLabels } from "@/data/translations";
 import { supabase } from "@/integrations/supabase/client";
+import type { Tables } from "@/integrations/supabase/types";
+import { useAuth } from "@/contexts/AuthContext";
 import AdminServices from "@/components/admin/AdminServices";
 import AdminBlogPosts from "@/components/admin/AdminBlogPosts";
 import AdminCaseStudies from "@/components/admin/AdminCaseStudies";
 import AdminSecondOpinions from "@/components/admin/AdminSecondOpinions";
 import AdminTestimonials from "@/components/admin/AdminTestimonials";
 
-type Tab = "overview" | "appointments" | "second-opinions" | "content" | "settings";
 type ContentSubTab = "services" | "blog" | "case-studies" | "testimonials";
 
 function SignupToggle() {
@@ -37,7 +37,7 @@ function SignupToggle() {
     setEnabled(newVal);
     await supabase
       .from("app_settings")
-      .update({ value: newVal as any, updated_at: new Date().toISOString() })
+      .update({ value: newVal, updated_at: new Date().toISOString() })
       .eq("key", "signup_enabled");
   };
 
@@ -55,49 +55,35 @@ function SignupToggle() {
   );
 }
 
-export default function AdminDashboard() {
-  const { config, updateConfig, isAdmin, isAuthLoading, adminLogout } = useSiteConfig();
+export type AdminDashboardTab = "appointments" | "second-opinions" | "content" | "settings";
+
+/**
+ * Existing admin modules, now hosted inside the new admin layout (see src/admin/AdminApp.tsx).
+ * Authentication/route protection is handled by the route guards; database RLS still enforces writes.
+ */
+export default function AdminDashboard({ tab }: { tab: AdminDashboardTab }) {
+  const { config, updateConfig } = useSiteConfig();
   const { enabledLanguages, setEnabledLanguages } = useLanguage();
-  const navigate = useNavigate();
-  const [activeTab, setActiveTab] = useState<Tab>("overview");
+  const { can } = useAuth();
+  const activeTab = tab;
   const [contentSubTab, setContentSubTab] = useState<ContentSubTab>("services");
   const [configForm, setConfigForm] = useState<SiteConfig>({ ...config });
   const [langSettings, setLangSettings] = useState<Language[]>([...enabledLanguages]);
   const [saved, setSaved] = useState(false);
   const [saving, setSaving] = useState(false);
-  const [appointments, setAppointments] = useState<any[]>([]);
+  const [appointments, setAppointments] = useState<Tables<"appointments">[]>([]);
 
   useEffect(() => {
-    if (isAdmin && activeTab === "appointments") {
+    if (activeTab === "appointments") {
       supabase.from("appointments").select("*").order("created_at", { ascending: false }).limit(20)
         .then(({ data }) => { if (data) setAppointments(data); });
     }
-  }, [isAdmin, activeTab]);
+  }, [activeTab]);
 
   // Sync configForm with latest config from context
   useEffect(() => {
     setConfigForm({ ...config });
   }, [config]);
-
-  useEffect(() => {
-    if (!isAuthLoading && !isAdmin) {
-      navigate("/admin/login");
-    }
-  }, [isAdmin, isAuthLoading, navigate]);
-
-  if (isAuthLoading) {
-    return (
-      <section className="py-20 md:py-32 flex justify-center">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
-      </section>
-    );
-  }
-
-  if (!isAdmin) {
-    return null;
-  }
-
-  const handleLogout = async () => { await adminLogout(); navigate("/"); };
 
   const handleSaveConfig = async () => {
     setSaving(true);
@@ -106,120 +92,17 @@ export default function AdminDashboard() {
       await updateConfig(configForm);
       setEnabledLanguages(langSettings);
       setSaved(true);
-      console.log('✅ Settings saved successfully!');
       setTimeout(() => setSaved(false), 3000);
-    } catch (error: any) {
+    } catch (error) {
       console.error("Save failed:", error);
-      alert(`Failed to save settings: ${error.message || 'Unknown error'}`);
+      alert(`Failed to save settings: ${error instanceof Error ? error.message : "Unknown error"}`);
     } finally {
       setSaving(false);
     }
   };
 
-  const tabs: { id: Tab; label: string; icon: React.ElementType }[] = [
-    { id: "overview", label: "Overview", icon: BarChart3 },
-    { id: "appointments", label: "Appointments", icon: Calendar },
-    { id: "second-opinions", label: "2nd Opinions", icon: Stethoscope },
-    { id: "content", label: "Content", icon: FileText },
-    { id: "settings", label: "Site Settings", icon: Settings },
-  ];
-
-  const a = mockAnalytics;
-
   return (
-    <section className="py-8 md:py-12">
-      <div className="container">
-        <div className="flex items-center justify-between mb-8">
-          <div>
-            <h1 className="font-display text-2xl md:text-3xl font-bold text-foreground">Admin Dashboard</h1>
-            <p className="text-sm text-muted-foreground">Welcome back, Admin</p>
-          </div>
-          <button onClick={handleLogout} className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-destructive transition-colors">
-            <LogOut size={16} /> Logout
-          </button>
-        </div>
-
-        {/* Tabs */}
-        <div className="flex gap-1 mb-8 overflow-x-auto pb-2">
-          {tabs.map((tab) => (
-            <button key={tab.id} onClick={() => setActiveTab(tab.id)}
-              className={`inline-flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all whitespace-nowrap ${
-                activeTab === tab.id ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:bg-secondary"
-              }`}>
-              <tab.icon size={16} /> {tab.label}
-            </button>
-          ))}
-        </div>
-
-        {/* Overview Tab */}
-        {activeTab === "overview" && (
-          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
-              {[
-                { label: "Total Visitors", value: a.totalVisitors.toLocaleString(), icon: Users, change: "+12%" },
-                { label: "Page Views", value: a.totalPageviews.toLocaleString(), icon: Eye, change: "+8%" },
-                { label: "Conversions", value: a.totalConversions.toString(), icon: TrendingUp, change: "+15%" },
-                { label: "Phone Calls", value: a.phoneCalls.toString(), icon: Phone, change: "+5%" },
-              ].map((stat, i) => (
-                <div key={i} className="bg-card rounded-xl border p-5">
-                  <div className="flex items-center justify-between mb-2">
-                    <stat.icon size={18} className="text-muted-foreground" />
-                    <span className="text-xs font-medium text-primary">{stat.change}</span>
-                  </div>
-                  <div className="font-display text-2xl font-bold text-foreground">{stat.value}</div>
-                  <div className="text-xs text-muted-foreground mt-1">{stat.label}</div>
-                </div>
-              ))}
-            </div>
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
-              <div className="bg-card rounded-xl border p-4 text-center">
-                <div className="text-xs text-muted-foreground mb-1">WhatsApp</div>
-                <div className="font-display text-xl font-bold text-foreground flex items-center justify-center gap-1">
-                  <MessageCircle size={16} className="text-primary" /> {a.whatsappInquiries}
-                </div>
-              </div>
-              <div className="bg-card rounded-xl border p-4 text-center">
-                <div className="text-xs text-muted-foreground mb-1">Bounce Rate</div>
-                <div className="font-display text-xl font-bold text-foreground">{a.bounceRate}%</div>
-              </div>
-              <div className="bg-card rounded-xl border p-4 text-center">
-                <div className="text-xs text-muted-foreground mb-1">2nd Opinions</div>
-                <div className="font-display text-xl font-bold text-foreground">{a.secondOpinionRequests}</div>
-              </div>
-              <div className="bg-card rounded-xl border p-4 text-center">
-                <div className="text-xs text-muted-foreground mb-1">EMI Inquiries</div>
-                <div className="font-display text-xl font-bold text-foreground">{a.emiInquiries}</div>
-              </div>
-            </div>
-            <div className="grid md:grid-cols-2 gap-6">
-              <div className="bg-card rounded-xl border p-5">
-                <h3 className="font-display font-semibold text-foreground mb-4">Top Pages</h3>
-                <div className="space-y-3">
-                  {a.topPages.map((page, i) => (
-                    <div key={i} className="flex items-center justify-between text-sm">
-                      <span className="text-muted-foreground truncate max-w-[200px]">{page.path}</span>
-                      <span className="font-medium text-foreground">{page.views}</span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-              <div className="bg-card rounded-xl border p-5">
-                <h3 className="font-display font-semibold text-foreground mb-4">Traffic Sources</h3>
-                <div className="space-y-3">
-                  {a.trafficSources.map((src, i) => (
-                    <div key={i} className="flex items-center justify-between text-sm">
-                      <span className="text-muted-foreground">{src.source}</span>
-                      <div className="flex items-center gap-4">
-                        <span className="text-foreground">{src.visitors} visits</span>
-                        <span className="text-primary font-medium">{src.conversions} conv.</span>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </div>
-          </motion.div>
-        )}
+    <div>
 
         {/* Appointments Tab - Now from DB */}
         {activeTab === "appointments" && (
@@ -664,7 +547,7 @@ export default function AdminDashboard() {
                         <p className="text-xs text-muted-foreground">Show a WhatsApp chat button on all pages</p>
                       </div>
                     </label>
-                    <SignupToggle />
+                    {can("security.settings") && <SignupToggle />}
                   </div>
                 </div>
 
@@ -686,7 +569,6 @@ export default function AdminDashboard() {
             </div>
           </motion.div>
         )}
-      </div>
-    </section>
+    </div>
   );
 }

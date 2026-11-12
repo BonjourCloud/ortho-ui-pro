@@ -2,6 +2,51 @@ import { createContext, useContext, useState, useEffect, ReactNode } from "react
 import { supabase } from "@/integrations/supabase/client";
 import type { User } from "@supabase/supabase-js";
 
+export interface EducationEntry {
+  degree: string;
+  institution: string;
+  yearStart: number;
+  yearEnd?: number;
+}
+
+export interface AwardEntry {
+  title: string;
+  organization: string;
+  year: number;
+}
+
+export interface TimeSlotEntry {
+  time: string;
+  available: boolean;
+}
+
+export interface WhyChooseEntry {
+  icon: string;
+  title: string;
+  desc: string;
+}
+
+export interface ServiceCategoryEntry {
+  name: string;
+  icon: string;
+  slug: string;
+  description: string;
+}
+
+export interface BrandingConfig {
+  logoUrl?: string;
+  logoAlt?: string;
+  faviconUrl?: string;
+  themePreset?: "clinical-teal" | "royal-navy" | "emerald-care";
+  primaryHsl?: string; // e.g. "180 45% 22%"
+  accentHsl?: string;  // e.g. "38 85% 52%"
+  headingFont?: "Playfair Display" | "Merriweather" | "Lora";
+  bodyFont?: "DM Sans" | "Inter" | "Plus Jakarta Sans";
+  footerTagline?: string;
+  headerCtaLabel?: string;
+  googleMapsUrl?: string;
+}
+
 export interface SiteConfig {
   doctorName: string;
   clinicName: string;
@@ -29,13 +74,14 @@ export interface SiteConfig {
   registrationNumber: string;
   facebook?: string;
   instagram?: string;
-  education: any[];
-  awards: any[];
+  education: EducationEntry[];
+  awards: AwardEntry[];
   memberships: string[];
   insuranceProviders: string[];
-  timeSlots: any[];
-  whyChoose: any[];
-  serviceCategories: any[];
+  timeSlots: TimeSlotEntry[];
+  whyChoose: WhyChooseEntry[];
+  serviceCategories: ServiceCategoryEntry[];
+  branding?: BrandingConfig;
 }
 
 const defaultConfig: SiteConfig = {

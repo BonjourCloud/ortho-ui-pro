@@ -1,5 +1,8 @@
+import { useEffect, useState } from "react";
 import { Helmet } from "react-helmet-async";
 import { useSiteConfig } from "@/contexts/SiteConfigContext";
+import { loadRouteSeoCatalog } from "@/lib/cms/repository";
+import type { RouteSeoMetadata } from "@/lib/cms/types";
 
 interface SEOProps {
   title?: string;
@@ -19,6 +22,20 @@ export default function SEO({
   type = "website",
 }: SEOProps) {
   const { config } = useSiteConfig();
+  const [override, setOverride] = useState<RouteSeoMetadata | null>(null);
+
+  useEffect(() => {
+    if (!url) return;
+    let active = true;
+    void loadRouteSeoCatalog().then(({ routes }) => {
+      if (!active) return;
+      const found = routes.find((r) => r.routePath === url) ?? null;
+      setOverride(found);
+    });
+    return () => {
+      active = false;
+    };
+  }, [url]);
 
   const siteTitle = `${config.doctorName} - ${config.clinicName}`;
   const defaultDescription = `${config.doctorName}, ${config.title}. ${config.specialization}. Book your appointment today at ${config.clinicName}.`;
@@ -26,11 +43,13 @@ export default function SEO({
   const siteUrl = "https://orthocarehub.in";
   const defaultImage = `${siteUrl}/og-image.svg`;
 
-  const pageTitle = title ? `${title} | ${siteTitle}` : siteTitle;
-  const pageDescription = description || defaultDescription;
-  const pageKeywords = keywords || defaultKeywords;
-  const pageImage = image || defaultImage;
-  const pageUrl = url ? `${siteUrl}${url}` : siteUrl;
+  const resolvedTitle = override?.seoTitle || title;
+  const pageTitle = resolvedTitle ? `${resolvedTitle} | ${siteTitle}` : siteTitle;
+  const pageDescription = override?.seoDescription || description || defaultDescription;
+  const pageKeywords = override?.seoKeywords || keywords || defaultKeywords;
+  const pageImage = override?.ogImageUrl || image || defaultImage;
+  const pageUrl = override?.canonicalUrl || (url ? `${siteUrl}${url}` : siteUrl);
+  const robotsContent = override?.noindex ? "noindex, nofollow" : "index, follow";
 
   return (
     <Helmet>
@@ -57,7 +76,7 @@ export default function SEO({
 
       {/* Additional Meta Tags */}
       <meta name="author" content={config.doctorName} />
-      <meta name="robots" content="index, follow" />
+      <meta name="robots" content={robotsContent} />
       <meta name="language" content="English" />
       <link rel="canonical" href={pageUrl} />
     </Helmet>

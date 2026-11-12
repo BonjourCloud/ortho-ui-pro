@@ -5,6 +5,9 @@ import type { Tables } from "@/integrations/supabase/types";
 type MedicalSection = Tables<"medical_sections">;
 type MedicalSubsection = Tables<"medical_subsections">;
 
+const PUBLISHED_SUBSECTION_COLS =
+  "id, section_id, parent_id, name, slug, description, content, meta_description, sort_order, is_active, is_featured, level, created_at, updated_at" as const;
+
 export interface SubsectionWithChildren extends MedicalSubsection {
   children: MedicalSubsection[];
 }
@@ -36,7 +39,7 @@ export function useMedicalSections() {
       // Fetch all subsections (both level 1 and level 2)
       const { data: subsectionsData } = await supabase
         .from("medical_subsections")
-        .select("*")
+        .select(PUBLISHED_SUBSECTION_COLS)
         .eq("is_active", true)
         .order("sort_order");
 
@@ -98,7 +101,7 @@ export function useMedicalSection(slug: string | undefined) {
 
       const { data: subsectionsData } = await supabase
         .from("medical_subsections")
-        .select("*")
+        .select(PUBLISHED_SUBSECTION_COLS)
         .eq("section_id", sectionData.id)
         .eq("is_active", true)
         .order("sort_order");
@@ -153,7 +156,7 @@ export function useMedicalSubsection(sectionSlug: string | undefined, subsection
       // Then get the subsection (could be level 1 or level 2)
       const { data: subsectionData } = await supabase
         .from("medical_subsections")
-        .select("*")
+        .select(PUBLISHED_SUBSECTION_COLS)
         .eq("section_id", sectionData.id)
         .eq("slug", subsectionSlug)
         .eq("is_active", true)

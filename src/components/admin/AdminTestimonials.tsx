@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Plus, Pencil, Trash2, X, Save, Eye, EyeOff, Star } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/contexts/AuthContext";
 
 interface Testimonial {
   id: string;
@@ -33,6 +34,7 @@ export default function AdminTestimonials() {
   const [editing, setEditing] = useState<string | null>(null);
   const [form, setForm] = useState(emptyForm);
   const { toast } = useToast();
+  const { can } = useAuth();
 
   const fetchItems = async () => {
     setLoading(true);
@@ -253,22 +255,22 @@ export default function AdminTestimonials() {
                 )}
               </div>
               <div className="flex gap-1 shrink-0">
-                <button 
+                {can("content.publish") && (<button 
                   onClick={() => togglePublish(item.id, item.is_published)}
                   className="p-1.5 text-muted-foreground hover:text-foreground"
                   title={item.is_published ? "Unpublish" : "Publish"}>
                   {item.is_published ? <Eye size={14} /> : <EyeOff size={14} />}
-                </button>
+                </button>)}
                 <button 
                   onClick={() => startEdit(item)} 
                   className="p-1.5 text-muted-foreground hover:text-foreground">
                   <Pencil size={14} />
                 </button>
-                <button 
+                {can("content.delete") && (<button 
                   onClick={() => handleDelete(item.id)} 
                   className="p-1.5 text-muted-foreground hover:text-destructive">
                   <Trash2 size={14} />
-                </button>
+                </button>)}
               </div>
             </div>
           </div>

@@ -36,9 +36,9 @@ export default function CaseStudyDetail() {
   return (
     <>
       <SEO
-        title={cs.title}
-        description={`${cs.condition} case study: ${cs.patient_age} year old ${cs.patient_gender}. Treatment: ${cs.treatment}. ${cs.summary}`}
-        keywords={`${cs.condition}, ${cs.treatment}, case study, patient outcome, orthopedic surgery`}
+        title={cs.procedure_name ? `${cs.condition} – ${cs.procedure_name}` : cs.condition}
+        description={[`${cs.condition} case study`, cs.age ? `${cs.age} year old${cs.gender === "F" ? " female" : cs.gender === "M" ? " male" : ""}` : null, cs.procedure_name ? `Procedure: ${cs.procedure_name}` : null, cs.outcome_summary].filter(Boolean).join(". ")}
+        keywords={`${cs.condition}, ${cs.procedure_name ?? ""}, case study, patient outcome, orthopedic surgery`}
         url={`/case-studies/${cs.slug}`}
         type="article"
       />

@@ -1,9 +1,10 @@
 import { Link, useLocation } from "react-router-dom";
 import WhatsAppFloat from "./WhatsAppFloat";
 import { Phone, Mail, MapPin, Clock, Menu, X, Shield, Globe, Facebook, Instagram, ChevronDown } from "lucide-react";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useSiteConfig } from "@/contexts/SiteConfigContext";
+import { APPROVED_THEME_PRESETS } from "@/lib/cms/types";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { languageLabels, Language } from "@/data/translations";
 import { useMedicalSections } from "@/hooks/useMedicalSections";
@@ -17,6 +18,17 @@ export default function Layout({ children }: { children: React.ReactNode }) {
   const { config, isAdmin } = useSiteConfig();
   const { language, setLanguage, t, enabledLanguages } = useLanguage();
   const { sections } = useMedicalSections();
+
+  // Apply approved theme preset / CSS variables from SiteConfig.branding
+  useEffect(() => {
+    if (typeof document === "undefined") return;
+    const root = document.documentElement;
+    const presetKey = config.branding?.themePreset ?? "clinical-teal";
+    const preset = APPROVED_THEME_PRESETS[presetKey] ?? APPROVED_THEME_PRESETS["clinical-teal"];
+    root.style.setProperty("--primary", config.branding?.primaryHsl || preset.primaryHsl);
+    root.style.setProperty("--accent", config.branding?.accentHsl || preset.accentHsl);
+    root.style.setProperty("--hero-gradient", preset.heroGradient);
+  }, [config.branding]);
 
   const handleDropdownEnter = (key: string) => {
     if (dropdownTimeout) {
@@ -111,9 +123,17 @@ export default function Layout({ children }: { children: React.ReactNode }) {
       <header className="sticky top-0 z-50 bg-card/95 backdrop-blur-md border-b shadow-sm">
         <div className="container flex items-center justify-between h-16 md:h-20">
           <Link to="/" className="flex items-center gap-2">
-            <div className="w-10 h-10 rounded-lg bg-primary flex items-center justify-center text-primary-foreground font-display font-bold text-lg">
-              {config.logoInitials}
-            </div>
+            {config.branding?.logoUrl ? (
+              <img
+                src={config.branding.logoUrl}
+                alt={config.branding.logoAlt || `${config.clinicName} logo`}
+                className="h-10 w-10 rounded-lg object-contain"
+              />
+            ) : (
+              <div className="w-10 h-10 rounded-lg bg-primary flex items-center justify-center text-primary-foreground font-display font-bold text-lg">
+                {config.logoInitials}
+              </div>
+            )}
             <div className="leading-tight">
               <div className="font-display font-bold text-foreground text-lg">{config.doctorName}</div>
               <div className="text-xs text-muted-foreground">{config.clinicName}</div>
@@ -343,7 +363,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
             <div>
               <h3 className="font-display text-xl font-bold mb-4">{config.doctorName} {config.clinicName}</h3>
               <p className="text-primary-foreground/70 text-sm leading-relaxed">
-                {t("footer.tagline")}
+                {config.branding?.footerTagline || t("footer.tagline")}
               </p>
             </div>
             <div>

@@ -1,191 +1,142 @@
-import { useState, useEffect } from "react";
-import { motion } from "framer-motion";
-import { Lock, Loader2, UserPlus, KeyRound } from "lucide-react";
-import { useSiteConfig } from "@/contexts/SiteConfigContext";
-import { useNavigate } from "react-router-dom";
+import { useEffect, useState } from "react";
+import { Link, Navigate, useLocation } from "react-router-dom";
+import { KeyRound, Loader2, Lock, UserPlus } from "lucide-react";
+import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
+import { AccessDenied } from "@/components/admin/states";
+
+type Mode = "login" | "signup" | "forgot";
+
+const ICONS = { login: Lock, signup: UserPlus, forgot: KeyRound };
+const TITLES = { login: "Sign in", signup: "Create account", forgot: "Reset password" };
+const SUBTITLES = { login: "OrthoCare Hub content manager", signup: "Create your admin account", forgot: "Enter your email to receive a reset link" };
+const BUTTONS = { login: "Sign in", signup: "Sign up", forgot: "Send reset link" };
+
+const inputClass = "w-full rounded-lg border bg-card px-4 py-2.5 text-sm text-foreground outline-none focus:border-primary focus:ring-2 focus:ring-primary/20";
 
 export default function AdminLogin() {
+  const { status, role, signIn, signOut, sessionExpired } = useAuth();
+  const location = useLocation();
+  const navState = location.state as { from?: string; expired?: boolean } | null;
+  const from = navState?.from && navState.from.startsWith("/admin") && navState.from !== "/admin/login" ? navState.from : "/admin";
+
+  const [mode, setMode] = useState<Mode>("login");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
-  const [info, setInfo] = useState("");
+  const [info, setInfo] = useState(navState?.expired || sessionExpired ? "Your session has ended. Please sign in again." : "");
   const [loading, setLoading] = useState(false);
-  const [mode, setMode] = useState<"login" | "signup" | "forgot">("login");
   const [signupEnabled, setSignupEnabled] = useState(false);
 
-  const { adminLogin, isAdmin, isAuthLoading } = useSiteConfig();
-  const navigate = useNavigate();
-
-  // Fetch signup toggle
+  // Existing behaviour: signup link appears only if the signup_enabled app setting is on.
   useEffect(() => {
-    const fetchSignupSetting = async () => {
-      const { data } = await supabase
-        .from("app_settings")
-        .select("value")
-        .eq("key", "signup_enabled")
-        .single();
-
-      if (data) {
-        setSignupEnabled(data.value === true);
-      }
-    };
-
-    fetchSignupSetting();
+    supabase
+      .from("app_settings")
+      .select("value")
+      .eq("key", "signup_enabled")
+      .maybeSingle()
+      .then(({ data }) => setSignupEnabled(data?.value === true));
   }, []);
 
-  // ✅ SAFE redirect (only after render)
-  useEffect(() => {
-    if (!isAuthLoading && isAdmin) {
-      navigate("/admin");
-    }
-  }, [isAdmin, isAuthLoading, navigate]);
-
-  // Loading state
-  if (isAuthLoading) {
+  if (status === "loading") {
     return (
-      <section className="py-20 md:py-32 flex justify-center">
-        <Loader2 className="animate-spin text-primary" size={32} />
-      </section>
+      <div role="status" className="flex min-h-screen items-center justify-center">
+        <Loader2 className="animate-spin text-primary" size={32} aria-label="Loading" />
+      </div>
     );
   }
 
-  // Prevent rendering login if already admin
-  if (isAdmin) {
-    return null;
+  if (status === "authenticated") {
+    if (role) return <Navigate to={from} replace />;
+    return <AccessDenied variant="no-role" onSignOut={() => void signOut()} />;
   }
+
+  const switchMode = (next: Mode) => {
+    setMode(next);
+    setError("");
+    setInfo("");
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
     setInfo("");
     setLoading(true);
-
     try {
       if (mode === "forgot") {
-        const { error: resetError } =
-          await supabase.auth.resetPasswordForEmail(email, {
-            redirectTo: `${window.location.origin}/reset-password`,
-          });
-
-        if (resetError) {
-          setError(resetError.message);
-        } else {
-          setInfo("Password reset email sent! Check your inbox.");
-        }
+        const { error: resetError } = await supabase.auth.resetPasswordForEmail(email, { redirectTo: `${window.location.origin}/reset-password` });
+        if (resetError) setError(resetError.message);
+        else setInfo("If that email has an account, a reset link has been sent.");
         return;
       }
-
       if (mode === "signup") {
-        const { error: signUpError } = await supabase.auth.signUp({
-          email,
-          password,
-          options: { emailRedirectTo: window.location.origin },
-        });
-
+        const { error: signUpError } = await supabase.auth.signUp({ email, password, options: { emailRedirectTo: `${window.location.origin}/admin/login` } });
         if (signUpError) {
           setError(signUpError.message);
         } else {
-          await supabase.functions.invoke("assign-admin-role", {
-            body: { email },
-          });
-
-          setInfo("Account created! You can now sign in.");
+          // Existing bootstrap path (edge function restricted to the designated admin email). Will be replaced by Super Admin user provisioning.
+          await supabase.functions.invoke("assign-admin-role", { body: { email } });
+          setInfo("Account created. If email confirmation is on, confirm your email, then sign in.");
           setMode("login");
         }
         return;
       }
-
-      // LOGIN FLOW
-      const result = await adminLogin(email, password);
-
-      if (!result.success) {
-        setError(result.error || "Login failed");
-      }
-      // ✅ NO navigate here (handled by useEffect)
-
-    } catch (err: any) {
-      setError(err.message || "Something went wrong");
+      const result = await signIn(email, password);
+      if (result.error) setError(result.error);
+      // On success AuthContext updates and this component redirects.
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Something went wrong");
     } finally {
       setLoading(false);
     }
   };
 
-  const icons = { login: Lock, signup: UserPlus, forgot: KeyRound };
-  const titles = {
-    login: "Admin Login",
-    signup: "Admin Sign Up",
-    forgot: "Reset Password",
-  };
-  const subtitles = {
-    login: "Access the dashboard",
-    signup: "Create your admin account",
-    forgot: "Enter your email to receive a reset link",
-  };
-  const buttonLabels = {
-    login: "Sign In",
-    signup: "Sign Up",
-    forgot: "Send Reset Link",
-  };
-
-  const Icon = icons[mode];
+  const Icon = ICONS[mode];
 
   return (
-    <section className="py-20 md:py-32">
-      <div className="container max-w-sm">
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="text-center mb-8"
-        >
-          <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center mx-auto mb-4">
-            <Icon className="text-primary" size={28} />
+    <main className="flex min-h-screen items-center justify-center bg-secondary/30 px-4 py-10 font-body">
+      <div className="w-full max-w-sm rounded-2xl border bg-card p-6 shadow-sm sm:p-8">
+        <div className="mb-6 text-center">
+          <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-primary/10">
+            <Icon className="text-primary" size={26} aria-hidden="true" />
           </div>
-          <h1 className="font-display text-2xl font-bold text-foreground">
-            {titles[mode]}
-          </h1>
-          <p className="text-sm text-muted-foreground mt-1">
-            {subtitles[mode]}
-          </p>
-        </motion.div>
+          <h1 className="font-display text-2xl font-bold text-foreground">{TITLES[mode]}</h1>
+          <p className="mt-1 text-sm text-muted-foreground">{SUBTITLES[mode]}</p>
+        </div>
 
         <form onSubmit={handleSubmit} className="space-y-4">
           {error && (
-            <div className="bg-destructive/10 text-destructive text-sm rounded-lg p-3">
+            <div role="alert" className="rounded-lg bg-destructive/10 p-3 text-sm text-destructive">
               {error}
             </div>
           )}
           {info && (
-            <div className="bg-primary/10 text-primary text-sm rounded-lg p-3">
+            <div role="status" className="rounded-lg bg-primary/10 p-3 text-sm text-primary">
               {info}
             </div>
           )}
 
           <div>
-            <label className="block text-sm font-medium text-foreground mb-1.5">
+            <label htmlFor="login-email" className="mb-1.5 block text-sm font-medium text-foreground">
               Email
             </label>
-            <input
-              type="email"
-              required
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              className="w-full rounded-lg border bg-card px-4 py-2.5 text-sm text-foreground focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none"
-            />
+            <input id="login-email" type="email" required autoComplete="username" value={email} onChange={(e) => setEmail(e.target.value)} className={inputClass} />
           </div>
 
           {mode !== "forgot" && (
             <div>
-              <label className="block text-sm font-medium text-foreground mb-1.5">
+              <label htmlFor="login-password" className="mb-1.5 block text-sm font-medium text-foreground">
                 Password
               </label>
               <input
+                id="login-password"
                 type="password"
                 required
                 minLength={6}
+                autoComplete={mode === "login" ? "current-password" : "new-password"}
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                className="w-full rounded-lg border bg-card px-4 py-2.5 text-sm text-foreground focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none"
+                className={inputClass}
               />
             </div>
           )}
@@ -193,69 +144,36 @@ export default function AdminLogin() {
           <button
             type="submit"
             disabled={loading}
-            className="w-full rounded-lg bg-primary px-6 py-3 text-sm font-semibold text-primary-foreground hover:opacity-90 transition-all disabled:opacity-50 flex items-center justify-center gap-2"
+            className="flex w-full items-center justify-center gap-2 rounded-lg bg-primary px-6 py-3 text-sm font-semibold text-primary-foreground transition-opacity hover:opacity-90 disabled:opacity-50"
           >
-            {loading && <Loader2 className="animate-spin" size={16} />}
-            {buttonLabels[mode]}
+            {loading && <Loader2 className="animate-spin" size={16} aria-hidden="true" />}
+            {BUTTONS[mode]}
           </button>
         </form>
 
-        <div className="mt-4 text-center space-y-2">
+        <div className="mt-4 space-y-2 text-center text-sm">
           {mode === "login" && (
             <>
-              <button
-                onClick={() => {
-                  setMode("forgot");
-                  setError("");
-                  setInfo("");
-                }}
-                className="text-sm text-muted-foreground hover:text-primary hover:underline block mx-auto"
-              >
+              <button type="button" onClick={() => switchMode("forgot")} className="block w-full text-muted-foreground hover:text-primary hover:underline">
                 Forgot password?
               </button>
-
               {signupEnabled && (
-                <button
-                  onClick={() => {
-                    setMode("signup");
-                    setError("");
-                    setInfo("");
-                  }}
-                  className="text-sm text-primary hover:underline block mx-auto"
-                >
-                  Need an account? Sign Up
+                <button type="button" onClick={() => switchMode("signup")} className="block w-full text-primary hover:underline">
+                  Need an account? Sign up
                 </button>
               )}
             </>
           )}
-
-          {mode === "signup" && (
-            <button
-              onClick={() => {
-                setMode("login");
-                setError("");
-                setInfo("");
-              }}
-              className="text-sm text-primary hover:underline"
-            >
-              Already have an account? Sign In
+          {mode !== "login" && (
+            <button type="button" onClick={() => switchMode("login")} className="text-primary hover:underline">
+              Back to sign in
             </button>
           )}
-
-          {mode === "forgot" && (
-            <button
-              onClick={() => {
-                setMode("login");
-                setError("");
-                setInfo("");
-              }}
-              className="text-sm text-primary hover:underline"
-            >
-              Back to Sign In
-            </button>
-          )}
+          <Link to="/" className="block pt-2 text-xs text-muted-foreground hover:text-primary">
+            ← Back to website
+          </Link>
         </div>
       </div>
-    </section>
+    </main>
   );
 }

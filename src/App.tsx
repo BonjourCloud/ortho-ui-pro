@@ -2,6 +2,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { lazy, Suspense } from "react";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { HelmetProvider } from "react-helmet-async";
 import { SiteConfigProvider } from "./contexts/SiteConfigContext";
@@ -19,10 +20,10 @@ import CaseStudyDetail from "./pages/CaseStudyDetail";
 import SecondOpinion from "./pages/SecondOpinion";
 import MedicalSection from "./pages/MedicalSection";
 import MedicalSubsection from "./pages/MedicalSubsection";
-import AdminLogin from "./pages/AdminLogin";
-import AdminDashboard from "./pages/AdminDashboard";
 import ResetPassword from "./pages/ResetPassword";
 import NotFound from "./pages/NotFound";
+
+const AdminApp = lazy(() => import("./admin/AdminApp"));
 
 const queryClient = new QueryClient();
 
@@ -56,8 +57,14 @@ const App = () => (
                   {/* Other routes */}
                   <Route path="/book" element={<BookAppointment />} />
                   <Route path="/contact" element={<Contact />} />
-                  <Route path="/admin/login" element={<AdminLogin />} />
-                  <Route path="/admin" element={<AdminDashboard />} />
+                  <Route
+                    path="/admin/*"
+                    element={
+                      <Suspense fallback={<div role="status" className="py-20 text-center text-sm text-muted-foreground">Loading…</div>}>
+                        <AdminApp />
+                      </Suspense>
+                    }
+                  />
                   <Route path="/reset-password" element={<ResetPassword />} />
                   <Route path="*" element={<NotFound />} />
                 </Routes>

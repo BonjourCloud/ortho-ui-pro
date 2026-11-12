@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/contexts/AuthContext";
 import { Plus, Pencil, Trash2, X } from "lucide-react";
 import type { Tables } from "@/integrations/supabase/types";
 
@@ -20,6 +21,7 @@ export default function AdminCaseStudies() {
   const [editing, setEditing] = useState<Partial<CaseStudy> | null>(null);
   const [isNew, setIsNew] = useState(false);
   const { toast } = useToast();
+  const { can } = useAuth();
 
   const load = async () => {
     const { data } = await supabase.from("case_studies").select("*").order("created_at", { ascending: false });
@@ -189,7 +191,7 @@ export default function AdminCaseStudies() {
             </div>
             <div className="flex gap-2">
               <button onClick={() => { setEditing({ ...cs }); setIsNew(false); }} className="p-2 text-muted-foreground hover:text-primary"><Pencil size={16} /></button>
-              <button onClick={() => handleDelete(cs.id)} className="p-2 text-muted-foreground hover:text-destructive"><Trash2 size={16} /></button>
+              {can("content.delete") && (<button onClick={() => handleDelete(cs.id)} className="p-2 text-muted-foreground hover:text-destructive"><Trash2 size={16} /></button>)}
             </div>
           </div>
         ))}
