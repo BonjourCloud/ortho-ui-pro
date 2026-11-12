@@ -34,6 +34,31 @@ export default function AdminSeo() {
   const [busy, setBusy] = useState(false);
   const [statusMessage, setStatusMessage] = useState<string | null>(null);
   const [pickerOpen, setPickerOpen] = useState(false);
+  const [customPathInput, setCustomPathInput] = useState("");
+
+  const handleAddCustomRoute = () => {
+    const raw = customPathInput.trim();
+    if (!raw) return;
+    const normalized = raw.startsWith("/") ? raw : `/${raw}`;
+    if (routes.some((r) => r.routePath === normalized)) {
+      setSelectedPath(normalized);
+      setCustomPathInput("");
+      return;
+    }
+    const newRoute: RouteSeoMetadata = {
+      routePath: normalized,
+      pageLabel: normalized,
+      seoTitle: normalized.split("/").filter(Boolean).pop()?.replace(/-/g, " ") || "Custom Page",
+      seoDescription: "",
+      seoKeywords: "",
+      ogImageUrl: "https://orthocarehub.in/og-image.svg",
+      canonicalUrl: `https://orthocarehub.in${normalized}`,
+      noindex: false,
+    };
+    setRoutes((prev) => [...prev, newRoute]);
+    setSelectedPath(normalized);
+    setCustomPathInput("");
+  };
 
   useEffect(() => {
     void loadRouteSeoCatalog().then(({ routes: list, schemaReady: ready }) => {
@@ -126,7 +151,24 @@ export default function AdminSeo() {
         <aside className="rounded-xl border bg-card p-4 shadow-sm lg:col-span-4">
           <div className="mb-3 flex items-center gap-2">
             <Globe size={16} className="text-primary" aria-hidden="true" />
-            <h2 className="font-display text-sm font-bold text-foreground">Website Pages</h2>
+            <h2 className="font-display text-sm font-bold text-foreground">Website Pages ({routes.length})</h2>
+          </div>
+
+          <div className="mb-3 flex gap-1.5">
+            <input
+              type="text"
+              value={customPathInput}
+              onChange={(e) => setCustomPathInput(e.target.value)}
+              placeholder="/orthopaedics/frozen-shoulder"
+              className="flex-1 rounded-lg border bg-background px-2.5 py-1.5 text-xs text-foreground outline-none focus:border-primary"
+            />
+            <button
+              type="button"
+              onClick={handleAddCustomRoute}
+              className="rounded-lg bg-secondary px-2.5 py-1.5 text-xs font-semibold text-foreground hover:bg-secondary/80"
+            >
+              + Route
+            </button>
           </div>
 
           <ul className="space-y-1.5">

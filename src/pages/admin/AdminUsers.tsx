@@ -61,11 +61,18 @@ export default function AdminUsers() {
     e.preventDefault();
     setError(null);
     setNotice(null);
+
+    const emailToCreate = newEmail.trim().toLowerCase();
+    if (users.some((u) => u.email.toLowerCase() === emailToCreate)) {
+      setError(`An account with email "${emailToCreate}" already exists. Please enter a different email address.`);
+      return;
+    }
+
     setBusy(true);
 
     const res = await invokeAdminUsers({
       action: "create",
-      email: newEmail.trim(),
+      email: emailToCreate,
       displayName: newDisplayName.trim(),
       password: newPassword || undefined,
       role: newRole,
@@ -78,7 +85,7 @@ export default function AdminUsers() {
       return;
     }
 
-    setNotice(`Created ${newRole === "super_admin" ? "Super Admin" : "Content Editor"} account for ${newEmail.trim()}.`);
+    setNotice(`Created ${newRole === "super_admin" ? "Super Admin" : "Admin"} account for ${emailToCreate}.`);
     setNewEmail("");
     setNewDisplayName("");
     setNewPassword("");
@@ -141,7 +148,7 @@ export default function AdminUsers() {
       <div className="flex flex-wrap items-center justify-between gap-3">
         <PageHeader
           title="Users & role management"
-          description="Create Content Editor or Super Admin accounts, change roles, and disable or re-enable access via the secure server-side Edge Function."
+          description="Create Admin (editor) or Super Admin accounts, change roles, and disable or re-enable access via the secure server-side Edge Function."
         />
         <button
           type="button"
@@ -243,7 +250,7 @@ export default function AdminUsers() {
               onChange={(e) => setNewRole(e.target.value as "editor" | "super_admin")}
               className={inputClass}
             >
-              <option value="editor">Content Editor (Drafts & Content)</option>
+              <option value="editor">Admin (drafts & submit for review)</option>
               <option value="super_admin">Super Admin (Full Control & Publish)</option>
             </select>
           </div>
@@ -309,7 +316,7 @@ export default function AdminUsers() {
                         }
                         className="rounded-lg border bg-background px-2.5 py-1 text-xs text-foreground disabled:opacity-50"
                       >
-                        <option value="editor">Content Editor</option>
+                        <option value="editor">Admin</option>
                         <option value="super_admin">Super Admin</option>
                       </select>
                     </td>

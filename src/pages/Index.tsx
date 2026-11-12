@@ -21,13 +21,13 @@ import {
   HeartPulse,
 } from "lucide-react";
 import heroImage from "@/assets/hero-doctor.jpg";
-import { useSiteConfig } from "@/contexts/SiteConfigContext";
 import { useTestimonials } from "@/hooks/useContent";
-import { useHomePageContent } from "@/hooks/usePageContent";
+import { useHomePageContent, usePreviewSiteConfig } from "@/hooks/usePageContent";
 import { PreviewBanner } from "@/components/PreviewBanner";
 import SEO from "@/components/SEO";
 import { trackClick } from "@/utils/analytics";
 import type { HomeSectionId } from "@/lib/cms/types";
+import { fillTemplate, siteLabel } from "@/lib/cms/siteLabels";
 
 const iconMap: Record<string, React.ElementType> = {
   Shield,
@@ -49,15 +49,17 @@ const iconMap: Record<string, React.ElementType> = {
 };
 
 export default function Index() {
-  const { config } = useSiteConfig();
+  const { config, usingDraft: configDraft } = usePreviewSiteConfig();
   const { testimonials } = useTestimonials();
-  const { content: home, usingDraft, workflowStatus } = useHomePageContent();
+  const { content: home, usingDraft: pageDraft, workflowStatus } = useHomePageContent();
+  const usingDraft = pageDraft || configDraft;
 
+  const statsLabels = home.hero.statsLabels;
   const stats = [
-    { label: "Years Experience", value: `${config.yearsExperience}+` },
-    { label: "Happy Patients", value: `${config.happyPatients.toLocaleString()}+` },
-    { label: "Surgeries", value: `${config.surgeriesCompleted.toLocaleString()}+` },
-    { label: "Branches", value: `${config.branches}` },
+    { label: statsLabels?.yearsExperience || "Years Experience", value: `${config.yearsExperience}+` },
+    { label: statsLabels?.happyPatients || "Happy Patients", value: `${config.happyPatients.toLocaleString()}+` },
+    { label: statsLabels?.surgeriesCompleted || "Surgeries", value: `${config.surgeriesCompleted.toLocaleString()}+` },
+    { label: statsLabels?.branches || "Branches", value: `${config.branches}` },
   ];
 
   const visibleSections = [...home.sectionsOrder]
@@ -218,7 +220,7 @@ export default function Index() {
                       to={procedure.ctaLink || "/book"}
                       className="inline-flex items-center gap-1 text-sm font-semibold text-primary hover:text-accent transition-colors"
                     >
-                      Book Consultation <ArrowRight size={14} />
+                      {procedure.ctaLabel || "Book Consultation"} <ArrowRight size={14} />
                     </Link>
                   </motion.div>
                 ))}
@@ -282,7 +284,7 @@ export default function Index() {
                     ))}
                   </div>
                   <span className="text-primary-foreground/80 text-sm font-medium">
-                    {config.googleRating} / 5 based on {config.googleReviewCount}+ Google reviews
+                    {fillTemplate(siteLabel(config, "reviewSummaryTemplate"), { rating: config.googleRating, count: config.googleReviewCount })}
                   </span>
                 </div>
               </div>
@@ -304,7 +306,7 @@ export default function Index() {
                       aria-label="Patient video testimonial"
                     >
                       <source src={home.testimonials.videoUrl} type="video/mp4" />
-                      Your browser does not support the video tag.
+                      {siteLabel(config, "videoFallbackText")}
                     </video>
                   </div>
                   <p className="text-center text-primary-foreground/70 text-sm mt-3">
@@ -330,13 +332,13 @@ export default function Index() {
                         ))}
                       </div>
                       <span className="text-xs bg-blue-500/20 text-blue-300 rounded-full px-2 py-1 font-medium">
-                        ✓ Verified Google Review
+                        {siteLabel(config, "reviewVerifiedBadge")}
                       </span>
                     </div>
                     <p className="text-sm text-primary-foreground/90 leading-relaxed mb-4">"{t.text}"</p>
                     {t.response && (
                       <div className="bg-primary-foreground/10 rounded-lg p-3 mb-4 border-l-2 border-accent">
-                        <p className="text-xs font-semibold text-accent mb-1">Doctor's Response:</p>
+                        <p className="text-xs font-semibold text-accent mb-1">{siteLabel(config, "reviewDoctorResponseLabel")}</p>
                         <p className="text-xs text-primary-foreground/80 italic">"{t.response}"</p>
                       </div>
                     )}
@@ -350,7 +352,7 @@ export default function Index() {
                       </div>
                       <div>
                         <div className="text-sm font-semibold text-primary-foreground">{t.name}</div>
-                        <div className="text-xs text-primary-foreground/60">Google Review</div>
+                        <div className="text-xs text-primary-foreground/60">{siteLabel(config, "reviewSourceLabel")}</div>
                       </div>
                     </div>
                   </motion.div>
@@ -363,7 +365,7 @@ export default function Index() {
                   rel="noopener noreferrer"
                   className="inline-flex items-center gap-2 rounded-lg bg-card/20 backdrop-blur-sm border border-primary-foreground/20 px-6 py-3 text-sm font-semibold text-primary-foreground transition-all hover:bg-card/30"
                 >
-                  Read all reviews on Google
+                  {home.testimonials.googleReviewsCtaLabel || "Read all reviews on Google"}
                   <ArrowRight size={16} />
                 </a>
               </div>
@@ -380,7 +382,7 @@ export default function Index() {
                   {home.cta.heading}
                 </h2>
                 <p className="text-muted-foreground max-w-xl mx-auto mb-8">
-                  Book a consultation with {config.doctorName} today. {home.cta.description}
+                  {home.cta.description || `Book a consultation with ${config.doctorName} today. Insurance accepted, EMI options available.`}
                 </p>
                 <div className="flex flex-wrap justify-center gap-3">
                   <Link

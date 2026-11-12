@@ -79,43 +79,38 @@ const EDITOR_CATEGORIES: ReadonlySet<CapabilityCategory> = new Set([
   "seo",
 ]);
 
-/** Editor: everything in editor categories, minus nothing – deletes/system/users/audit/patient data/publishing are excluded. */
+/** Editor ("Admin"): content, clinic, media, branding and SEO work. Deletes, system/security settings, users, audit logs, patient data, approval and publishing are excluded. */
 const EDITOR_CAPABILITIES: ReadonlySet<Capability> = new Set(
   ALL_CAPABILITIES.filter((c) => EDITOR_CATEGORIES.has(categoryOf(c))),
 );
 
 /**
- * Legacy `admin` (existing role before Super Admin assignment is confirmed).
- * Keeps existing content/clinic/patient-inbox access so current workflows do not break,
- * but CANNOT bypass Super-Admin-only restrictions (system/security settings, user management, audit logs).
+ * Legacy `admin` role (pre-CMS). It is retired in the database (005b drops every legacy policy and
+ * `user_roles_cms_roles_only` forbids storing it), so it must never unlock anything in the UI and is
+ * NEVER treated as a Super Admin. `decideAccess` shows it the "No CMS access" screen.
  */
-const LEGACY_ADMIN_EXCLUDED: ReadonlySet<Capability> = new Set<Capability>([
-  "users.manage",
-  "activity.view",
-  "system.settings",
-  "security.settings",
-]);
 
 export interface PermissionOptions {
   /**
-   * Mirrors app_settings.editors_can_publish (defaults to false).
-   * Per Rajiv's confirmed workflow, Editors save drafts and submit for review (`content.submit_review`),
-   * while Super Admin approves (`content.approve`) and publishes (`content.publish`).
+   * @deprecated Ignored. Editors (shown as "Admin") can never publish or approve: the publish
+   * functions and workflow triggers require an active Super Admin regardless of app_settings.
    */
   editorsCanPublish?: boolean;
 }
 
-export function can(role: CmsRole | null | undefined, capability: Capability, options: PermissionOptions = {}): boolean {
+/** Capabilities an editor must never hold, whatever their category. */
+const EDITOR_FORBIDDEN: ReadonlySet<Capability> = new Set<Capability>(["content.publish", "content.approve"]);
+
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+export function can(role: CmsRole | null | undefined, capability: Capability, _options: PermissionOptions = {}): boolean {
   if (!role) return false;
   switch (role) {
     case "super_admin":
       return true;
-    case "legacy_admin":
-      return !LEGACY_ADMIN_EXCLUDED.has(capability);
     case "editor":
-      if (capability === "content.publish") return options.editorsCanPublish === true;
-      if (capability === "content.approve") return false;
+      if (EDITOR_FORBIDDEN.has(capability)) return false;
       return EDITOR_CAPABILITIES.has(capability);
+    case "legacy_admin":
     default:
       return false;
   }
@@ -131,6 +126,7 @@ export function parseRole(value: unknown): CmsRole | null {
 
 export const ROLE_LABELS: Record<CmsRole, string> = {
   super_admin: "Super Admin",
-  editor: "Content Editor",
-  legacy_admin: "Administrator (legacy role)",
+  // Business name for the routine CMS administrator; the database role stays `editor`.
+  editor: "Admin",
+  legacy_admin: "Legacy admin (no CMS access)",
 };

@@ -16,7 +16,8 @@ export function decideAccess(auth: AccessInput, capability?: Capability): Access
   if (auth.status === "loading") return "loading";
   if (auth.status === "error") return "error";
   if (auth.status === "unauthenticated") return "login";
-  if (!auth.role) return "no-role";
+  // The retired legacy `admin` role is never a CMS role (and never a Super Admin).
+  if (!auth.role || auth.role === "legacy_admin") return "no-role";
   if (capability && !auth.can(capability)) return "forbidden";
   return "allowed";
 }

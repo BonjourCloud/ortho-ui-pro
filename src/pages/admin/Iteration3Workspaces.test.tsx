@@ -102,6 +102,7 @@ import AdminClinic from "@/pages/admin/AdminClinic";
 import AdminDoctor from "@/pages/admin/AdminDoctor";
 import AdminMedia from "@/pages/admin/AdminMedia";
 import { PreviewBanner } from "@/components/PreviewBanner";
+import { parseHtmlToTreatmentBlocks, SITE_PAGE_CATALOG } from "@/lib/cms/types";
 
 describe("Iteration 3 CMS Workspaces & Rajiv Approval Workflow", () => {
   beforeEach(() => {
@@ -217,7 +218,8 @@ describe("Iteration 3 CMS Workspaces & Rajiv Approval Workflow", () => {
   });
 
   describe("CLINIC-001 & CLINIC-002: AdminClinic & AdminDoctor (Approval workflow & live config protection)", () => {
-    it("CLINIC-001: Editor edits clinic address/phone and submits for review WITHOUT calling live updateConfig; Super Admin publish calls updateConfig", async () => {
+    it("CLINIC-001: without migration 005c the clinic workspace is read-only and never touches live site_config", async () => {
+      // The shared supabase mock answers every table with 42P01 (relation does not exist).
       currentRole = "editor";
       const { unmount } = render(
         <MemoryRouter>
@@ -225,30 +227,26 @@ describe("Iteration 3 CMS Workspaces & Rajiv Approval Workflow", () => {
         </MemoryRouter>,
       );
 
+      const alert = await screen.findByRole("alert");
+      expect(alert).toHaveTextContent(/migration 005c has not been applied/i);
+
       const phoneInput = screen.getByLabelText(/primary phone number/i);
       fireEvent.change(phoneInput, { target: { value: "+91-9000011111" } });
-
-      fireEvent.click(screen.getByRole("button", { name: /submit for review/i }));
-      await waitFor(() => {
-        expect(screen.getByTestId("workflow-status-badge")).toHaveTextContent("Pending Super Admin Review");
-      });
-      // Live site_config was NOT modified by Editor!
+      expect(screen.getByRole("button", { name: /submit for review/i })).toBeDisabled();
+      expect(screen.getByRole("button", { name: /save draft/i })).toBeDisabled();
       expect(mockUpdateConfig).not.toHaveBeenCalled();
       unmount();
 
-      // Super Admin publishes approved clinic changes -> calls live updateConfig
+      // Super Admin cannot publish either: publishing only accepts an approved database draft.
       currentRole = "super_admin";
       render(
         <MemoryRouter>
           <AdminClinic />
         </MemoryRouter>,
       );
-      fireEvent.click(screen.getByRole("button", { name: /publish to live website/i }));
-      await waitFor(() => {
-        expect(mockUpdateConfig).toHaveBeenCalledWith(
-          expect.objectContaining({ phone: "+91-9000011111" }),
-        );
-      });
+      await screen.findByRole("alert");
+      expect(screen.getByRole("button", { name: /publish to live website/i })).toBeDisabled();
+      expect(mockUpdateConfig).not.toHaveBeenCalled();
     });
 
     it("CLINIC-002: Editor updates doctor qualifications and selects portrait from MediaPickerModal", async () => {
@@ -259,7 +257,7 @@ describe("Iteration 3 CMS Workspaces & Rajiv Approval Workflow", () => {
         </MemoryRouter>,
       );
 
-      fireEvent.click(screen.getByRole("button", { name: /add qualification/i }));
+      fireEvent.click(await screen.findByRole("button", { name: /add qualification/i }));
       expect(screen.getByLabelText(/degree 1/i)).toHaveValue("MS (Orthopaedics)");
 
       // Open MediaPickerModal and pick an image
@@ -274,11 +272,11 @@ describe("Iteration 3 CMS Workspaces & Rajiv Approval Workflow", () => {
         expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
       });
 
-      fireEvent.click(screen.getByRole("button", { name: /save draft/i }));
-      await waitFor(() => {
-        expect(screen.getByTestId("workflow-status-badge")).toHaveTextContent("Draft");
-      });
+      // Without migration 005c nothing can be saved, and the live config is never written.
+      expect(screen.getByRole("alert")).toHaveTextContent(/migration 005c has not been applied/i);
+      expect(screen.getByRole("button", { name: /save draft/i })).toBeDisabled();
       expect(mockUpdateConfig).not.toHaveBeenCalled();
+      // The full doctor workflow is covered in DraftWorkflowsDoctorBrandingCollections.test.tsx (DOCTOR-01).
     });
   });
 
@@ -344,6 +342,98 @@ describe("Iteration 3 CMS Workspaces & Rajiv Approval Workflow", () => {
       const region = screen.getByRole("region", { name: /draft preview notice/i });
       expect(region).toHaveTextContent(/cms draft preview/i);
       expect(region).toHaveTextContent(/pending super admin review/i);
+    });
+  });
+
+  describe("Website-Wide CMS Coverage (All 11 Public Pages, HTML-to-Blocks Parser & Media Edit/Replace)", () => {
+    it("renders selector for all 11 public pages and allows Editor -> Super Admin approval on secondary pages (e.g. /second-opinion)", async () => {
+      currentRole = "editor";
+      const { unmount } = render(
+        <MemoryRouter>
+          <AdminPages />
+        </MemoryRouter>,
+      );
+
+      await screen.findByLabelText(/top badge text/i);
+      expect(SITE_PAGE_CATALOG.length).toBe(11);
+
+      // Switch to Second Opinion (/second-opinion)
+      fireEvent.click(screen.getByRole("button", { name: /second opinion \(\/second-opinion\)/i }));
+
+      const headingInput = await screen.findByLabelText(/hero main heading/i);
+      expect(headingInput).toHaveValue("Been Advised Surgery? Get a Second Opinion");
+
+      fireEvent.change(headingInput, { target: { value: "Specialist Second Opinion in Hyderabad" } });
+      fireEvent.click(screen.getByRole("button", { name: /submit for review/i }));
+
+      await waitFor(() => {
+        expect(screen.getByTestId("workflow-status-badge")).toHaveTextContent("Pending Super Admin Review");
+      });
+      unmount();
+
+      // Super Admin approves and publishes /second-opinion
+      currentRole = "super_admin";
+      render(
+        <MemoryRouter>
+          <AdminPages />
+        </MemoryRouter>,
+      );
+      await screen.findByLabelText(/top badge text/i);
+      fireEvent.click(screen.getByRole("button", { name: /second opinion \(\/second-opinion\)/i }));
+
+      await waitFor(() => {
+        expect(screen.getByTestId("workflow-status-badge")).toHaveTextContent("Pending Super Admin Review");
+      });
+      fireEvent.click(screen.getByRole("button", { name: /^approve$/i }));
+      await waitFor(() => {
+        expect(screen.getByTestId("workflow-status-badge")).toHaveTextContent("Approved (Ready to Publish)");
+      });
+      fireEvent.click(screen.getByRole("button", { name: /publish approved/i }));
+      await waitFor(() => {
+        expect(screen.getByTestId("workflow-status-badge")).toHaveTextContent("Published (Live)");
+      });
+    });
+
+    it("parseHtmlToTreatmentBlocks preserves seeded headings, paragraphs, bullet lists, and inline <figure><img> illustrations", () => {
+      const sampleSeededHtml = `
+        <figure class="my-6"><img src="/images/treatments/rotator-cuff-tear.png" alt="Rotator cuff anatomy" /><figcaption>Rotator cuff tear overview</figcaption></figure>
+        <h2>What is a Rotator Cuff Tear?</h2>
+        <p>A rotator cuff tear is a common cause of pain and disability among adults.</p>
+        <ul><li>Deep dull ache in the shoulder</li><li>Difficulty sleeping on the affected side</li></ul>
+      `;
+      const blocks = parseHtmlToTreatmentBlocks(sampleSeededHtml, "Rotator Cuff Tear");
+      expect(blocks.length).toBeGreaterThanOrEqual(2);
+      expect(blocks[0].imageUrl).toBe("/images/treatments/rotator-cuff-tear.png");
+      expect(blocks[0].imageAlt).toBe("Rotator cuff anatomy");
+      expect(blocks[1].heading).toBe("What is a Rotator Cuff Tear?");
+      expect(blocks[1].body).toContain("common cause of pain");
+      expect(blocks[1].bulletItems).toEqual([
+        "Deep dull ache in the shoulder",
+        "Difficulty sleeping on the affected side",
+      ]);
+    });
+
+    it("allows editing media asset alt text, caption, and category in AdminMedia", async () => {
+      currentRole = "editor";
+      render(
+        <MemoryRouter>
+          <AdminMedia />
+        </MemoryRouter>,
+      );
+
+      await screen.findByText("dr-srivanth-hero.jpg");
+      const editButtons = screen.getAllByRole("button", { name: /^edit$/i });
+      fireEvent.click(editButtons[0]);
+
+      const dialog = await screen.findByRole("region", { name: /edit or replace selected media/i });
+      expect(dialog).toBeInTheDocument();
+
+      const saveBtn = screen.getByRole("button", { name: /save details/i });
+      fireEvent.click(saveBtn);
+
+      await waitFor(() => {
+        expect(screen.getByText(/updated alt text, caption, and category/i)).toBeInTheDocument();
+      });
     });
   });
 });

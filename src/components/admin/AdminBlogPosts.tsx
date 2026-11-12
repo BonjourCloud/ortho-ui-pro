@@ -1,8 +1,12 @@
 import { useState, useEffect } from "react";
-import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import { useAuth } from "@/contexts/AuthContext";
-import { Plus, Pencil, Trash2, X } from "lucide-react";
+import { X } from "lucide-react";
+import RichTextEditor from "@/components/admin/RichTextEditor";
+import { CollectionDraftList } from "@/components/admin/CollectionDraftList";
+import { useCollectionDraft } from "@/hooks/useCollectionDraft";
+import { newDraftItemId } from "@/lib/cms/collections";
+import { listMediaAssets } from "@/lib/cms/repository";
+import type { MediaAsset } from "@/lib/cms/types";
 import type { Tables } from "@/integrations/supabase/types";
 
 type BlogPost = Tables<"blog_posts">;
@@ -13,19 +17,16 @@ const emptyPost = {
 };
 
 export default function AdminBlogPosts() {
-  const [posts, setPosts] = useState<BlogPost[]>([]);
+  const ws = useCollectionDraft<BlogPost>("blog_posts");
   const [editing, setEditing] = useState<Partial<BlogPost> | null>(null);
   const [isNew, setIsNew] = useState(false);
   const [tagsInput, setTagsInput] = useState("");
+  const [mediaAssets, setMediaAssets] = useState<MediaAsset[]>([]);
   const { toast } = useToast();
-  const { can } = useAuth();
 
-  const load = async () => {
-    const { data } = await supabase.from("blog_posts").select("*").order("published_at", { ascending: false });
-    if (data) setPosts(data);
-  };
-
-  useEffect(() => { load(); }, []);
+  useEffect(() => {
+    void listMediaAssets().then((res) => setMediaAssets(res.assets));
+  }, []);
 
   const slugify = (s: string) => s.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "");
 
@@ -41,30 +42,17 @@ export default function AdminBlogPosts() {
     setIsNew(true);
   };
 
-  const handleSave = async () => {
+  /** Records the edit in the draft changeset only — nothing live changes until approval and publishing. */
+  const handleSave = () => {
     if (!editing?.title || !editing?.slug || !editing?.content) {
       toast({ title: "Error", description: "Title, slug, and content are required.", variant: "destructive" });
       return;
     }
     const payload = { ...editing, tags: tagsInput.split(",").map((t) => t.trim()).filter(Boolean) };
-    if (isNew) {
-      const { error } = await supabase.from("blog_posts").insert(payload as any);
-      if (error) { toast({ title: "Error", description: error.message, variant: "destructive" }); return; }
-    } else {
-      const { error } = await supabase.from("blog_posts").update(payload as any).eq("id", editing.id!);
-      if (error) { toast({ title: "Error", description: error.message, variant: "destructive" }); return; }
-    }
-    toast({ title: "Saved!" });
+    ws.editItem({ ...payload, id: payload.id ?? newDraftItemId() } as BlogPost);
     setEditing(null);
     setIsNew(false);
-    load();
-  };
-
-  const handleDelete = async (id: string) => {
-    if (!confirm("Delete this blog post?")) return;
-    await supabase.from("blog_posts").delete().eq("id", id);
-    toast({ title: "Deleted" });
-    load();
+    toast({ title: "Added to draft", description: "Save the draft and submit it for review. The live website is unchanged." });
   };
 
   if (editing) {
@@ -98,9 +86,14 @@ export default function AdminBlogPosts() {
               className="w-full rounded-lg border bg-background px-4 py-2.5 text-sm text-foreground focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none resize-none" />
           </div>
           <div>
-            <label className="block text-sm font-medium text-foreground mb-1">Content (HTML) *</label>
-            <textarea value={editing.content || ""} onChange={(e) => setEditing({ ...editing, content: e.target.value })} rows={10}
-              className="w-full rounded-lg border bg-background px-4 py-2.5 text-sm text-foreground focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none resize-y font-mono text-xs" />
+            <RichTextEditor
+              label="Article Content (Rich Text / HTML) *"
+              value={editing.content || ""}
+              onChange={(next) => setEditing({ ...editing, content: next })}
+              mediaAssets={mediaAssets}
+              rows={10}
+              helpText="Use the formatting toolbar to add headings, bullet lists, links, and images from the Media Library."
+            />
           </div>
           <div className="grid sm:grid-cols-2 gap-4">
             <div>
@@ -126,32 +119,26 @@ export default function AdminBlogPosts() {
   }
 
   return (
-    <div>
-      <div className="flex items-center justify-between mb-4">
-        <h3 className="font-display font-semibold text-foreground">Blog Posts ({posts.length})</h3>
-        <button onClick={startNew}
-          className="inline-flex items-center gap-1 rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:opacity-90">
-          <Plus size={16} /> Add Post
-        </button>
-      </div>
-      <div className="space-y-3">
-        {posts.map((post) => (
-          <div key={post.id} className="bg-card rounded-xl border p-4 flex items-center justify-between">
-            <div>
-              <div className="flex items-center gap-2">
-                <span className="text-sm font-semibold text-foreground">{post.title}</span>
-                {post.is_featured && <span className="text-xs bg-accent/10 text-accent rounded-full px-2 py-0.5">Featured</span>}
-              </div>
-              <div className="text-xs text-muted-foreground">{post.category} • {post.views_count} views • {post.read_time} min read</div>
-            </div>
-            <div className="flex gap-2">
-              <button onClick={() => startEdit(post)} className="p-2 text-muted-foreground hover:text-primary"><Pencil size={16} /></button>
-              {can("content.delete") && (<button onClick={() => handleDelete(post.id)} className="p-2 text-muted-foreground hover:text-destructive"><Trash2 size={16} /></button>)}
-            </div>
+    <CollectionDraftList<BlogPost>
+      ws={ws}
+      title="Blog Posts"
+      label="Blog posts"
+      addLabel="Add Post"
+      emptyText="No blog posts yet."
+      previewUrl="/blog?preview=1"
+      onAdd={startNew}
+      onEdit={startEdit}
+      renderSummary={(post) => (
+        <div>
+          <div className="flex items-center gap-2">
+            <span className="text-sm font-semibold text-foreground">{post.title}</span>
+            {post.is_featured && <span className="text-xs bg-accent/10 text-accent rounded-full px-2 py-0.5">Featured</span>}
           </div>
-        ))}
-        {posts.length === 0 && <p className="text-sm text-muted-foreground text-center py-8">No blog posts yet.</p>}
-      </div>
-    </div>
+          <div className="text-xs text-muted-foreground">
+            {post.category} • {post.views_count ?? 0} views • {post.read_time} min read
+          </div>
+        </div>
+      )}
+    />
   );
 }

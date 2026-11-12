@@ -42,6 +42,13 @@ export interface DraftPublishBarProps {
   statusMessage?: string | null;
   /** Public path to open in preview mode (e.g. "/?preview=1" or "/orthopaedics/frozen-shoulder?preview=1") */
   previewUrl?: string;
+  /**
+   * When true, "Publish" is only enabled once the change is `approved` (the database enforces the
+   * same rule). Used by workspaces whose publish path rejects anything that was not approved.
+   */
+  publishRequiresApproval?: boolean;
+  /** Disables every action (e.g. the workspace's database tables are not available yet). */
+  actionsDisabled?: boolean;
   onSaveDraft: () => void;
   onSubmitForReview?: () => void;
   onApprove?: () => void;
@@ -77,6 +84,8 @@ export function DraftPublishBar({
   history = [],
   statusMessage,
   previewUrl,
+  publishRequiresApproval = false,
+  actionsDisabled = false,
   onSaveDraft,
   onSubmitForReview,
   onApprove,
@@ -85,6 +94,8 @@ export function DraftPublishBar({
 }: DraftPublishBarProps) {
   const effectiveStatus: WorkflowStatus =
     workflowStatus ?? (hasDraft ? "draft" : "published");
+  const disabled = busy || actionsDisabled;
+  const publishBlockedByReview = publishRequiresApproval && effectiveStatus !== "approved";
 
   const [showRejectBox, setShowRejectBox] = useState(false);
   const [rejectFeedback, setRejectFeedback] = useState("");
@@ -153,7 +164,7 @@ export function DraftPublishBar({
 
           <button
             type="button"
-            disabled={busy}
+            disabled={disabled}
             onClick={onSaveDraft}
             className="inline-flex items-center gap-1.5 rounded-lg border border-primary/40 bg-primary/10 px-4 py-2 text-xs font-semibold text-primary transition-colors hover:bg-primary/20 disabled:opacity-50"
           >
@@ -164,7 +175,7 @@ export function DraftPublishBar({
           {canSubmitReview && onSubmitForReview && effectiveStatus !== "pending_approval" && (
             <button
               type="button"
-              disabled={busy}
+              disabled={disabled}
               onClick={onSubmitForReview}
               className="inline-flex items-center gap-1.5 rounded-lg border border-blue-600/40 bg-blue-600/10 px-4 py-2 text-xs font-semibold text-blue-700 transition-colors hover:bg-blue-600/20 disabled:opacity-50 dark:text-blue-300"
             >
@@ -176,7 +187,7 @@ export function DraftPublishBar({
           {canApprove && onApprove && effectiveStatus === "pending_approval" && (
             <button
               type="button"
-              disabled={busy}
+              disabled={disabled}
               onClick={onApprove}
               className="inline-flex items-center gap-1.5 rounded-lg bg-teal-600 px-3.5 py-2 text-xs font-semibold text-white transition-opacity hover:opacity-90 disabled:opacity-50"
             >
@@ -188,7 +199,7 @@ export function DraftPublishBar({
           {canApprove && onReject && (effectiveStatus === "pending_approval" || effectiveStatus === "approved") && (
             <button
               type="button"
-              disabled={busy}
+              disabled={disabled}
               onClick={() => setShowRejectBox((v) => !v)}
               className="inline-flex items-center gap-1.5 rounded-lg border border-destructive/40 bg-destructive/10 px-3.5 py-2 text-xs font-semibold text-destructive transition-colors hover:bg-destructive/20 disabled:opacity-50"
             >
@@ -200,8 +211,9 @@ export function DraftPublishBar({
           {canPublish ? (
             <button
               type="button"
-              disabled={busy}
+              disabled={disabled || publishBlockedByReview}
               onClick={onPublish}
+              title={publishBlockedByReview ? "Approve the submitted changes before publishing." : undefined}
               className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-4 py-2 text-xs font-semibold text-primary-foreground transition-opacity hover:opacity-90 disabled:opacity-50"
             >
               <Send size={14} aria-hidden="true" />
@@ -240,7 +252,7 @@ export function DraftPublishBar({
       {showRejectBox && canApprove && (
         <div className="space-y-2 rounded-lg border bg-secondary/40 p-3">
           <label htmlFor="reject-feedback-input" className="block text-xs font-semibold text-foreground">
-            Feedback for Content Editor (required)
+            Feedback for the Admin (required)
           </label>
           <textarea
             id="reject-feedback-input"

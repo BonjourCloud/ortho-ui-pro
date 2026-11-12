@@ -1,14 +1,20 @@
 import { useState } from "react";
 import { motion } from "framer-motion";
 import { FileText, Upload, CheckCircle, Shield, Clock, MessageCircle } from "lucide-react";
-import { useSiteConfig } from "@/contexts/SiteConfigContext";
+import { usePreviewSiteConfig, useSitePageContent } from "@/hooks/usePageContent";
+import {
+  CmsDraftPreviewBanner,
+  PageFaqSection,
+  PageRichBodySection,
+} from "@/components/PageCmsSupplement";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import SEO from "@/components/SEO";
 import { trackClick } from "@/utils/analytics";
+import { pageLabel } from "@/lib/cms/siteLabels";
 
-const conditionOptions = [
+const DEFAULT_CONDITIONS = [
   "Joint Replacement Recommendation",
   "Spine Surgery Recommendation",
   "ACL / Ligament Injury",
@@ -18,8 +24,11 @@ const conditionOptions = [
   "Other",
 ];
 
+const BENEFIT_ICONS = [FileText, Clock, Shield];
+
 export default function SecondOpinion() {
-  const { config } = useSiteConfig();
+  const { config } = usePreviewSiteConfig();
+  const { content: page, usingDraft, workflowStatus } = useSitePageContent("second-opinion");
   const { t } = useLanguage();
   const { toast } = useToast();
   const [submitted, setSubmitted] = useState(false);
@@ -34,6 +43,26 @@ export default function SecondOpinion() {
     additionalNotes: "",
     files: [] as File[],
   });
+
+  const conditionOptions = page.customLabels.conditionOptions
+    ? page.customLabels.conditionOptions
+        .split(",")
+        .map((s) => s.trim())
+        .filter(Boolean)
+    : DEFAULT_CONDITIONS;
+
+  const benefitCards =
+    page.highlights.length > 0
+      ? page.highlights.map((h, i) => ({
+          icon: BENEFIT_ICONS[i % BENEFIT_ICONS.length],
+          title: h.title,
+          desc: h.description,
+        }))
+      : [
+          { icon: FileText, title: t("secondOpinion.benefit1Title"), desc: t("secondOpinion.benefit1Desc") },
+          { icon: Clock, title: t("secondOpinion.benefit2Title"), desc: t("secondOpinion.benefit2Desc") },
+          { icon: Shield, title: t("secondOpinion.benefit3Title"), desc: t("secondOpinion.benefit3Desc") },
+        ];
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files) {
@@ -50,18 +79,20 @@ export default function SecondOpinion() {
     e.preventDefault();
     setLoading(true);
 
-    // Generate a unique folder for this submission
     const folder = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
     const uploadedPaths: string[] = [];
 
-    // Upload files to storage
     for (const file of form.files) {
       const filePath = `${folder}/${file.name}`;
       const { error: uploadError } = await supabase.storage
         .from("second-opinion-reports")
         .upload(filePath, file);
       if (uploadError) {
-        toast({ title: "Upload Error", description: `Failed to upload ${file.name}. Please try again.`, variant: "destructive" });
+        toast({
+          title: "Upload Error",
+          description: `Failed to upload ${file.name}. Please try again.`,
+          variant: "destructive",
+        });
         setLoading(false);
         return;
       }
@@ -95,9 +126,13 @@ export default function SecondOpinion() {
         <div className="container max-w-lg text-center">
           <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }}>
             <CheckCircle className="mx-auto text-primary mb-6" size={64} />
-            <h1 className="font-display text-3xl font-bold text-foreground mb-4">{t("secondOpinion.successTitle")}</h1>
-            <p className="text-muted-foreground mb-2">{t("secondOpinion.successMsg")}</p>
-            <p className="text-sm text-muted-foreground mb-8">{t("secondOpinion.successNote")}</p>
+            <h1 className="font-display text-3xl font-bold text-foreground mb-4">
+              {page.customLabels.confirmationHeading || t("secondOpinion.successTitle")}
+            </h1>
+            <p className="text-muted-foreground mb-2">
+              {page.customLabels.confirmationDescription || t("secondOpinion.successMsg")}
+            </p>
+            <p className="text-sm text-muted-foreground mb-8">{pageLabel(page, "successNoteLabel", t("secondOpinion.successNote"))}</p>
             <a
               href={`https://wa.me/${config.whatsapp?.replace(/\D/g, "") || config.phone.replace(/\D/g, "")}`}
               target="_blank"
@@ -111,7 +146,8 @@ export default function SecondOpinion() {
               }
               className="inline-flex items-center gap-2 rounded-lg bg-primary px-6 py-3 text-sm font-semibold text-primary-foreground hover:opacity-90"
             >
-              <MessageCircle size={16} /> {t("secondOpinion.whatsapp")}
+              <MessageCircle size={16} />{" "}
+              {page.customLabels.whatsappFollowupLabel || t("secondOpinion.whatsapp")}
             </a>
           </motion.div>
         </div>
@@ -122,37 +158,55 @@ export default function SecondOpinion() {
   return (
     <>
       <SEO
-        title="Second Opinion"
-        description={`Get a second medical opinion from ${config.doctorName}. Expert review of your diagnosis, treatment plan, and surgical recommendations. Confidential and thorough evaluation.`}
+        title={page.heroTitle || "Second Opinion"}
+        description={
+          page.heroSubtitle ||
+          `Get a second medical opinion from ${config.doctorName}. Expert review of your diagnosis, treatment plan, and surgical recommendations. Confidential and thorough evaluation.`
+        }
         keywords="second opinion, medical review, orthopedic consultation, treatment review, surgical opinion"
         url="/second-opinion"
       />
+      <CmsDraftPreviewBanner usingDraft={usingDraft} workflowStatus={workflowStatus} pageLabel="Second Opinion" />
+
       {/* Hero */}
       <section className="bg-hero-gradient py-14 md:py-20">
         <div className="container max-w-3xl text-center">
           <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
             <Shield className="mx-auto text-accent mb-4" size={40} />
             <h1 className="font-display text-3xl md:text-4xl font-bold text-primary-foreground mb-4">
-              {t("secondOpinion.title")}
+              {page.heroTitle || t("secondOpinion.title")}
             </h1>
             <p className="text-primary-foreground/80 leading-relaxed max-w-xl mx-auto">
-              {t("secondOpinion.subtitle")}
+              {page.heroSubtitle || t("secondOpinion.subtitle")}
             </p>
+            {page.heroImageUrl && (
+              <div className="mt-8 max-w-2xl mx-auto">
+                <img
+                  src={page.heroImageUrl}
+                  alt={page.heroImageAlt || page.heroTitle}
+                  className="rounded-2xl shadow-xl w-full max-h-72 object-cover mx-auto"
+                />
+              </div>
+            )}
           </motion.div>
         </div>
       </section>
+
+      <PageRichBodySection bodyHtml={page.bodyHtml} />
 
       {/* Benefits */}
       <section className="py-10 border-b">
         <div className="container">
           <div className="grid sm:grid-cols-3 gap-6">
-            {[
-              { icon: FileText, title: t("secondOpinion.benefit1Title"), desc: t("secondOpinion.benefit1Desc") },
-              { icon: Clock, title: t("secondOpinion.benefit2Title"), desc: t("secondOpinion.benefit2Desc") },
-              { icon: Shield, title: t("secondOpinion.benefit3Title"), desc: t("secondOpinion.benefit3Desc") },
-            ].map((item, i) => (
-              <motion.div key={i} initial={{ opacity: 0, y: 15 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ delay: i * 0.1 }}
-                className="text-center">
+            {benefitCards.map((item, i) => (
+              <motion.div
+                key={i}
+                initial={{ opacity: 0, y: 15 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ delay: i * 0.1 }}
+                className="text-center"
+              >
                 <div className="w-12 h-12 rounded-full bg-accent/10 flex items-center justify-center mx-auto mb-3">
                   <item.icon className="text-accent" size={22} />
                 </div>
@@ -167,69 +221,127 @@ export default function SecondOpinion() {
       {/* Form */}
       <section className="py-14 md:py-20">
         <div className="container max-w-2xl">
-          <motion.form onSubmit={handleSubmit} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}
-            className="bg-card rounded-xl border p-6 md:p-8 space-y-5">
-            <h2 className="font-display text-xl font-bold text-foreground mb-2">{t("secondOpinion.formTitle")}</h2>
+          <motion.form
+            onSubmit={handleSubmit}
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="bg-card rounded-xl border p-6 md:p-8 space-y-5"
+          >
+            <h2 className="font-display text-xl font-bold text-foreground mb-2">
+              {page.customLabels.formHeading || t("secondOpinion.formTitle")}
+            </h2>
 
             <div className="grid sm:grid-cols-2 gap-4">
               <div>
-                <label className="block text-sm font-medium text-foreground mb-1.5">{t("secondOpinion.name")} *</label>
-                <input required value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })}
-                  className="w-full rounded-lg border bg-background px-4 py-2.5 text-sm text-foreground focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none" />
+                <label className="block text-sm font-medium text-foreground mb-1.5">{pageLabel(page, "nameLabel", t("secondOpinion.name"))} *</label>
+                <input
+                  required
+                  value={form.name}
+                  onChange={(e) => setForm({ ...form, name: e.target.value })}
+                  className="w-full rounded-lg border bg-background px-4 py-2.5 text-sm text-foreground focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none"
+                />
               </div>
               <div>
-                <label className="block text-sm font-medium text-foreground mb-1.5">{t("secondOpinion.age")} *</label>
-                <input required type="number" min={1} max={120} value={form.age} onChange={(e) => setForm({ ...form, age: e.target.value })}
-                  className="w-full rounded-lg border bg-background px-4 py-2.5 text-sm text-foreground focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none" />
+                <label className="block text-sm font-medium text-foreground mb-1.5">{pageLabel(page, "ageLabel", t("secondOpinion.age"))} *</label>
+                <input
+                  required
+                  type="number"
+                  min={1}
+                  max={120}
+                  value={form.age}
+                  onChange={(e) => setForm({ ...form, age: e.target.value })}
+                  className="w-full rounded-lg border bg-background px-4 py-2.5 text-sm text-foreground focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none"
+                />
               </div>
             </div>
 
             <div className="grid sm:grid-cols-2 gap-4">
               <div>
-                <label className="block text-sm font-medium text-foreground mb-1.5">{t("secondOpinion.phone")} *</label>
-                <input required type="tel" value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })}
-                  className="w-full rounded-lg border bg-background px-4 py-2.5 text-sm text-foreground focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none" />
+                <label className="block text-sm font-medium text-foreground mb-1.5">{pageLabel(page, "phoneLabel", t("secondOpinion.phone"))} *</label>
+                <input
+                  required
+                  type="tel"
+                  value={form.phone}
+                  onChange={(e) => setForm({ ...form, phone: e.target.value })}
+                  className="w-full rounded-lg border bg-background px-4 py-2.5 text-sm text-foreground focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none"
+                />
               </div>
               <div>
-                <label className="block text-sm font-medium text-foreground mb-1.5">{t("secondOpinion.email")}</label>
-                <input type="email" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })}
-                  className="w-full rounded-lg border bg-background px-4 py-2.5 text-sm text-foreground focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none" />
+                <label className="block text-sm font-medium text-foreground mb-1.5">{pageLabel(page, "emailLabel", t("secondOpinion.email"))}</label>
+                <input
+                  type="email"
+                  value={form.email}
+                  onChange={(e) => setForm({ ...form, email: e.target.value })}
+                  className="w-full rounded-lg border bg-background px-4 py-2.5 text-sm text-foreground focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none"
+                />
               </div>
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-foreground mb-1.5">{t("secondOpinion.condition")} *</label>
-              <select required value={form.condition} onChange={(e) => setForm({ ...form, condition: e.target.value })}
-                className="w-full rounded-lg border bg-background px-4 py-2.5 text-sm text-foreground focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none">
-                <option value="">{t("secondOpinion.selectCondition")}</option>
-                {conditionOptions.map((c) => <option key={c} value={c}>{c}</option>)}
+              <label className="block text-sm font-medium text-foreground mb-1.5">{pageLabel(page, "conditionLabel", t("secondOpinion.condition"))} *</label>
+              <select
+                required
+                value={form.condition}
+                onChange={(e) => setForm({ ...form, condition: e.target.value })}
+                className="w-full rounded-lg border bg-background px-4 py-2.5 text-sm text-foreground focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none"
+              >
+                <option value="">{pageLabel(page, "selectConditionLabel", t("secondOpinion.selectCondition"))}</option>
+                {conditionOptions.map((c) => (
+                  <option key={c} value={c}>
+                    {c}
+                  </option>
+                ))}
               </select>
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-foreground mb-1.5">{t("secondOpinion.currentDiagnosis")} *</label>
-              <textarea required rows={3} value={form.currentDiagnosis} onChange={(e) => setForm({ ...form, currentDiagnosis: e.target.value })}
-                placeholder={t("secondOpinion.diagnosisPlaceholder")}
-                className="w-full rounded-lg border bg-background px-4 py-2.5 text-sm text-foreground focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none resize-none" />
+              <label className="block text-sm font-medium text-foreground mb-1.5">
+                {pageLabel(page, "currentDiagnosisLabel", t("secondOpinion.currentDiagnosis"))} *
+              </label>
+              <textarea
+                required
+                rows={3}
+                value={form.currentDiagnosis}
+                onChange={(e) => setForm({ ...form, currentDiagnosis: e.target.value })}
+                placeholder={pageLabel(page, "diagnosisPlaceholderLabel", t("secondOpinion.diagnosisPlaceholder"))}
+                className="w-full rounded-lg border bg-background px-4 py-2.5 text-sm text-foreground focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none resize-none"
+              />
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-foreground mb-1.5">{t("secondOpinion.uploadReports")}</label>
+              <label className="block text-sm font-medium text-foreground mb-1.5">
+                {pageLabel(page, "uploadReportsLabel", t("secondOpinion.uploadReports"))}
+              </label>
               <div className="border-2 border-dashed rounded-xl p-6 text-center hover:border-primary/40 transition-colors">
                 <Upload className="mx-auto text-muted-foreground mb-2" size={28} />
-                <p className="text-sm text-muted-foreground mb-2">{t("secondOpinion.uploadHint")}</p>
+                <p className="text-sm text-muted-foreground mb-2">{pageLabel(page, "uploadHintLabel", t("secondOpinion.uploadHint"))}</p>
                 <label className="inline-flex items-center gap-2 rounded-lg bg-secondary px-4 py-2 text-sm font-medium text-foreground cursor-pointer hover:bg-secondary/80 transition-colors">
-                  <Upload size={14} /> {t("secondOpinion.chooseFiles")}
-                  <input type="file" multiple accept=".pdf,.jpg,.jpeg,.png,.dicom" onChange={handleFileChange} className="hidden" />
+                  <Upload size={14} /> {pageLabel(page, "chooseFilesLabel", t("secondOpinion.chooseFiles"))}
+                  <input
+                    type="file"
+                    multiple
+                    accept=".pdf,.jpg,.jpeg,.png,.dicom"
+                    onChange={handleFileChange}
+                    className="hidden"
+                  />
                 </label>
-                <p className="text-xs text-muted-foreground mt-2">{t("secondOpinion.fileTypes")}</p>
+                <p className="text-xs text-muted-foreground mt-2">{pageLabel(page, "fileTypesLabel", t("secondOpinion.fileTypes"))}</p>
               </div>
               {form.files.length > 0 && (
                 <div className="mt-3 space-y-2">
                   {form.files.map((file, i) => (
-                    <div key={i} className="flex items-center justify-between bg-secondary/50 rounded-lg px-3 py-2 text-sm">
+                    <div
+                      key={i}
+                      className="flex items-center justify-between bg-secondary/50 rounded-lg px-3 py-2 text-sm"
+                    >
                       <span className="truncate max-w-[250px] text-foreground">{file.name}</span>
-                      <button type="button" onClick={() => removeFile(i)} className="text-muted-foreground hover:text-destructive text-xs ml-2">✕</button>
+                      <button
+                        type="button"
+                        onClick={() => removeFile(i)}
+                        className="text-muted-foreground hover:text-destructive text-xs ml-2"
+                      >
+                        ✕
+                      </button>
                     </div>
                   ))}
                 </div>
@@ -237,20 +349,31 @@ export default function SecondOpinion() {
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-foreground mb-1.5">{t("secondOpinion.additionalNotes")}</label>
-              <textarea rows={2} value={form.additionalNotes} onChange={(e) => setForm({ ...form, additionalNotes: e.target.value })}
-                className="w-full rounded-lg border bg-background px-4 py-2.5 text-sm text-foreground focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none resize-none" />
+              <label className="block text-sm font-medium text-foreground mb-1.5">
+                {pageLabel(page, "additionalNotesLabel", t("secondOpinion.additionalNotes"))}
+              </label>
+              <textarea
+                rows={2}
+                value={form.additionalNotes}
+                onChange={(e) => setForm({ ...form, additionalNotes: e.target.value })}
+                className="w-full rounded-lg border bg-background px-4 py-2.5 text-sm text-foreground focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none resize-none"
+              />
             </div>
 
-            <button type="submit" disabled={loading}
-              className="w-full rounded-lg bg-accent px-6 py-3 text-sm font-semibold text-accent-foreground hover:opacity-90 disabled:opacity-60 transition-all shadow-md">
-              {loading ? "Submitting..." : t("secondOpinion.submit")}
+            <button
+              type="submit"
+              disabled={loading}
+              className="w-full rounded-lg bg-accent px-6 py-3 text-sm font-semibold text-accent-foreground hover:opacity-90 disabled:opacity-60 transition-all shadow-md"
+            >
+              {loading ? pageLabel(page, "submittingLabel", "Submitting...") : t("secondOpinion.submit")}
             </button>
 
-            <p className="text-xs text-muted-foreground text-center">{t("secondOpinion.privacy")}</p>
+            <p className="text-xs text-muted-foreground text-center">{pageLabel(page, "privacyLabel", t("secondOpinion.privacy"))}</p>
           </motion.form>
         </div>
       </section>
+
+      <PageFaqSection faqs={page.faqs} />
     </>
   );
 }

@@ -160,6 +160,27 @@ describe("admin route guards (AUTH-004, ROLE-004, SEC-001 UI layer)", () => {
     expect(screen.queryByRole("heading", { name: /sign in/i })).not.toBeInTheDocument();
   });
 
+  it("login page shows AccessDenied (No CMS access) when authenticated without a CMS role", () => {
+    setAuth("authenticated", null);
+    renderAt("/admin/login");
+    expect(screen.getByRole("heading", { name: /no cms access/i })).toBeInTheDocument();
+    expect(screen.queryByRole("heading", { name: /sign in/i })).not.toBeInTheDocument();
+    screen.getByRole("button", { name: /sign out/i }).click();
+    expect(signOut).toHaveBeenCalled();
+  });
+
+  it("login page shows verification error with retry and sign-out when role RPC fails (e.g. uninitialized DB)", () => {
+    setAuth("error", null, { error: "Could not find the function public.has_role in the schema cache" });
+    renderAt("/admin/login");
+    expect(screen.getByRole("heading", { name: /couldn't verify your account/i })).toBeInTheDocument();
+    expect(screen.getByRole("alert")).toHaveTextContent(/public\.has_role/i);
+    expect(screen.queryByRole("heading", { name: /sign in/i })).not.toBeInTheDocument();
+    screen.getByRole("button", { name: /try again/i }).click();
+    expect(retry).toHaveBeenCalled();
+    screen.getByRole("button", { name: /sign out/i }).click();
+    expect(signOut).toHaveBeenCalled();
+  });
+
   it("login page tells the user when the previous session expired", () => {
     setAuth("unauthenticated", null, { sessionExpired: true });
     renderAt("/admin/login");

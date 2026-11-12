@@ -1,8 +1,9 @@
-import { useState, useEffect } from "react";
-import { supabase } from "@/integrations/supabase/client";
+import { useState } from "react";
 import { useToast } from "@/hooks/use-toast";
-import { useAuth } from "@/contexts/AuthContext";
-import { Plus, Pencil, Trash2, X } from "lucide-react";
+import { X } from "lucide-react";
+import { CollectionDraftList } from "@/components/admin/CollectionDraftList";
+import { useCollectionDraft } from "@/hooks/useCollectionDraft";
+import { newDraftItemId } from "@/lib/cms/collections";
 import type { Tables } from "@/integrations/supabase/types";
 
 type Service = Tables<"services">;
@@ -15,44 +16,23 @@ const emptyService = {
 };
 
 export default function AdminServices() {
-  const [services, setServices] = useState<Service[]>([]);
+  const ws = useCollectionDraft<Service>("services");
   const [editing, setEditing] = useState<Partial<Service> | null>(null);
   const [isNew, setIsNew] = useState(false);
   const { toast } = useToast();
-  const { can } = useAuth();
-
-  const load = async () => {
-    const { data } = await supabase.from("services").select("*").order("sort_order");
-    if (data) setServices(data);
-  };
-
-  useEffect(() => { load(); }, []);
 
   const slugify = (s: string) => s.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "");
 
-  const handleSave = async () => {
+  /** Records the edit in the draft changeset only — nothing live changes until approval and publishing. */
+  const handleSave = () => {
     if (!editing?.name || !editing?.slug) {
       toast({ title: "Error", description: "Name and slug are required.", variant: "destructive" });
       return;
     }
-    if (isNew) {
-      const { error } = await supabase.from("services").insert(editing as any);
-      if (error) { toast({ title: "Error", description: error.message, variant: "destructive" }); return; }
-    } else {
-      const { error } = await supabase.from("services").update(editing as any).eq("id", editing.id!);
-      if (error) { toast({ title: "Error", description: error.message, variant: "destructive" }); return; }
-    }
-    toast({ title: "Saved!" });
+    ws.editItem({ ...editing, id: editing.id ?? newDraftItemId() } as Service);
     setEditing(null);
     setIsNew(false);
-    load();
-  };
-
-  const handleDelete = async (id: string) => {
-    if (!confirm("Delete this service?")) return;
-    await supabase.from("services").delete().eq("id", id);
-    toast({ title: "Deleted" });
-    load();
+    toast({ title: "Added to draft", description: "Save the draft and submit it for review. The live website is unchanged." });
   };
 
   if (editing) {
@@ -143,29 +123,29 @@ export default function AdminServices() {
   }
 
   return (
-    <div>
-      <div className="flex items-center justify-between mb-4">
-        <h3 className="font-display font-semibold text-foreground">Services ({services.length})</h3>
-        <button onClick={() => { setEditing({ ...emptyService }); setIsNew(true); }}
-          className="inline-flex items-center gap-1 rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:opacity-90">
-          <Plus size={16} /> Add Service
-        </button>
-      </div>
-      <div className="space-y-3">
-        {services.map((svc) => (
-          <div key={svc.id} className="bg-card rounded-xl border p-4 flex items-center justify-between">
-            <div>
-              <div className="text-sm font-semibold text-foreground">{svc.name}</div>
-              <div className="text-xs text-muted-foreground">{svc.category} • {svc.cost_range} • {svc.patients_treated} patients</div>
-            </div>
-            <div className="flex gap-2">
-              <button onClick={() => setEditing({ ...svc })} className="p-2 text-muted-foreground hover:text-primary"><Pencil size={16} /></button>
-              {can("content.delete") && (<button onClick={() => handleDelete(svc.id)} className="p-2 text-muted-foreground hover:text-destructive"><Trash2 size={16} /></button>)}
-            </div>
+    <CollectionDraftList<Service>
+      ws={ws}
+      title="Services"
+      label="Services"
+      addLabel="Add Service"
+      emptyText="No services yet. Add your first service."
+      previewUrl="/services?preview=1"
+      onAdd={() => {
+        setEditing({ ...emptyService });
+        setIsNew(true);
+      }}
+      onEdit={(svc) => {
+        setEditing({ ...svc });
+        setIsNew(false);
+      }}
+      renderSummary={(svc) => (
+        <div>
+          <div className="text-sm font-semibold text-foreground">{svc.name}</div>
+          <div className="text-xs text-muted-foreground">
+            {svc.category} • {svc.cost_range} • {svc.patients_treated} patients
           </div>
-        ))}
-        {services.length === 0 && <p className="text-sm text-muted-foreground text-center py-8">No services yet. Add your first service.</p>}
-      </div>
-    </div>
+        </div>
+      )}
+    />
   );
 }

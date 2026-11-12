@@ -1,9 +1,10 @@
 import { useParams, Link } from "react-router-dom";
 import { motion } from "framer-motion";
-import { ArrowLeft, TrendingDown, TrendingUp, CheckCircle, Quote } from "lucide-react";
+import { ArrowLeft, ArrowRight, TrendingDown, TrendingUp, CheckCircle, Quote } from "lucide-react";
 import { useCaseStudy } from "@/hooks/useContent";
-import { useSiteConfig } from "@/contexts/SiteConfigContext";
+import { usePreviewSiteConfig, useSitePageContent } from "@/hooks/usePageContent";
 import SEO from "@/components/SEO";
+import { pageLabel } from "@/lib/cms/siteLabels";
 
 interface Milestone {
   day: number;
@@ -13,7 +14,8 @@ interface Milestone {
 
 export default function CaseStudyDetail() {
   const { slug } = useParams();
-  const { config } = useSiteConfig();
+  const { config } = usePreviewSiteConfig();
+  const { content: page } = useSitePageContent("case-studies");
   const { study: cs, loading } = useCaseStudy(slug);
 
   if (loading) {
@@ -24,8 +26,8 @@ export default function CaseStudyDetail() {
     return (
       <section className="py-20">
         <div className="container text-center">
-          <h1 className="font-display text-3xl font-bold text-foreground mb-4">Case Study Not Found</h1>
-          <Link to="/case-studies" className="text-primary font-medium">← Back to Case Studies</Link>
+          <h1 className="font-display text-3xl font-bold text-foreground mb-4">{pageLabel(page, "notFoundHeading", "Case Study Not Found")}</h1>
+          <Link to="/case-studies" className="text-primary font-medium">← {pageLabel(page, "backLabel", "Back to Case Studies")}</Link>
         </div>
       </section>
     );
@@ -46,7 +48,7 @@ export default function CaseStudyDetail() {
         <div className="container max-w-3xl">
           <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
             <Link to="/case-studies" className="inline-flex items-center gap-1 text-primary-foreground/70 text-sm mb-4 hover:text-primary-foreground">
-              <ArrowLeft size={14} /> Back to Case Studies
+              <ArrowLeft size={14} /> {pageLabel(page, "backLabel", "Back to Case Studies")}
             </Link>
             <span className="block text-accent text-sm font-semibold mb-2">{cs.surgery_type} • {cs.patient_initials} • Age {cs.age}</span>
             <h1 className="font-display text-3xl md:text-4xl font-bold text-primary-foreground mb-3">{cs.condition}</h1>
@@ -60,7 +62,7 @@ export default function CaseStudyDetail() {
           <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}
             className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-10">
             <div className="bg-card rounded-xl border p-4 text-center">
-              <div className="text-xs text-muted-foreground mb-1">Age / Gender</div>
+              <div className="text-xs text-muted-foreground mb-1">{pageLabel(page, "ageGenderLabel", "Age / Gender")}</div>
               <div className="font-display font-bold text-foreground">{cs.age} / {cs.gender}</div>
             </div>
             <div className="bg-card rounded-xl border p-4 text-center">
@@ -68,22 +70,22 @@ export default function CaseStudyDetail() {
               <div className="font-display font-bold text-foreground text-sm">{cs.occupation}</div>
             </div>
             <div className="bg-card rounded-xl border p-4 text-center">
-              <div className="text-xs text-muted-foreground mb-1">Hospital Stay</div>
+              <div className="text-xs text-muted-foreground mb-1">{pageLabel(page, "hospitalStayLabel", "Hospital Stay")}</div>
               <div className="font-display font-bold text-foreground">{cs.hospital_stay_days} day{(cs.hospital_stay_days || 1) > 1 ? "s" : ""}</div>
             </div>
             <div className="bg-card rounded-xl border p-4 text-center">
-              <div className="text-xs text-muted-foreground mb-1">Follow-Up</div>
+              <div className="text-xs text-muted-foreground mb-1">{pageLabel(page, "followUpLabel", "Follow-Up")}</div>
               <div className="font-display font-bold text-foreground text-sm">{cs.follow_up_period}</div>
             </div>
           </motion.div>
 
           <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}>
-            <h2 className="font-display text-xl font-bold text-foreground mb-3">Outcome Summary</h2>
+            <h2 className="font-display text-xl font-bold text-foreground mb-3">{pageLabel(page, "outcomeHeading", "Outcome Summary")}</h2>
             <p className="text-muted-foreground leading-relaxed mb-8">{cs.outcome_summary}</p>
 
             <div className="grid sm:grid-cols-2 gap-4 mb-10">
               <div className="bg-card rounded-xl border p-5">
-                <h3 className="font-display font-semibold text-foreground mb-3">Pain Score</h3>
+                <h3 className="font-display font-semibold text-foreground mb-3">{pageLabel(page, "painScoreLabel", "Pain Score")}</h3>
                 <div className="flex items-center justify-between">
                   <div className="text-center">
                     <div className="text-xs text-muted-foreground">Before</div>
@@ -97,7 +99,7 @@ export default function CaseStudyDetail() {
                 </div>
               </div>
               <div className="bg-card rounded-xl border p-5">
-                <h3 className="font-display font-semibold text-foreground mb-3">Range of Motion</h3>
+                <h3 className="font-display font-semibold text-foreground mb-3">{pageLabel(page, "romLabel", "Range of Motion")}</h3>
                 <div className="flex items-center justify-between">
                   <div className="text-center">
                     <div className="text-xs text-muted-foreground">Before</div>
@@ -114,7 +116,7 @@ export default function CaseStudyDetail() {
 
             {milestones.length > 0 && (
               <>
-                <h2 className="font-display text-xl font-bold text-foreground mb-4">Recovery Timeline</h2>
+                <h2 className="font-display text-xl font-bold text-foreground mb-4">{pageLabel(page, "recoveryTimelineHeading", "Recovery Timeline")}</h2>
                 <div className="space-y-4 mb-10">
                   {milestones.map((m, i) => (
                     <motion.div key={i} initial={{ opacity: 0, x: -20 }} whileInView={{ opacity: 1, x: 0 }} viewport={{ once: true }} transition={{ delay: i * 0.1 }}
@@ -146,17 +148,30 @@ export default function CaseStudyDetail() {
             <div className="grid sm:grid-cols-2 gap-4">
               {cs.return_to_work && (
                 <div className="bg-teal-light rounded-xl p-4">
-                  <div className="text-xs text-muted-foreground mb-1">Return to Work</div>
+                  <div className="text-xs text-muted-foreground mb-1">{pageLabel(page, "returnToWorkLabel", "Return to Work")}</div>
                   <div className="text-sm font-semibold text-foreground">{cs.return_to_work}</div>
                 </div>
               )}
               {cs.return_to_sports && (
                 <div className="bg-teal-light rounded-xl p-4">
-                  <div className="text-xs text-muted-foreground mb-1">Return to Activities</div>
+                  <div className="text-xs text-muted-foreground mb-1">{pageLabel(page, "returnToActivitiesLabel", "Return to Activities")}</div>
                   <div className="text-sm font-semibold text-foreground">{cs.return_to_sports}</div>
                 </div>
               )}
             </div>
+
+            {page.ctaHeading && (
+              <div className="mt-10 rounded-2xl bg-secondary/40 p-8 text-center">
+                <h3 className="font-display text-2xl font-bold text-foreground mb-2">{page.ctaHeading}</h3>
+                {page.ctaDescription && <p className="text-sm text-muted-foreground mb-5">{page.ctaDescription}</p>}
+                <Link
+                  to={page.ctaPrimaryLink || "/book"}
+                  className="inline-flex items-center gap-2 rounded-lg bg-accent px-6 py-3 text-sm font-semibold text-accent-foreground shadow-md hover:opacity-90"
+                >
+                  {page.ctaPrimaryLabel || "Book Consultation"} <ArrowRight size={16} />
+                </Link>
+              </div>
+            )}
           </motion.div>
         </div>
       </section>

@@ -1,95 +1,23 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { UserCheck, Award, GraduationCap, Image as ImageIcon, Plus, Trash2 } from "lucide-react";
 import { PageHeader } from "@/components/admin/states";
-import { DraftPublishBar } from "@/components/admin/DraftPublishBar";
+import { DraftWorkflowPanels, DraftWorkspaceLoading } from "@/components/admin/DraftWorkflowPanels";
 import { MediaPickerModal } from "@/components/admin/MediaPickerModal";
-import {
-  useSiteConfig,
-  type AwardEntry,
-  type EducationEntry,
-  type SiteConfig,
-} from "@/contexts/SiteConfigContext";
-import { useAuth } from "@/contexts/AuthContext";
-import { loadStagedSiteConfig, transitionSiteConfigWorkflow } from "@/lib/cms/repository";
-import type { ApprovalHistoryEntry, WorkflowStatus } from "@/lib/cms/types";
+import type { AwardEntry, EducationEntry } from "@/contexts/SiteConfigContext";
+import { useSiteConfigDraft } from "@/hooks/useSiteConfigDraft";
+import { SITE_CONFIG_SCOPE_PREVIEW_URL } from "@/lib/cms/siteConfigScopes";
 
 const inputClass =
   "w-full rounded-lg border bg-background px-3.5 py-2 text-xs text-foreground outline-none focus:border-primary focus:ring-2 focus:ring-primary/20";
 
+/**
+ * Doctor Profile workspace — same database draft workflow as Clinic Information (005c, scope 'doctor').
+ * Live values change only when a Super Admin publishes an approved draft.
+ */
 export default function AdminDoctor() {
-  const { config, updateConfig } = useSiteConfig();
-  const { user, role, can } = useAuth();
-
-  const canSubmitReview = can("content.submit_review");
-  const canApprove = can("content.approve");
-  const canPublish = can("content.publish");
-
-  const [form, setForm] = useState<SiteConfig>({ ...config });
-  const [workflowStatus, setWorkflowStatus] = useState<WorkflowStatus>("published");
-  const [reviewFeedback, setReviewFeedback] = useState<string | null>(null);
-  const [reviewedByEmail, setReviewedByEmail] = useState<string | null>(null);
-  const [reviewedAt, setReviewedAt] = useState<string | null>(null);
-  const [history, setHistory] = useState<ApprovalHistoryEntry[]>([]);
-  const [busy, setBusy] = useState(false);
-  const [statusMessage, setStatusMessage] = useState<string | null>(null);
+  const ws = useSiteConfigDraft("doctor");
+  const { form, setForm } = ws;
   const [mediaPickerOpen, setMediaPickerOpen] = useState(false);
-
-  useEffect(() => {
-    const staged = loadStagedSiteConfig("doctor");
-    if (staged) {
-      setForm({ ...config, ...staged.draft });
-      setWorkflowStatus(staged.workflowStatus);
-      setReviewFeedback(staged.reviewFeedback ?? null);
-      setReviewedByEmail(staged.reviewedByEmail ?? null);
-      setReviewedAt(staged.reviewedAt ?? null);
-      setHistory(staged.history ?? []);
-    } else {
-      setForm({ ...config });
-    }
-  }, [config]);
-
-  const runTransition = async (targetStatus: WorkflowStatus, feedback?: string) => {
-    setBusy(true);
-    setStatusMessage(null);
-    const res = await transitionSiteConfigWorkflow({
-      scope: "doctor",
-      updates: {
-        doctorName: form.doctorName,
-        title: form.title,
-        specialization: form.specialization,
-        registrationNumber: form.registrationNumber,
-        shortBio: form.shortBio,
-        fullBio: form.fullBio,
-        philosophy: form.philosophy,
-        heroImageUrl: form.heroImageUrl,
-        yearsExperience: form.yearsExperience,
-        happyPatients: form.happyPatients,
-        surgeriesCompleted: form.surgeriesCompleted,
-        education: form.education,
-        awards: form.awards,
-        memberships: form.memberships,
-        languages: form.languages,
-      },
-      targetStatus,
-      actorEmail: user?.email ?? "cms-user@orthocarehub.in",
-      actorRole: role ?? "editor",
-      canPublish,
-      updateLiveConfig: updateConfig,
-      feedback,
-    });
-    setBusy(false);
-    setStatusMessage(res.message);
-    if (res.workflowStatus) {
-      setWorkflowStatus(res.workflowStatus);
-    }
-    const refreshed = loadStagedSiteConfig("doctor");
-    if (refreshed) {
-      setReviewFeedback(refreshed.reviewFeedback ?? null);
-      setReviewedByEmail(refreshed.reviewedByEmail ?? null);
-      setReviewedAt(refreshed.reviewedAt ?? null);
-      setHistory(refreshed.history ?? []);
-    }
-  };
 
   const addEducation = () => {
     const next: EducationEntry[] = [
@@ -107,30 +35,45 @@ export default function AdminDoctor() {
     setForm({ ...form, awards: next });
   };
 
+  const header = (
+    <PageHeader
+      title="Doctor profile"
+      description="Manage doctor name, qualifications, biography, profile photo, experience statistics, and fellowships."
+    />
+  );
+
+  if (!ws.configLoaded || ws.loading) {
+    return (
+      <div className="space-y-6">
+        {header}
+        <DraftWorkspaceLoading label="Doctor profile" />
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-6">
-      <PageHeader
-        title="Doctor profile"
-        description="Manage doctor name, qualifications, biography, profile photo, experience statistics, and fellowships."
-      />
+      {header}
 
-      <DraftPublishBar
-        workflowStatus={workflowStatus}
-        busy={busy}
-        canSubmitReview={canSubmitReview}
-        canApprove={canApprove}
-        canPublish={canPublish}
-        reviewFeedback={reviewFeedback}
-        reviewedByEmail={reviewedByEmail}
-        reviewedAt={reviewedAt}
-        history={history}
-        statusMessage={statusMessage}
-        previewUrl="/about?preview=1"
-        onSaveDraft={() => void runTransition("draft")}
-        onSubmitForReview={() => void runTransition("pending_approval")}
-        onApprove={() => void runTransition("approved")}
-        onReject={(fb) => void runTransition("rejected", fb)}
-        onPublish={() => void runTransition("published")}
+      <DraftWorkflowPanels
+        label="Doctor profile"
+        migration="005c"
+        schemaReady={ws.schemaReady}
+        loadError={ws.loadError}
+        workflowStatus={ws.workflowStatus}
+        busy={ws.busy}
+        statusMessage={ws.statusMessage}
+        reviewFeedback={ws.record?.reviewFeedback ?? null}
+        reviewedByEmail={ws.record?.reviewedByEmail ?? null}
+        reviewedAt={ws.record?.reviewedAt ?? null}
+        history={ws.record?.history ?? []}
+        previewUrl={SITE_CONFIG_SCOPE_PREVIEW_URL.doctor}
+        unsavedChanges={ws.unsavedChanges}
+        changes={ws.pendingChanges}
+        onSave={(s) => void ws.save(s)}
+        onReview={(d, fb) => void ws.review(d, fb)}
+        onPublish={() => void ws.publish()}
+        onDiscard={ws.discardEdits}
       />
 
       {/* Core Identity & Photo */}
@@ -241,6 +184,88 @@ export default function AdminDoctor() {
               className={inputClass}
             />
           </div>
+
+          <div className="sm:col-span-2">
+            <label htmlFor="doctor-philosophy" className="mb-1 block text-xs font-medium text-foreground">
+              Doctor's Care Philosophy Quote (Displayed on /about)
+            </label>
+            <textarea
+              id="doctor-philosophy"
+              rows={2}
+              value={form.philosophy}
+              onChange={(e) => setForm({ ...form, philosophy: e.target.value })}
+              className={inputClass}
+            />
+          </div>
+        </div>
+      </section>
+
+      {/* International Fellowship Spotlight Card */}
+      <section className="rounded-xl border bg-card p-5 shadow-sm space-y-4">
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <h2 className="font-display text-base font-bold text-foreground">
+            International Fellowship Spotlight Card (/about)
+          </h2>
+          <label className="flex items-center gap-2 text-xs font-medium text-foreground cursor-pointer">
+            <input
+              type="checkbox"
+              checked={form.showFellowshipCard ?? true}
+              onChange={(e) => setForm({ ...form, showFellowshipCard: e.target.checked })}
+              className="rounded border-border"
+            />
+            Show Fellowship Card on /about
+          </label>
+        </div>
+
+        <div className="grid gap-4 sm:grid-cols-4">
+          <div>
+            <label className="mb-1 block text-xs font-medium text-foreground">Flag / Badge Icon</label>
+            <input
+              type="text"
+              value={form.fellowshipBadge ?? "🇰🇷"}
+              onChange={(e) => setForm({ ...form, fellowshipBadge: e.target.value })}
+              className={inputClass}
+            />
+          </div>
+          <div className="sm:col-span-3">
+            <label className="mb-1 block text-xs font-medium text-foreground">Fellowship Heading</label>
+            <input
+              type="text"
+              value={form.fellowshipTitle ?? "International Fellowship — South Korea"}
+              onChange={(e) => setForm({ ...form, fellowshipTitle: e.target.value })}
+              className={inputClass}
+            />
+          </div>
+          <div className="sm:col-span-2">
+            <label className="mb-1 block text-xs font-medium text-foreground">Fellowship Subtitle (optional)</label>
+            <input
+              type="text"
+              value={form.fellowshipSubtitle ?? ""}
+              onChange={(e) => setForm({ ...form, fellowshipSubtitle: e.target.value })}
+              className={inputClass}
+            />
+          </div>
+          <div className="sm:col-span-2">
+            <label className="mb-1 block text-xs font-medium text-foreground">
+              Fellowship Photo / Operating Room Image URL
+            </label>
+            <input
+              type="text"
+              value={form.fellowshipImageUrl ?? ""}
+              onChange={(e) => setForm({ ...form, fellowshipImageUrl: e.target.value })}
+              placeholder="/images/fellowship-korea-operating-room.jpeg"
+              className={inputClass}
+            />
+          </div>
+          <div className="sm:col-span-4">
+            <label className="mb-1 block text-xs font-medium text-foreground">Fellowship Description</label>
+            <textarea
+              rows={3}
+              value={form.fellowshipDescription ?? ""}
+              onChange={(e) => setForm({ ...form, fellowshipDescription: e.target.value })}
+              className={inputClass}
+            />
+          </div>
         </div>
       </section>
 
@@ -284,15 +309,73 @@ export default function AdminDoctor() {
               className={inputClass}
             />
           </div>
+          <div>
+            <label htmlFor="doc-google-rating" className="mb-1 block text-xs font-medium text-foreground">
+              Google Rating (0–5)
+            </label>
+            <input
+              id="doc-google-rating"
+              type="number"
+              step="0.1"
+              min={0}
+              max={5}
+              value={form.googleRating}
+              onChange={(e) => setForm({ ...form, googleRating: Number(e.target.value) || 0 })}
+              className={inputClass}
+            />
+          </div>
+          <div>
+            <label htmlFor="doc-google-reviews" className="mb-1 block text-xs font-medium text-foreground">
+              Google Review Count
+            </label>
+            <input
+              id="doc-google-reviews"
+              type="number"
+              min={0}
+              value={form.googleReviewCount}
+              onChange={(e) => setForm({ ...form, googleReviewCount: Number(e.target.value) || 0 })}
+              className={inputClass}
+            />
+          </div>
+          <div>
+            <label htmlFor="doc-languages" className="mb-1 block text-xs font-medium text-foreground">
+              Languages Spoken (comma separated)
+            </label>
+            <input
+              id="doc-languages"
+              type="text"
+              key={(form.languages ?? []).join("|")}
+              defaultValue={(form.languages ?? []).join(", ")}
+              onBlur={(e) =>
+                setForm({
+                  ...form,
+                  languages: e.target.value
+                    .split(",")
+                    .map((l) => l.trim())
+                    .filter(Boolean),
+                })
+              }
+              className={inputClass}
+            />
+          </div>
         </div>
       </section>
 
       {/* Qualifications & Education */}
       <section className="rounded-xl border bg-card p-5 shadow-sm">
-        <div className="mb-3 flex items-center justify-between">
-          <div className="flex items-center gap-2">
+        <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
+          <div className="flex items-center gap-3">
             <GraduationCap size={18} className="text-primary" aria-hidden="true" />
             <h2 className="font-display text-base font-bold text-foreground">Degrees & Fellowships</h2>
+            <label className="flex items-center gap-1.5 text-xs text-muted-foreground cursor-pointer">
+              <input
+                type="checkbox"
+                checked={form.showEducationSection ?? false}
+                onChange={(e) => setForm({ ...form, showEducationSection: e.target.checked })}
+                className="rounded border-border"
+              />
+              Display section on /about
+            </label>
           </div>
           <button
             type="button"
@@ -364,10 +447,19 @@ export default function AdminDoctor() {
 
       {/* Awards */}
       <section className="rounded-xl border bg-card p-5 shadow-sm">
-        <div className="mb-3 flex items-center justify-between">
-          <div className="flex items-center gap-2">
+        <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
+          <div className="flex items-center gap-3">
             <Award size={18} className="text-primary" aria-hidden="true" />
             <h2 className="font-display text-base font-bold text-foreground">Awards & Recognitions</h2>
+            <label className="flex items-center gap-1.5 text-xs text-muted-foreground cursor-pointer">
+              <input
+                type="checkbox"
+                checked={form.showAwardsSection ?? false}
+                onChange={(e) => setForm({ ...form, showAwardsSection: e.target.checked })}
+                className="rounded border-border"
+              />
+              Display section on /about
+            </label>
           </div>
           <button
             type="button"
@@ -432,6 +524,52 @@ export default function AdminDoctor() {
                   <Trash2 size={14} />
                 </button>
               </div>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      {/* Professional Memberships */}
+      <section className="rounded-xl border bg-card p-5 shadow-sm">
+        <div className="mb-3 flex items-center justify-between">
+          <h2 className="font-display text-base font-bold text-foreground">
+            Professional Memberships ({(form.memberships ?? []).length})
+          </h2>
+          <button
+            type="button"
+            onClick={() => setForm({ ...form, memberships: [...(form.memberships ?? []), "Indian Orthopaedic Association"] })}
+            className="inline-flex items-center gap-1 rounded-lg border px-3 py-1.5 text-xs font-semibold text-primary hover:bg-secondary"
+          >
+            <Plus size={13} /> Add membership
+          </button>
+        </div>
+        <div className="space-y-2">
+          {(form.memberships ?? []).map((m, idx) => (
+            <div key={idx} className="flex items-center gap-2">
+              <input
+                type="text"
+                aria-label={`Membership ${idx + 1}`}
+                value={m}
+                onChange={(e) => {
+                  const next = [...(form.memberships ?? [])];
+                  next[idx] = e.target.value;
+                  setForm({ ...form, memberships: next });
+                }}
+                className={inputClass}
+              />
+              <button
+                type="button"
+                onClick={() =>
+                  setForm({
+                    ...form,
+                    memberships: (form.memberships ?? []).filter((_, i) => i !== idx),
+                  })
+                }
+                aria-label={`Remove membership ${idx + 1}`}
+                className="p-1.5 text-muted-foreground hover:text-destructive"
+              >
+                <Trash2 size={14} />
+              </button>
             </div>
           ))}
         </div>

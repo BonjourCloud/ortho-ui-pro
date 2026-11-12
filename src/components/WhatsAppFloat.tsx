@@ -1,10 +1,11 @@
-import { useSiteConfig } from "@/contexts/SiteConfigContext";
+import { usePreviewSiteConfig } from "@/hooks/usePageContent";
 import { trackClick } from "@/utils/analytics";
 
 export default function WhatsAppFloat() {
-  const { config } = useSiteConfig();
+  const { config } = usePreviewSiteConfig("clinic");
   const number = config.whatsapp?.replace(/\D/g, "") || config.phone.replace(/\D/g, "");
   const phoneNumber = config.phone;
+  const whatsappMessage = config.whatsappDefaultMessage || "Hi Doctor, I'd like to book a consultation.";
 
   if (!config.whatsappFloatEnabled) return null;
   return (
@@ -33,7 +34,7 @@ export default function WhatsAppFloat() {
 
       {/* WhatsApp Button */}
       <a
-        href={`https://wa.me/${number}?text=${encodeURIComponent("Hi Doctor, I'd like to book a consultation.")}`}
+        href={`https://wa.me/${number}?text=${encodeURIComponent(whatsappMessage)}`}
         target="_blank"
         rel="noopener noreferrer"
         aria-label="Chat on WhatsApp"

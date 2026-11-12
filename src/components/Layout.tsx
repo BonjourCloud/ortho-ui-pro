@@ -1,13 +1,15 @@
 import { Link, useLocation } from "react-router-dom";
 import WhatsAppFloat from "./WhatsAppFloat";
-import { Phone, Mail, MapPin, Clock, Menu, X, Shield, Globe, Facebook, Instagram, ChevronDown } from "lucide-react";
+import { Phone, Mail, MapPin, Clock, Menu, X, Shield, Globe, Facebook, Instagram, Youtube, ChevronDown } from "lucide-react";
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useSiteConfig } from "@/contexts/SiteConfigContext";
+import { usePreviewSiteConfig } from "@/hooks/usePageContent";
 import { APPROVED_THEME_PRESETS } from "@/lib/cms/types";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { languageLabels, Language } from "@/data/translations";
 import { useMedicalSections } from "@/hooks/useMedicalSections";
+import { siteLabel, siteLabelOr } from "@/lib/cms/siteLabels";
 
 export default function Layout({ children }: { children: React.ReactNode }) {
   const [menuOpen, setMenuOpen] = useState(false);
@@ -15,7 +17,8 @@ export default function Layout({ children }: { children: React.ReactNode }) {
   const [activeDropdown, setActiveDropdown] = useState<string | null>(null);
   const [dropdownTimeout, setDropdownTimeout] = useState<NodeJS.Timeout | null>(null);
   const location = useLocation();
-  const { config, isAdmin } = useSiteConfig();
+  const { isAdmin } = useSiteConfig();
+  const { config } = usePreviewSiteConfig();
   const { language, setLanguage, t, enabledLanguages } = useLanguage();
   const { sections } = useMedicalSections();
 
@@ -28,6 +31,12 @@ export default function Layout({ children }: { children: React.ReactNode }) {
     root.style.setProperty("--primary", config.branding?.primaryHsl || preset.primaryHsl);
     root.style.setProperty("--accent", config.branding?.accentHsl || preset.accentHsl);
     root.style.setProperty("--hero-gradient", preset.heroGradient);
+    if (config.branding?.headingFont) {
+      root.style.setProperty("--font-display", `"${config.branding.headingFont}", Georgia, serif`);
+    }
+    if (config.branding?.bodyFont) {
+      root.style.setProperty("--font-body", `"${config.branding.bodyFont}", system-ui, sans-serif`);
+    }
   }, [config.branding]);
 
   const handleDropdownEnter = (key: string) => {
@@ -48,29 +57,42 @@ export default function Layout({ children }: { children: React.ReactNode }) {
   const isAdminRoute = location.pathname.startsWith("/admin");
   if (isAdminRoute) return <>{children}</>;
 
-  const navLinks = [
-    { to: "/", label: t("nav.home") },
-    { to: "/about", label: t("nav.about") },
-    { 
-      to: "/orthopaedics", 
-      label: "Orthopaedics",
-      hasDropdown: true,
-      dropdownKey: "orthopaedics"
-    },
-    { 
-      to: "/physiotherapy", 
-      label: "Physiotherapy",
-      hasDropdown: true,
-      dropdownKey: "physiotherapy"
-    },
-    { 
-      to: "/rehabilitation", 
-      label: "Rehabilitation",
-      hasDropdown: true,
-      dropdownKey: "rehabilitation"
-    },
-    { to: "/contact", label: t("nav.contact") },
-  ];
+  const customNav = config.branding?.navItems;
+  const navLinks = Array.isArray(customNav) && customNav.length > 0
+    ? [...customNav]
+        .filter((item) => item.visible !== false)
+        .sort((a, b) => a.sortOrder - b.sortOrder)
+        .map((item) => ({
+          to: item.to,
+          label: item.label,
+          hasDropdown: item.hasDropdown ?? (item.to === "/orthopaedics" || item.to === "/physiotherapy" || item.to === "/rehabilitation"),
+          dropdownKey: item.dropdownKey || (item.to.replace(/^\//, "") as "orthopaedics" | "physiotherapy" | "rehabilitation" | undefined),
+        }))
+    : [
+        { to: "/", label: t("nav.home") },
+        { to: "/about", label: t("nav.about") },
+        { 
+          to: "/orthopaedics", 
+          label: "Orthopaedics",
+          hasDropdown: true,
+          dropdownKey: "orthopaedics"
+        },
+        { 
+          to: "/physiotherapy", 
+          label: "Physiotherapy",
+          hasDropdown: true,
+          dropdownKey: "physiotherapy"
+        },
+        { 
+          to: "/rehabilitation", 
+          label: "Rehabilitation",
+          hasDropdown: true,
+          dropdownKey: "rehabilitation"
+        },
+        { to: "/contact", label: t("nav.contact") },
+      ];
+
+  const headerCtaLink = config.branding?.headerCtaLink || "/book";
 
   const formatPhone = (phone: string) => {
     const digits = phone.replace(/\D/g, "");
@@ -80,6 +102,24 @@ export default function Layout({ children }: { children: React.ReactNode }) {
 
   return (
     <div className="min-h-screen flex flex-col font-body">
+      {/* Global Announcement Banner */}
+      {config.branding?.announcementEnabled && config.branding?.announcementText && (
+        <aside
+          aria-label="Announcement"
+          className="bg-accent text-accent-foreground py-2 px-4 text-xs sm:text-sm font-medium text-center flex items-center justify-center gap-2"
+        >
+          <span>{config.branding.announcementText}</span>
+          {config.branding.announcementLinkUrl && (
+            <Link
+              to={config.branding.announcementLinkUrl}
+              className="underline font-semibold hover:opacity-80 transition-opacity ml-1"
+            >
+              {config.branding.announcementLinkLabel || "Learn more"} →
+            </Link>
+          )}
+        </aside>
+      )}
+
       {/* Top bar */}
       <div className="bg-primary text-primary-foreground text-sm hidden md:block">
         <div className="container flex items-center justify-between py-2">
@@ -224,10 +264,10 @@ export default function Layout({ children }: { children: React.ReactNode }) {
               )
             ))}
             <Link
-              to="/book"
+              to={headerCtaLink}
               className="inline-flex items-center justify-center rounded-lg bg-accent px-5 py-2.5 text-sm font-semibold text-accent-foreground transition-all hover:opacity-90 shadow-md"
             >
-              {t("nav.bookAppointment")}
+              {config.branding?.headerCtaLabel || t("nav.bookAppointment")}
             </Link>
           </nav>
 
@@ -337,15 +377,15 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                   )
                 ))}
                 <Link
-                  to="/book"
+                  to={headerCtaLink}
                   onClick={() => setMenuOpen(false)}
                   className="inline-flex items-center justify-center rounded-lg bg-accent px-5 py-2.5 text-sm font-semibold text-accent-foreground"
                 >
-                  {t("nav.bookAppointment")}
+                  {config.branding?.headerCtaLabel || t("nav.bookAppointment")}
                 </Link>
                 {isAdmin && (
                   <Link to="/admin" onClick={() => setMenuOpen(false)} className="text-sm font-medium py-2 text-accent flex items-center gap-1">
-                    <Shield size={14} /> Admin Dashboard
+                    <Shield size={14} /> {siteLabel(config, "adminLinkLabel")}
                   </Link>
                 )}
               </div>
@@ -367,7 +407,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
               </p>
             </div>
             <div>
-              <h4 className="font-display text-lg font-semibold mb-4">{t("footer.quickLinks")}</h4>
+              <h4 className="font-display text-lg font-semibold mb-4">{siteLabelOr(config, "footerQuickLinksHeading", t("footer.quickLinks"))}</h4>
               <div className="flex flex-col gap-2">
                 {navLinks.map((l) => (
                   <Link key={l.to} to={l.to} className="text-sm text-primary-foreground/70 hover:text-primary-foreground transition-colors">
@@ -375,14 +415,19 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                   </Link>
                 ))}
                 <Link to="/book" className="text-sm text-primary-foreground/70 hover:text-primary-foreground transition-colors">
-                  {t("nav.bookAppointment")}
+                  {siteLabelOr(config, "footerBookLabel", t("nav.bookAppointment"))}
                 </Link>
               </div>
             </div>
             <div>
-              <h4 className="font-display text-lg font-semibold mb-4">{t("footer.contact")}</h4>
+              <h4 className="font-display text-lg font-semibold mb-4">{siteLabelOr(config, "footerContactHeading", t("footer.contact"))}</h4>
               <div className="flex flex-col gap-3 text-sm text-primary-foreground/70">
-                <a href="https://maps.app.goo.gl/KQzg4FnBZ2bbBxwh8" target="_blank" rel="noopener noreferrer" className="flex items-start gap-2 hover:text-primary-foreground transition-colors">
+                <a
+                  href={config.branding?.googleMapsUrl || config.googleMapsDirectionsUrl || "https://maps.app.goo.gl/KQzg4FnBZ2bbBxwh8"}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-start gap-2 hover:text-primary-foreground transition-colors"
+                >
                   <MapPin size={16} className="mt-0.5 shrink-0" />
                   <span>{config.location}</span>
                 </a>
@@ -395,9 +440,9 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                   <span>{config.email}</span>
                 </div>
               </div>
-              {(config.facebook || config.instagram) && (
+              {(config.facebook || config.instagram || config.branding?.youtubeUrl) && (
                 <div className="mt-4">
-                  <h5 className="text-sm font-semibold mb-3">Follow Us</h5>
+                  <h5 className="text-sm font-semibold mb-3">{siteLabel(config, "footerFollowHeading")}</h5>
                   <div className="flex gap-3">
                     {config.facebook && (
                       <a href={config.facebook} target="_blank" rel="noopener noreferrer" 
@@ -413,13 +458,20 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                         <Instagram size={18} />
                       </a>
                     )}
+                    {config.branding?.youtubeUrl && (
+                      <a href={config.branding.youtubeUrl} target="_blank" rel="noopener noreferrer"
+                         className="w-10 h-10 rounded-full bg-primary-foreground/10 hover:bg-primary-foreground/20 flex items-center justify-center transition-colors"
+                         aria-label="YouTube">
+                        <Youtube size={18} />
+                      </a>
+                    )}
                   </div>
                 </div>
               )}
             </div>
           </div>
           <div className="border-t border-primary-foreground/20 mt-10 pt-6 text-center text-xs text-primary-foreground/50">
-            © 2026 {config.doctorName} {config.clinicName}. {t("footer.rights")}
+            {config.branding?.copyrightText || `© 2026 ${config.doctorName} ${config.clinicName}. ${siteLabelOr(config, "footerRightsText", t("footer.rights"))}`}
           </div>
         </div>
       </footer>

@@ -12,18 +12,37 @@ export function AdminLoading({ label = "Loading…" }: { label?: string }) {
   );
 }
 
-export function AdminError({ message, onRetry, title = "Something went wrong" }: { message?: string | null; onRetry?: () => void; title?: string }) {
+export function AdminError({
+  message,
+  onRetry,
+  onSignOut,
+  title = "Something went wrong",
+}: {
+  message?: string | null;
+  onRetry?: () => void;
+  onSignOut?: () => void;
+  title?: string;
+}) {
   return (
-    <div role="alert" className="mx-auto flex min-h-[40vh] max-w-md flex-col items-center justify-center gap-3 text-center">
+    <div role="alert" className="mx-auto flex min-h-[40vh] max-w-md flex-col items-center justify-center gap-3 px-4 text-center">
       <div className="flex h-12 w-12 items-center justify-center rounded-full bg-destructive/10">
         <AlertTriangle className="h-6 w-6 text-destructive" aria-hidden="true" />
       </div>
       <h2 className="font-display text-xl font-semibold text-foreground">{title}</h2>
       {message && <p className="text-sm text-muted-foreground">{message}</p>}
-      {onRetry && (
-        <Button variant="outline" onClick={onRetry}>
-          Try again
-        </Button>
+      {(onRetry || onSignOut) && (
+        <div className="flex gap-2">
+          {onRetry && (
+            <Button variant="outline" onClick={onRetry}>
+              Try again
+            </Button>
+          )}
+          {onSignOut && (
+            <Button variant="ghost" onClick={onSignOut}>
+              Sign out
+            </Button>
+          )}
+        </div>
       )}
     </div>
   );

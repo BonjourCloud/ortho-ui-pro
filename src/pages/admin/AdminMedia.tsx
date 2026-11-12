@@ -1,9 +1,16 @@
 import { useEffect, useState } from "react";
-import { Upload, Trash2, Copy, Check, Image as ImageIcon, Video, Lock } from "lucide-react";
+import { Upload, Trash2, Copy, Check, Image as ImageIcon, Video, Lock, Pencil, RefreshCw, X } from "lucide-react";
 import { PageHeader } from "@/components/admin/states";
 import { useAuth } from "@/contexts/AuthContext";
-import { deleteMediaAsset, listMediaAssets, uploadMediaAsset } from "@/lib/cms/repository";
+import {
+  deleteMediaAsset,
+  listMediaAssets,
+  replaceMediaAssetFile,
+  updateMediaAssetMetadata,
+  uploadMediaAsset,
+} from "@/lib/cms/repository";
 import type { MediaAsset, MediaCategory, MediaType } from "@/lib/cms/types";
+import { MEDIA_ACCEPT_ATTR, MEDIA_ALLOWED_DESCRIPTION } from "@/lib/cms/types";
 
 const CATEGORIES: { value: MediaCategory | "all"; label: string }[] = [
   { value: "all", label: "All categories" },
@@ -34,6 +41,69 @@ export default function AdminMedia() {
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
   const [copiedId, setCopiedId] = useState<string | null>(null);
+
+  const [editAlt, setEditAlt] = useState("");
+  const [editCaption, setEditCaption] = useState("");
+  const [editCategory, setEditCategory] = useState<MediaCategory>("general");
+  const [savingMeta, setSavingMeta] = useState(false);
+
+  const openEditAsset = (asset: MediaAsset) => {
+    setSelected(asset);
+    setEditAlt(asset.altText);
+    setEditCaption(asset.caption);
+    setEditCategory(asset.category);
+  };
+
+  const handleSaveMetadata = async () => {
+    if (!selected) return;
+    setSavingMeta(true);
+    setError(null);
+    setNotice(null);
+    const res = await updateMediaAssetMetadata({
+      assetId: selected.id,
+      altText: editAlt,
+      caption: editCaption,
+      category: editCategory,
+    });
+    setSavingMeta(false);
+    if (!res.ok) {
+      setError(res.error ?? "Failed to update media metadata.");
+      return;
+    }
+    const updated: MediaAsset = {
+      ...selected,
+      altText: editAlt.trim(),
+      caption: editCaption.trim(),
+      category: editCategory,
+    };
+    setAssets((prev) => prev.map((a) => (a.id === selected.id ? updated : a)));
+    setSelected(updated);
+    setNotice(`Updated alt text, caption, and category for "${selected.fileName}".`);
+  };
+
+  const handleReplaceFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !selected) return;
+    setError(null);
+    setNotice(null);
+    setSavingMeta(true);
+    const res = await replaceMediaAssetFile({ asset: selected, file });
+    setSavingMeta(false);
+    e.target.value = "";
+    if (!res.ok || !res.asset) {
+      setError(res.error ?? "Failed to replace media file.");
+      return;
+    }
+    // The replacement is a NEW asset; the original stays in the library and on any page using it.
+    const previous = selected;
+    const replacement = res.asset;
+    setAssets((prev) => [replacement, ...prev]);
+    openEditAsset(replacement);
+    setNotice(
+      `Uploaded "${replacement.fileName}" as a new version of "${previous.fileName}". Pages using the old file keep showing it until the new file is selected there and that change is approved.` +
+        (res.persistedToDatabase ? "" : " (Session preview only: the storage bucket is not available yet.)"),
+    );
+  };
 
   useEffect(() => {
     void listMediaAssets().then(({ assets: list, schemaReady: ready }) => {
@@ -112,7 +182,7 @@ export default function AdminMedia() {
     <div className="space-y-6">
       <PageHeader
         title="Media library"
-        description="Upload and manage website images (JPG, PNG, WebP, SVG up to 5 MB) and videos (MP4, WebM up to 50 MB)."
+        description={`Upload and manage website images and videos (${MEDIA_ALLOWED_DESCRIPTION}).`}
       />
 
       {!schemaReady && (
@@ -196,7 +266,7 @@ export default function AdminMedia() {
               <input
                 data-testid="media-file-input"
                 type="file"
-                accept="image/jpeg,image/png,image/webp,image/svg+xml,video/mp4,video/webm"
+                accept={MEDIA_ACCEPT_ATTR}
                 onChange={handleUpload}
                 className="sr-only"
               />
@@ -244,6 +314,108 @@ export default function AdminMedia() {
         </span>
       </div>
 
+      {/* Selected Media Edit / Replacement Panel */}
+      {selected && (
+        <section
+          aria-label="Edit or replace selected media"
+          className="rounded-xl border-2 border-primary/30 bg-card p-5 shadow-sm space-y-4"
+        >
+          <div className="flex items-center justify-between border-b pb-3">
+            <div>
+              <h2 className="font-display text-base font-bold text-foreground">
+                Edit & Replace Media — {selected.fileName}
+              </h2>
+              <p className="text-xs text-muted-foreground">
+                Update alt text, caption, category organization, or replace the file. Replacement creates a new versioned storage path so other pages using the previous URL remain completely unaffected.
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={() => setSelected(null)}
+              className="rounded-lg p-1.5 text-muted-foreground hover:bg-secondary hover:text-foreground"
+            >
+              <X size={16} />
+            </button>
+          </div>
+
+          <div className="grid gap-4 md:grid-cols-3">
+            <div className="flex flex-col items-center justify-center rounded-xl border bg-secondary/30 p-3">
+              {selected.mediaType === "image" ? (
+                <img
+                  src={selected.publicUrl}
+                  alt={selected.altText || selected.fileName}
+                  className="max-h-44 rounded-lg object-contain"
+                />
+              ) : (
+                <video src={selected.publicUrl} controls className="max-h-44 rounded-lg" />
+              )}
+              <code className="mt-2 max-w-full truncate text-[10px] text-muted-foreground">
+                {selected.publicUrl}
+              </code>
+            </div>
+
+            <div className="md:col-span-2 space-y-3">
+              <div className="grid gap-3 sm:grid-cols-2">
+                <div>
+                  <label className="mb-1 block text-xs font-medium text-foreground">Alt Text</label>
+                  <input
+                    type="text"
+                    value={editAlt}
+                    onChange={(e) => setEditAlt(e.target.value)}
+                    className="w-full rounded-lg border bg-background px-3 py-2 text-xs text-foreground"
+                  />
+                </div>
+                <div>
+                  <label className="mb-1 block text-xs font-medium text-foreground">Category Organization</label>
+                  <select
+                    value={editCategory}
+                    onChange={(e) => setEditCategory(e.target.value as MediaCategory)}
+                    className="w-full rounded-lg border bg-background px-3 py-2 text-xs text-foreground"
+                  >
+                    {CATEGORIES.filter((c) => c.value !== "all").map((c) => (
+                      <option key={c.value} value={c.value}>
+                        {c.label}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <div className="sm:col-span-2">
+                  <label className="mb-1 block text-xs font-medium text-foreground">Caption</label>
+                  <input
+                    type="text"
+                    value={editCaption}
+                    onChange={(e) => setEditCaption(e.target.value)}
+                    className="w-full rounded-lg border bg-background px-3 py-2 text-xs text-foreground"
+                  />
+                </div>
+              </div>
+
+              <div className="flex flex-wrap items-center gap-2 pt-1">
+                <button
+                  type="button"
+                  disabled={savingMeta}
+                  onClick={() => void handleSaveMetadata()}
+                  className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-4 py-2 text-xs font-semibold text-primary-foreground hover:opacity-90 disabled:opacity-50"
+                >
+                  <Check size={14} /> Save Details
+                </button>
+                {canUpload && (
+                  <label className="inline-flex cursor-pointer items-center gap-1.5 rounded-lg border bg-secondary px-3.5 py-2 text-xs font-semibold text-foreground hover:bg-secondary/80">
+                    <RefreshCw size={13} /> Replace File
+                    <input
+                      type="file"
+                      accept={MEDIA_ACCEPT_ATTR}
+                      onChange={handleReplaceFile}
+                      className="sr-only"
+                    />
+                  </label>
+                )}
+              </div>
+            </div>
+          </div>
+        </section>
+      )}
+
       {/* Media Grid */}
       <div className="grid gap-4 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
         {filtered.map((asset) => (
@@ -281,17 +453,31 @@ export default function AdminMedia() {
                 <p className="mt-1 line-clamp-2 text-[11px] text-muted-foreground">
                   <strong className="text-foreground/80">Alt:</strong> {asset.altText || "None"}
                 </p>
+                {asset.caption && (
+                  <p className="mt-0.5 line-clamp-1 text-[11px] text-muted-foreground">
+                    <strong className="text-foreground/80">Caption:</strong> {asset.caption}
+                  </p>
+                )}
               </div>
 
               <div className="mt-3 flex items-center justify-between border-t pt-2.5">
-                <button
-                  type="button"
-                  onClick={() => handleCopyUrl(asset)}
-                  className="inline-flex items-center gap-1 text-xs font-medium text-primary hover:underline"
-                >
-                  {copiedId === asset.id ? <Check size={12} /> : <Copy size={12} />}
-                  {copiedId === asset.id ? "Copied" : "Copy URL"}
-                </button>
+                <div className="flex items-center gap-2.5">
+                  <button
+                    type="button"
+                    onClick={() => handleCopyUrl(asset)}
+                    className="inline-flex items-center gap-1 text-xs font-medium text-primary hover:underline"
+                  >
+                    {copiedId === asset.id ? <Check size={12} /> : <Copy size={12} />}
+                    {copiedId === asset.id ? "Copied" : "Copy URL"}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => openEditAsset(asset)}
+                    className="inline-flex items-center gap-1 text-xs font-medium text-foreground/80 hover:text-primary"
+                  >
+                    <Pencil size={11} /> Edit
+                  </button>
+                </div>
 
                 {canDelete ? (
                   <button

@@ -3,7 +3,7 @@ import { Link, Navigate, useLocation } from "react-router-dom";
 import { KeyRound, Loader2, Lock, UserPlus } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
-import { AccessDenied } from "@/components/admin/states";
+import { AccessDenied, AdminError } from "@/components/admin/states";
 
 type Mode = "login" | "signup" | "forgot";
 
@@ -15,7 +15,7 @@ const BUTTONS = { login: "Sign in", signup: "Sign up", forgot: "Send reset link"
 const inputClass = "w-full rounded-lg border bg-card px-4 py-2.5 text-sm text-foreground outline-none focus:border-primary focus:ring-2 focus:ring-primary/20";
 
 export default function AdminLogin() {
-  const { status, role, signIn, signOut, sessionExpired } = useAuth();
+  const { status, role, error: authError, signIn, signOut, retry, sessionExpired } = useAuth();
   const location = useLocation();
   const navState = location.state as { from?: string; expired?: boolean } | null;
   const from = navState?.from && navState.from.startsWith("/admin") && navState.from !== "/admin/login" ? navState.from : "/admin";
@@ -46,9 +46,26 @@ export default function AdminLogin() {
     );
   }
 
+  if (status === "error") {
+    return (
+      <main className="flex min-h-screen items-center justify-center bg-secondary/30 px-4 py-10 font-body">
+        <AdminError
+          title="We couldn't verify your account"
+          message={authError}
+          onRetry={retry}
+          onSignOut={() => void signOut()}
+        />
+      </main>
+    );
+  }
+
   if (status === "authenticated") {
     if (role) return <Navigate to={from} replace />;
-    return <AccessDenied variant="no-role" onSignOut={() => void signOut()} />;
+    return (
+      <main className="flex min-h-screen items-center justify-center bg-secondary/30 px-4 py-10 font-body">
+        <AccessDenied variant="no-role" onSignOut={() => void signOut()} />
+      </main>
+    );
   }
 
   const switchMode = (next: Mode) => {
@@ -74,8 +91,8 @@ export default function AdminLogin() {
         if (signUpError) {
           setError(signUpError.message);
         } else {
-          // Existing bootstrap path (edge function restricted to the designated admin email). Will be replaced by Super Admin user provisioning.
-          await supabase.functions.invoke("assign-admin-role", { body: { email } });
+          // No role is assigned here. CMS roles are granted only by a Super Admin via the
+          // admin-users Edge Function; the legacy assign-admin-role function is retired.
           setInfo("Account created. If email confirmation is on, confirm your email, then sign in.");
           setMode("login");
         }

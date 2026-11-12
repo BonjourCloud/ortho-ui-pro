@@ -65,6 +65,14 @@ vi.mock("@/contexts/AuthContext", () => ({
 }));
 
 vi.mock("@/contexts/SiteConfigContext", () => ({
+  DEFAULT_NAV_ITEMS: [
+    { id: "home", label: "Home", to: "/", visible: true, sortOrder: 1 },
+    { id: "about", label: "About", to: "/about", visible: true, sortOrder: 2 },
+    { id: "orthopaedics", label: "Orthopaedics", to: "/orthopaedics", visible: true, sortOrder: 3, hasDropdown: true, dropdownKey: "orthopaedics" },
+    { id: "physiotherapy", label: "Physiotherapy", to: "/physiotherapy", visible: true, sortOrder: 4, hasDropdown: true, dropdownKey: "physiotherapy" },
+    { id: "rehabilitation", label: "Rehabilitation", to: "/rehabilitation", visible: true, sortOrder: 5, hasDropdown: true, dropdownKey: "rehabilitation" },
+    { id: "contact", label: "Contact", to: "/contact", visible: true, sortOrder: 6 },
+  ],
   useSiteConfig: () => ({
     config: baseConfig,
     updateConfig: mockUpdateConfig,
@@ -113,7 +121,7 @@ describe("Iteration 4 Workspaces (BRAND-001, SEO-001, AUDIT-001, ROLE-004, ROLE-
   });
 
   describe("BRAND-001: AdminBranding (Logo, theme presets & approval workflow)", () => {
-    it("allows Editor to select a theme preset & footer tagline, save draft, and submit for review without modifying live SiteConfig; Super Admin publishes live", async () => {
+    it("without migration 005c the Branding workspace is read-only and never writes live SiteConfig", async () => {
       currentRole = "editor";
       const { unmount } = render(
         <MemoryRouter>
@@ -121,38 +129,31 @@ describe("Iteration 4 Workspaces (BRAND-001, SEO-001, AUDIT-001, ROLE-004, ROLE-
         </MemoryRouter>,
       );
 
-      // Select Royal Medical Navy theme preset
+      const alert = await screen.findByRole("alert");
+      expect(alert).toHaveTextContent(/migration 005c has not been applied/i);
+
+      // Form remains usable for preparing changes…
       fireEvent.click(screen.getByRole("button", { name: /royal medical navy & gold/i }));
       fireEvent.change(screen.getByLabelText(/footer clinic tagline/i), {
         target: { value: "Excellence in Joint Replacement & Sports Medicine" },
       });
-
-      fireEvent.click(screen.getByRole("button", { name: /submit for review/i }));
-      await waitFor(() => {
-        expect(screen.getByTestId("workflow-status-badge")).toHaveTextContent("Pending Super Admin Review");
-      });
+      expect(screen.getByLabelText(/footer clinic tagline/i)).toHaveValue("Excellence in Joint Replacement & Sports Medicine");
+      // …but nothing can be saved or submitted, and the live config is untouched.
+      expect(screen.getByRole("button", { name: /submit for review/i })).toBeDisabled();
       expect(mockUpdateConfig).not.toHaveBeenCalled();
       unmount();
 
-      // Super Admin approves and publishes
+      // Super Admin cannot publish either (publishing only accepts an approved database draft).
       currentRole = "super_admin";
       render(
         <MemoryRouter>
           <AdminBranding />
         </MemoryRouter>,
       );
-
-      fireEvent.click(screen.getByRole("button", { name: /publish to live website/i }));
-      await waitFor(() => {
-        expect(mockUpdateConfig).toHaveBeenCalledWith(
-          expect.objectContaining({
-            branding: expect.objectContaining({
-              themePreset: "royal-navy",
-              footerTagline: "Excellence in Joint Replacement & Sports Medicine",
-            }),
-          }),
-        );
-      });
+      await screen.findByRole("alert");
+      expect(screen.getByRole("button", { name: /publish to live website/i })).toBeDisabled();
+      expect(mockUpdateConfig).not.toHaveBeenCalled();
+      // The full branding workflow is covered in DraftWorkflowsDoctorBrandingCollections.test.tsx (BRAND-02..04).
     });
   });
 

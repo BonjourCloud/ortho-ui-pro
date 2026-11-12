@@ -1,8 +1,9 @@
-import { useState, useEffect } from "react";
-import { supabase } from "@/integrations/supabase/client";
+import { useState } from "react";
 import { useToast } from "@/hooks/use-toast";
-import { useAuth } from "@/contexts/AuthContext";
-import { Plus, Pencil, Trash2, X } from "lucide-react";
+import { X } from "lucide-react";
+import { CollectionDraftList } from "@/components/admin/CollectionDraftList";
+import { useCollectionDraft } from "@/hooks/useCollectionDraft";
+import { newDraftItemId } from "@/lib/cms/collections";
 import type { Tables } from "@/integrations/supabase/types";
 
 type CaseStudy = Tables<"case_studies">;
@@ -13,48 +14,27 @@ const emptyCaseStudy = {
   hospital_stay_days: 1, follow_up_period: "", outcome_summary: "",
   pain_score_pre: 5, pain_score_post: 1, range_of_motion_pre: "",
   range_of_motion_post: "", testimonial: "", return_to_work: "",
-  return_to_sports: "", is_featured: false, milestones: [] as any,
+  return_to_sports: "", is_featured: false, milestones: [] as CaseStudy["milestones"],
 };
 
 export default function AdminCaseStudies() {
-  const [studies, setStudies] = useState<CaseStudy[]>([]);
+  const ws = useCollectionDraft<CaseStudy>("case_studies");
   const [editing, setEditing] = useState<Partial<CaseStudy> | null>(null);
   const [isNew, setIsNew] = useState(false);
   const { toast } = useToast();
-  const { can } = useAuth();
-
-  const load = async () => {
-    const { data } = await supabase.from("case_studies").select("*").order("created_at", { ascending: false });
-    if (data) setStudies(data);
-  };
-
-  useEffect(() => { load(); }, []);
 
   const slugify = (s: string) => s.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "");
 
-  const handleSave = async () => {
+  /** Records the edit in the draft changeset only — nothing live changes until approval and publishing. */
+  const handleSave = () => {
     if (!editing?.condition || !editing?.slug) {
       toast({ title: "Error", description: "Condition and slug are required.", variant: "destructive" });
       return;
     }
-    if (isNew) {
-      const { error } = await supabase.from("case_studies").insert(editing as any);
-      if (error) { toast({ title: "Error", description: error.message, variant: "destructive" }); return; }
-    } else {
-      const { error } = await supabase.from("case_studies").update(editing as any).eq("id", editing.id!);
-      if (error) { toast({ title: "Error", description: error.message, variant: "destructive" }); return; }
-    }
-    toast({ title: "Saved!" });
+    ws.editItem({ ...editing, id: editing.id ?? newDraftItemId() } as CaseStudy);
     setEditing(null);
     setIsNew(false);
-    load();
-  };
-
-  const handleDelete = async (id: string) => {
-    if (!confirm("Delete this case study?")) return;
-    await supabase.from("case_studies").delete().eq("id", id);
-    toast({ title: "Deleted" });
-    load();
+    toast({ title: "Added to draft", description: "Save the draft and submit it for review. The live website is unchanged." });
   };
 
   if (editing) {
@@ -171,32 +151,32 @@ export default function AdminCaseStudies() {
   }
 
   return (
-    <div>
-      <div className="flex items-center justify-between mb-4">
-        <h3 className="font-display font-semibold text-foreground">Case Studies ({studies.length})</h3>
-        <button onClick={() => { setEditing({ ...emptyCaseStudy }); setIsNew(true); }}
-          className="inline-flex items-center gap-1 rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:opacity-90">
-          <Plus size={16} /> Add Case Study
-        </button>
-      </div>
-      <div className="space-y-3">
-        {studies.map((cs) => (
-          <div key={cs.id} className="bg-card rounded-xl border p-4 flex items-center justify-between">
-            <div>
-              <div className="flex items-center gap-2">
-                <span className="text-sm font-semibold text-foreground">{cs.condition}</span>
-                {cs.is_featured && <span className="text-xs bg-accent/10 text-accent rounded-full px-2 py-0.5">Featured</span>}
-              </div>
-              <div className="text-xs text-muted-foreground">{cs.patient_initials} • Age {cs.age} • Pain {cs.pain_score_pre}→{cs.pain_score_post}</div>
-            </div>
-            <div className="flex gap-2">
-              <button onClick={() => { setEditing({ ...cs }); setIsNew(false); }} className="p-2 text-muted-foreground hover:text-primary"><Pencil size={16} /></button>
-              {can("content.delete") && (<button onClick={() => handleDelete(cs.id)} className="p-2 text-muted-foreground hover:text-destructive"><Trash2 size={16} /></button>)}
-            </div>
+    <CollectionDraftList<CaseStudy>
+      ws={ws}
+      title="Case Studies"
+      label="Case studies"
+      addLabel="Add Case Study"
+      emptyText="No case studies yet."
+      previewUrl="/case-studies?preview=1"
+      onAdd={() => {
+        setEditing({ ...emptyCaseStudy });
+        setIsNew(true);
+      }}
+      onEdit={(cs) => {
+        setEditing({ ...cs });
+        setIsNew(false);
+      }}
+      renderSummary={(cs) => (
+        <div>
+          <div className="flex items-center gap-2">
+            <span className="text-sm font-semibold text-foreground">{cs.condition}</span>
+            {cs.is_featured && <span className="text-xs bg-accent/10 text-accent rounded-full px-2 py-0.5">Featured</span>}
           </div>
-        ))}
-        {studies.length === 0 && <p className="text-sm text-muted-foreground text-center py-8">No case studies yet.</p>}
-      </div>
-    </div>
+          <div className="text-xs text-muted-foreground">
+            {cs.patient_initials} • Age {cs.age} • Pain {cs.pain_score_pre}→{cs.pain_score_post}
+          </div>
+        </div>
+      )}
+    />
   );
 }

@@ -15,7 +15,14 @@ export function RequireAuth() {
     case "loading":
       return <AdminLoading label="Checking your session…" />;
     case "error":
-      return <AdminError title="We couldn't verify your account" message={auth.error} onRetry={auth.retry} />;
+      return (
+        <AdminError
+          title="We couldn't verify your account"
+          message={auth.error}
+          onRetry={auth.retry}
+          onSignOut={() => void auth.signOut()}
+        />
+      );
     case "login":
       return <Navigate to="/admin/login" replace state={{ from: location.pathname, expired: auth.sessionExpired }} />;
     case "no-role":

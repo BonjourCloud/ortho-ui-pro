@@ -27,7 +27,7 @@ export type WorkflowAction =
 
 export interface ApprovalHistoryEntry {
   id: string;
-  entityType: "cms_page" | "site_config" | "medical_subsection" | "service" | "blog_post" | "cms_seo_metadata";
+  entityType: "cms_page" | "site_config" | "medical_subsection" | "service" | "blog_post" | "cms_seo_metadata" | "collection";
   entityId: string;
   fromStatus: WorkflowStatus | null;
   toStatus: WorkflowStatus;
@@ -156,12 +156,20 @@ export interface ProcedureCardItem {
   title: string;
   description: string;
   ctaLink?: string;
+  ctaLabel?: string;
 }
 
 export interface WhyChooseCardItem {
   icon: string;
   title: string;
   description: string;
+}
+
+export interface HomeStatsLabels {
+  yearsExperience: string;
+  happyPatients: string;
+  surgeriesCompleted: string;
+  branches: string;
 }
 
 export interface HomeHeroSectionData {
@@ -175,6 +183,7 @@ export interface HomeHeroSectionData {
   secondaryCtaLabel: string;
   secondaryCtaLink: string;
   heroImageUrl?: string;
+  statsLabels?: HomeStatsLabels;
 }
 
 export interface HomeSpecialtiesSectionData {
@@ -201,6 +210,7 @@ export interface HomeTestimonialsSectionData {
   videoUrl: string;
   videoCaption: string;
   googleReviewsUrl: string;
+  googleReviewsCtaLabel?: string;
 }
 
 export interface HomeCtaSectionData {
@@ -252,6 +262,12 @@ export const DEFAULT_HOME_CONTENT: HomePageContent = {
     secondaryCtaLabel: "Get Second Opinion",
     secondaryCtaLink: "/contact",
     heroImageUrl: "",
+    statsLabels: {
+      yearsExperience: "Years Experience",
+      happyPatients: "Happy Patients",
+      surgeriesCompleted: "Surgeries",
+      branches: "Branches",
+    },
   },
   specialties: {
     eyebrow: "Our Specialties",
@@ -404,6 +420,7 @@ export const DEFAULT_HOME_CONTENT: HomePageContent = {
     videoCaption: "Hear from one of our patients",
     googleReviewsUrl:
       "https://www.google.com/search?sca_esv=d690ffcb785891a9&rlz=1C1CHBF_enIN1200IN1200&sxsrf=ANbL-n5bLYuWTqgTdnXqXVm5swn_UzIYWg:1776066514357&si=AL3DRZEsmMGCryMMFSHJ3StBhOdZ2-6yYkXd_doETEE1OR-qOYNrsMxMPmGX9vtn8fier-d1Po5lvx8z6EqgmGszRX2582iYKwohcjweNlaDkXEt6g7jZ2ainFVfIaf8fzIiOuNfHjuZxZZ3jeJ4qe3MJiUNFdv5X7zJk23BcW6x12yl0KuiLRg%3D&q=Dr.+Srivanth%27s+Orthopedic+%26+Speciality+Hospital+Reviews&sa=X&ved=2ahUKEwi_7r2tq-qTAxViRmwGHfq5OfEQ0bkNegQINxAH&biw=1521&bih=721&dpr=1.26",
+    googleReviewsCtaLabel: "Read all reviews on Google",
   },
   cta: {
     heading: "Ready to Move Without Pain?",
@@ -543,6 +560,675 @@ export function compileTreatmentBlocksToHtml(blocks: TreatmentSectionBlock[]): s
     .join("\n\n");
 }
 
+function unescapeHtml(html: string): string {
+  return html
+    .replace(/&lt;/g, "<")
+    .replace(/&gt;/g, ">")
+    .replace(/&quot;/g, '"')
+    .replace(/&#39;/g, "'")
+    .replace(/&amp;/g, "&");
+}
+
+function stripTags(html: string): string {
+  return unescapeHtml(
+    html
+      .replace(/<br\s*\/?>/gi, "\n")
+      .replace(/<[^>]+>/g, ""),
+  ).trim();
+}
+
+function inferBlockType(heading: string, explicitType?: string): TreatmentBlockType {
+  const validTypes: TreatmentBlockType[] = [
+    "overview",
+    "symptoms",
+    "causes",
+    "diagnosis",
+    "treatments",
+    "recovery",
+    "faq",
+    "image",
+  ];
+  if (explicitType && (validTypes as string[]).includes(explicitType)) {
+    return explicitType as TreatmentBlockType;
+  }
+  const h = heading.toLowerCase();
+  if (h.includes("symptom") || h.includes("sign")) return "symptoms";
+  if (h.includes("cause") || h.includes("risk")) return "causes";
+  if (h.includes("diagnos") || h.includes("evaluat") || h.includes("test")) return "diagnosis";
+  if (h.includes("recover") || h.includes("rehab") || h.includes("aftercare") || h.includes("post-op")) return "recovery";
+  if (h.includes("faq") || h.includes("question")) return "faq";
+  if (h.includes("treat") || h.includes("surg") || h.includes("procedur") || h.includes("therap")) return "treatments";
+  return "overview";
+}
+
+/**
+ * Parses existing HTML (`medical_subsections.content`) into structured `TreatmentSectionBlock[]`
+ * so doctors can edit any seeded or existing treatment page with structured blocks OR rich HTML
+ * without losing its existing headings, paragraphs, bullet lists, or medical illustrations.
+ */
+export function parseHtmlToTreatmentBlocks(
+  rawHtml: string | null | undefined,
+  fallbackTitle: string,
+): TreatmentSectionBlock[] {
+  const html = (rawHtml || "").trim();
+  if (!html) {
+    return [
+      {
+        id: "overview-1",
+        type: "overview",
+        heading: `About ${fallbackTitle}`,
+        body: "",
+        bulletItems: [],
+      },
+    ];
+  }
+
+  // Split by <section ...> if present, otherwise split before each <h2> or <h3>
+  const sectionMatches = html.match(/<section[^>]*>[\s\S]*?<\/section>/gi);
+  const chunks =
+    sectionMatches && sectionMatches.length > 0
+      ? sectionMatches
+      : html
+          .split(/(?=<h[23]\b)/i)
+          .map((c) => c.trim())
+          .filter(Boolean);
+
+  const blocks: TreatmentSectionBlock[] = [];
+
+  chunks.forEach((chunk, index) => {
+    const typeAttrMatch = chunk.match(/data-cms-block=["']([^"']+)["']/i);
+    const headingMatch = chunk.match(/<h[123][^>]*>([\s\S]*?)<\/h[123]>/i);
+    const heading = headingMatch ? stripTags(headingMatch[1]) : index === 0 ? `About ${fallbackTitle}` : `Section ${index + 1}`;
+
+    const imgMatches = [...chunk.matchAll(/<img[^>]+src=["']([^"']+)["'][^>]*>/gi)];
+    const extractedImages = imgMatches
+      .map((m) => {
+        const tag = m[0];
+        const src = m[1]?.trim() || "";
+        const altM = tag.match(/alt=["']([^"']*)["']/i);
+        const alt = altM ? unescapeHtml(altM[1]) : "";
+        return { src, alt };
+      })
+      .filter((img) => Boolean(img.src));
+
+    const firstImg = extractedImages[0];
+    const imageUrl = firstImg?.src || "";
+    const imageAlt = firstImg?.alt || "";
+
+    const paragraphMatches = [...chunk.matchAll(/<p[^>]*>([\s\S]*?)<\/p>/gi)];
+    const body = paragraphMatches
+      .map((m) => stripTags(m[1]))
+      .filter(Boolean)
+      .join("\n\n");
+
+    const liMatches = [...chunk.matchAll(/<li[^>]*>([\s\S]*?)<\/li>/gi)];
+    const bulletItems = liMatches.map((m) => stripTags(m[1])).filter(Boolean);
+
+    const blockType =
+      typeAttrMatch?.[1] === "image" || (!body && bulletItems.length === 0 && imageUrl)
+        ? "image"
+        : inferBlockType(heading, typeAttrMatch?.[1]);
+
+    blocks.push({
+      id: `block-${index + 1}`,
+      type: blockType,
+      heading,
+      body,
+      bulletItems,
+      imageUrl: imageUrl || undefined,
+      imageAlt: imageAlt || undefined,
+    });
+
+    // If an image block contained multiple images in the same section, preserve all remaining images
+    if (blockType === "image" && extractedImages.length > 1) {
+      for (let m = 1; m < extractedImages.length; m++) {
+        blocks.push({
+          id: `block-${index + 1}-img-${m + 1}`,
+          type: "image",
+          heading: extractedImages[m].alt || `${heading} Illustration ${m + 1}`,
+          body: "",
+          bulletItems: [],
+          imageUrl: extractedImages[m].src,
+          imageAlt: extractedImages[m].alt || heading,
+        });
+      }
+    }
+
+    // If a non-image section contains inline illustrations, extract each one as a distinct image block
+    if (blockType !== "image" && extractedImages.length > 0) {
+      extractedImages.forEach((img, m) => {
+        blocks.push({
+          id: `block-${index + 1}-img-${m + 1}`,
+          type: "image",
+          heading: img.alt || `${heading} Illustration ${m + 1}`,
+          body: "",
+          bulletItems: [],
+          imageUrl: img.src,
+          imageAlt: img.alt || heading,
+        });
+      });
+    }
+  });
+
+  return blocks.length > 0
+    ? blocks
+    : [
+        {
+          id: "overview-1",
+          type: "overview",
+          heading: `About ${fallbackTitle}`,
+          body: stripTags(html),
+          bulletItems: [],
+        },
+      ];
+}
+
+// ---------------------------------------------------------------------------
+// 2B. All Public Website Pages Content Model (`cms_pages` by slug)
+// ---------------------------------------------------------------------------
+
+export type SitePageSlug =
+  | "about"
+  | "orthopaedics"
+  | "physiotherapy"
+  | "rehabilitation"
+  | "services"
+  | "book"
+  | "contact"
+  | "second-opinion"
+  | "blog"
+  | "case-studies";
+
+export interface SitePageHighlightItem {
+  id: string;
+  icon: string;
+  title: string;
+  description: string;
+}
+
+export interface SitePageFaqItem {
+  id: string;
+  question: string;
+  answer: string;
+}
+
+export interface SitePageContent {
+  slug: SitePageSlug;
+  pageTitle: string;
+  routePath: string;
+  heroEyebrow: string;
+  heroTitle: string;
+  heroSubtitle: string;
+  heroImageUrl: string;
+  heroImageAlt: string;
+  bodyHtml: string;
+  ctaHeading: string;
+  ctaDescription: string;
+  ctaPrimaryLabel: string;
+  ctaPrimaryLink: string;
+  ctaSecondaryLabel: string;
+  ctaSecondaryLink: string;
+  highlights: SitePageHighlightItem[];
+  faqs: SitePageFaqItem[];
+  customLabels: Record<string, string>;
+}
+
+export const SITE_PAGE_CATALOG: { slug: "home" | SitePageSlug; label: string; routePath: string; description: string }[] = [
+  {
+    slug: "home",
+    label: "Home Page (/)",
+    routePath: "/",
+    description: "Hero banner, clinic statistics labels, specialties, featured procedures, why choose us, testimonial video & bottom CTA.",
+  },
+  {
+    slug: "about",
+    label: "About Doctor Page (/about)",
+    routePath: "/about",
+    description: "Hero headings, section titles, supplemental rich-text biography, FAQs, and bottom CTA on the About page.",
+  },
+  {
+    slug: "orthopaedics",
+    label: "Orthopaedics Landing (/orthopaedics)",
+    routePath: "/orthopaedics",
+    description: "Department hero banner, introduction, highlight cards, FAQs, and bottom CTA for Orthopaedics.",
+  },
+  {
+    slug: "physiotherapy",
+    label: "Physiotherapy Landing (/physiotherapy)",
+    routePath: "/physiotherapy",
+    description: "Department hero banner, introduction, highlight cards, FAQs, and bottom CTA for Physiotherapy.",
+  },
+  {
+    slug: "rehabilitation",
+    label: "Rehabilitation Landing (/rehabilitation)",
+    routePath: "/rehabilitation",
+    description: "Department hero banner, introduction, highlight cards, FAQs, and bottom CTA for Rehabilitation.",
+  },
+  {
+    slug: "services",
+    label: "Services Directory (/services)",
+    routePath: "/services",
+    description: "Hero banner, search & filter labels, introduction text, FAQs, and bottom consultation CTA.",
+  },
+  {
+    slug: "book",
+    label: "Book Appointment (/book)",
+    routePath: "/book",
+    description: "Hero banner, booking wizard step titles, appointment type options, insurance heading, and confirmation message.",
+  },
+  {
+    slug: "contact",
+    label: "Contact & Directions (/contact)",
+    routePath: "/contact",
+    description: "Hero banner, contact section headings, inquiry form labels, confirmation message, and map button text.",
+  },
+  {
+    slug: "second-opinion",
+    label: "Second Opinion (/second-opinion)",
+    routePath: "/second-opinion",
+    description: "Hero banner, 3 benefit highlight cards, surgery condition dropdown options, upload labels, and confirmation screen.",
+  },
+  {
+    slug: "blog",
+    label: "Health Blog (/blog & /blog/:slug)",
+    routePath: "/blog",
+    description: "Blog listing hero banner, search placeholder, empty state text, and article bottom CTA banner.",
+  },
+  {
+    slug: "case-studies",
+    label: "Patient Case Studies (/case-studies & /case-studies/:slug)",
+    routePath: "/case-studies",
+    description: "Case studies hero banner, outcome labels, and case study detail bottom CTA banner.",
+  },
+];
+
+export const DEFAULT_SITE_PAGES_CONTENT: Record<SitePageSlug, SitePageContent> = {
+  about: {
+    slug: "about",
+    pageTitle: "About Doctor Page",
+    routePath: "/about",
+    heroEyebrow: "About",
+    heroTitle: "", // Uses "Meet {config.doctorName}" when empty so doctorName stays dynamic unless overridden
+    heroSubtitle: "", // Uses config.title when empty
+    heroImageUrl: "", // Uses config.heroImageUrl or default portrait when empty
+    heroImageAlt: "",
+    bodyHtml: "",
+    ctaHeading: "Ready for a Personal Consultation?",
+    ctaDescription: "Book an appointment to discuss your symptoms, imaging, and personalized recovery plan.",
+    ctaPrimaryLabel: "Book Appointment",
+    ctaPrimaryLink: "/book",
+    ctaSecondaryLabel: "Get Second Opinion",
+    ctaSecondaryLink: "/second-opinion",
+    highlights: [],
+    faqs: [],
+    customLabels: {
+      meetPrefix: "Meet",
+      philosophyHeading: "My Philosophy",
+      educationHeading: "Education & Training",
+      awardsHeading: "Awards & Recognition",
+      membershipsHeading: "Professional Memberships",
+    },
+  },
+  orthopaedics: {
+    slug: "orthopaedics",
+    pageTitle: "Orthopaedics Department Page",
+    routePath: "/orthopaedics",
+    heroEyebrow: "Our Services",
+    heroTitle: "Orthopaedics",
+    heroSubtitle: "Comprehensive orthopedic care for bone, joint, ligament, tendon, and musculoskeletal conditions.",
+    heroImageUrl: "",
+    heroImageAlt: "Orthopaedics Department at OrthoCare Hub",
+    bodyHtml: "",
+    ctaHeading: "Need Help Choosing a Treatment?",
+    ctaDescription: "Book a consultation and our team will guide you to the right treatment plan.",
+    ctaPrimaryLabel: "Book Consultation",
+    ctaPrimaryLink: "/book",
+    ctaSecondaryLabel: "WhatsApp Us",
+    ctaSecondaryLink: "/contact",
+    highlights: [],
+    faqs: [],
+    customLabels: {
+      ConditionsCountSuffix: "conditions & treatments",
+      learnMoreLabel: "Learn more",
+      notFoundHeading: "Section Not Found",
+      backHomeLabel: "← Back to Home",
+      comingSoonText: "Content coming soon. Please check back later.",
+      subsectionNotFoundHeading: "Page Not Found",
+      subsectionComingSoonHeading: "Content Coming Soon",
+      subsectionBookLabel: "Book Appointment",
+      subsectionBookLink: "/book",
+      subsectionContactLabel: "Contact Us",
+      subsectionContactLink: "/contact",
+    },
+  },
+  physiotherapy: {
+    slug: "physiotherapy",
+    pageTitle: "Physiotherapy Department Page",
+    routePath: "/physiotherapy",
+    heroEyebrow: "Our Services",
+    heroTitle: "Physiotherapy",
+    heroSubtitle: "Evidence-based physiotherapy modalities, shockwave therapy, and targeted pain relief programs.",
+    heroImageUrl: "",
+    heroImageAlt: "Physiotherapy Department at OrthoCare Hub",
+    bodyHtml: "",
+    ctaHeading: "Need Help Choosing a Treatment?",
+    ctaDescription: "Book a consultation and our team will guide you to the right treatment plan.",
+    ctaPrimaryLabel: "Book Consultation",
+    ctaPrimaryLink: "/book",
+    ctaSecondaryLabel: "WhatsApp Us",
+    ctaSecondaryLink: "/contact",
+    highlights: [],
+    faqs: [],
+    customLabels: {
+      ConditionsCountSuffix: "conditions & treatments",
+      learnMoreLabel: "Learn more",
+      notFoundHeading: "Section Not Found",
+      backHomeLabel: "← Back to Home",
+      comingSoonText: "Content coming soon. Please check back later.",
+      subsectionNotFoundHeading: "Page Not Found",
+      subsectionComingSoonHeading: "Content Coming Soon",
+      subsectionBookLabel: "Book Appointment",
+      subsectionBookLink: "/book",
+      subsectionContactLabel: "Contact Us",
+      subsectionContactLink: "/contact",
+    },
+  },
+  rehabilitation: {
+    slug: "rehabilitation",
+    pageTitle: "Rehabilitation Department Page",
+    routePath: "/rehabilitation",
+    heroEyebrow: "Our Services",
+    heroTitle: "Rehabilitation",
+    heroSubtitle: "Structured post-operative, post-fracture, and sports injury rehabilitation programs.",
+    heroImageUrl: "",
+    heroImageAlt: "Rehabilitation Department at OrthoCare Hub",
+    bodyHtml: "",
+    ctaHeading: "Need Help Choosing a Treatment?",
+    ctaDescription: "Book a consultation and our team will guide you to the right treatment plan.",
+    ctaPrimaryLabel: "Book Consultation",
+    ctaPrimaryLink: "/book",
+    ctaSecondaryLabel: "WhatsApp Us",
+    ctaSecondaryLink: "/contact",
+    highlights: [],
+    faqs: [],
+    customLabels: {
+      ConditionsCountSuffix: "conditions & treatments",
+      learnMoreLabel: "Learn more",
+      notFoundHeading: "Section Not Found",
+      backHomeLabel: "← Back to Home",
+      comingSoonText: "Content coming soon. Please check back later.",
+      subsectionNotFoundHeading: "Page Not Found",
+      subsectionComingSoonHeading: "Content Coming Soon",
+      subsectionBookLabel: "Book Appointment",
+      subsectionBookLink: "/book",
+      subsectionContactLabel: "Contact Us",
+      subsectionContactLink: "/contact",
+    },
+  },
+  services: {
+    slug: "services",
+    pageTitle: "Services & Procedures Directory",
+    routePath: "/services",
+    heroEyebrow: "Our Expertise",
+    heroTitle: "Services & Procedures",
+    heroSubtitle: "Comprehensive orthopedic care — from conservative management to advanced surgical solutions.",
+    heroImageUrl: "",
+    heroImageAlt: "Orthopedic Services & Procedures",
+    bodyHtml: "",
+    ctaHeading: "Need Help Choosing a Treatment?",
+    ctaDescription: "Book a consultation and we will create a personalized treatment plan for your condition.",
+    ctaPrimaryLabel: "Book Appointment",
+    ctaPrimaryLink: "/book",
+    ctaSecondaryLabel: "Get Second Opinion",
+    ctaSecondaryLink: "/second-opinion",
+    highlights: [],
+    faqs: [],
+    customLabels: {
+      searchPlaceholder: "Search services...",
+      bookButtonLabel: "Book This Service",
+      loadingText: "Loading services...",
+      emiBadgeLabel: "EMI Available",
+    },
+  },
+  book: {
+    slug: "book",
+    pageTitle: "Book Appointment Page",
+    routePath: "/book",
+    heroEyebrow: "Appointments",
+    heroTitle: "Book Appointment",
+    heroSubtitle: "Schedule your visit. We'll confirm via WhatsApp.",
+    heroImageUrl: "",
+    heroImageAlt: "Book an Appointment at OrthoCare Hub",
+    bodyHtml: "",
+    ctaHeading: "Need Immediate Assistance?",
+    ctaDescription: "Call our reception desk directly or message us on WhatsApp for urgent slots.",
+    ctaPrimaryLabel: "Contact Clinic",
+    ctaPrimaryLink: "/contact",
+    ctaSecondaryLabel: "Second Opinion",
+    ctaSecondaryLink: "/second-opinion",
+    highlights: [],
+    faqs: [],
+    customLabels: {
+      appointmentTypes: "In-Person Consultation, Video Consultation, Follow-up Visit",
+      confirmationHeading: "Appointment Requested!",
+      confirmationNote: "We will confirm within 2 hours via WhatsApp.",
+      whatsappConfirmLabel: "Confirm via WhatsApp",
+      insuranceHeading: "Accepted Insurance Providers",
+      successMessage: "Your appointment has been submitted successfully.",
+      firstNameLabel: "First Name *",
+      lastNameLabel: "Last Name *",
+      phoneLabel: "Phone *",
+      phonePlaceholder: "+91",
+      appointmentTypeLabel: "Appointment Type *",
+      selectTypePlaceholder: "Select type",
+      serviceLabel: "Service",
+      selectServicePlaceholder: "Select service",
+      dateLabel: "Preferred Date *",
+      timeLabel: "Preferred Time *",
+      selectTimePlaceholder: "Select time",
+      symptomsLabel: "Describe Your Symptoms *",
+      symptomsPlaceholder: "Brief description of your condition...",
+      insuranceLabel: "Insurance Provider",
+      insuranceNoneOption: "None / Self-pay",
+      emiCheckboxLabel: "I'm interested in EMI payment options",
+      callDirectlyLabel: "Or call directly:",
+    },
+  },
+  contact: {
+    slug: "contact",
+    pageTitle: "Contact & Directions Page",
+    routePath: "/contact",
+    heroEyebrow: "Reach Out",
+    heroTitle: "Contact Us",
+    heroSubtitle: "Have questions? Get in touch with our team.",
+    heroImageUrl: "",
+    heroImageAlt: "Contact OrthoCare Hub",
+    bodyHtml: "",
+    ctaHeading: "Ready to Schedule Your Visit?",
+    ctaDescription: "Book an in-clinic or video consultation with our specialist today.",
+    ctaPrimaryLabel: "Book Appointment",
+    ctaPrimaryLink: "/book",
+    ctaSecondaryLabel: "Get Second Opinion",
+    ctaSecondaryLink: "/second-opinion",
+    highlights: [],
+    faqs: [],
+    customLabels: {
+      getInTouchHeading: "Get In Touch",
+      formHeading: "Send a Message",
+      submitButtonLabel: "Send Message",
+      successHeading: "Message Sent!",
+      successDescription: "We'll get back to you within 24 hours.",
+      openInMapsLabel: "Open in Maps",
+      whatsappButtonLabel: "Chat on WhatsApp",
+      mapTitle: "Clinic Location",
+      nameLabel: "Full Name *",
+      emailLabel: "Email *",
+      phoneLabel: "Phone",
+      phonePlaceholder: "+91",
+      subjectLabel: "Subject *",
+      messageLabel: "Message *",
+    },
+  },
+  "second-opinion": {
+    slug: "second-opinion",
+    pageTitle: "Second Opinion Page",
+    routePath: "/second-opinion",
+    heroEyebrow: "Second Opinion",
+    heroTitle: "Been Advised Surgery? Get a Second Opinion",
+    heroSubtitle: "Upload your X-rays, MRI reports, and prescriptions for an honest, expert assessment before making a major decision.",
+    heroImageUrl: "",
+    heroImageAlt: "Orthopedic Second Opinion Service",
+    bodyHtml: "",
+    ctaHeading: "Prefer an In-Person Evaluation?",
+    ctaDescription: "Bring your films and medical records directly to our clinic for a comprehensive physical examination.",
+    ctaPrimaryLabel: "Book In-Person Visit",
+    ctaPrimaryLink: "/book",
+    ctaSecondaryLabel: "Contact Clinic",
+    ctaSecondaryLink: "/contact",
+    highlights: [
+      {
+        id: "so-1",
+        icon: "Shield",
+        title: "Expert Review",
+        description: "Thorough evaluation of your imaging and medical history by a fellowship-trained specialist.",
+      },
+      {
+        id: "so-2",
+        icon: "Clock",
+        title: "Quick Turnaround",
+        description: "Receive a clear treatment recommendation within 24–48 hours of submitting your reports.",
+      },
+      {
+        id: "so-3",
+        icon: "CheckCircle",
+        title: "100% Confidential",
+        description: "Your medical reports are stored in a private encrypted clinical bucket visible only to your doctor.",
+      },
+    ],
+    faqs: [],
+    customLabels: {
+      formHeading: "Submit Your Case Details",
+      conditionOptions:
+        "Knee Replacement (TKR), Hip Replacement (THR), ACL / Ligament Reconstruction, Shoulder Surgery (Rotator Cuff / Dislocation), Spine / Disc Surgery, Fracture Fixation, Arthroscopy, Other Recommended Surgery",
+      confirmationHeading: "Second Opinion Request Submitted!",
+      confirmationDescription:
+        "We have received your details and reports. Our specialist team will review your case and contact you within 24–48 hours.",
+      whatsappFollowupLabel: "Message on WhatsApp",
+      successNoteLabel: "",
+      nameLabel: "",
+      ageLabel: "",
+      phoneLabel: "",
+      emailLabel: "",
+      conditionLabel: "",
+      selectConditionLabel: "",
+      currentDiagnosisLabel: "",
+      diagnosisPlaceholderLabel: "",
+      uploadReportsLabel: "",
+      uploadHintLabel: "",
+      chooseFilesLabel: "",
+      fileTypesLabel: "",
+      additionalNotesLabel: "",
+      submitLabel: "",
+      privacyLabel: "",
+      submittingLabel: "Submitting...",
+    },
+  },
+  blog: {
+    slug: "blog",
+    pageTitle: "Health Blog Page",
+    routePath: "/blog",
+    heroEyebrow: "Patient Education",
+    heroTitle: "Health Blog & Articles",
+    heroSubtitle: "Evidence-based orthopedic guides, recovery tips, and joint health insights from our specialist team.",
+    heroImageUrl: "",
+    heroImageAlt: "OrthoCare Hub Health Blog",
+    bodyHtml: "",
+    ctaHeading: "Have Questions About Your Condition?",
+    ctaDescription: "Book a consultation for personalized advice and treatment planning.",
+    ctaPrimaryLabel: "Book Appointment",
+    ctaPrimaryLink: "/book",
+    ctaSecondaryLabel: "Get Second Opinion",
+    ctaSecondaryLink: "/second-opinion",
+    highlights: [],
+    faqs: [],
+    customLabels: {
+      searchPlaceholder: "Search articles...",
+      featuredBadgeLabel: "Featured",
+      emptyStateText: "No articles found.",
+      loadingText: "Loading posts...",
+      featuredHeading: "Featured Articles",
+      moreHeading: "More Articles",
+      relatedHeading: "Related Articles",
+      backLabel: "Back to Blog",
+      notFoundHeading: "Post Not Found",
+      authorTitle: "Orthopedic Surgeon",
+    },
+  },
+  "case-studies": {
+    slug: "case-studies",
+    pageTitle: "Patient Case Studies Page",
+    routePath: "/case-studies",
+    heroEyebrow: "Proven Outcomes",
+    heroTitle: "Patient Case Studies & Recovery Stories",
+    heroSubtitle: "Explore real clinical outcomes, pain score improvements, and recovery timelines across complex orthopedic procedures.",
+    heroImageUrl: "",
+    heroImageAlt: "OrthoCare Hub Patient Case Studies",
+    bodyHtml: "",
+    ctaHeading: "Have a Similar Condition?",
+    ctaDescription: "Book a consultation to discuss your treatment options and expected recovery timeline.",
+    ctaPrimaryLabel: "Book Consultation",
+    ctaPrimaryLink: "/book",
+    ctaSecondaryLabel: "Get Second Opinion",
+    ctaSecondaryLink: "/second-opinion",
+    highlights: [],
+    faqs: [],
+    customLabels: {
+      painScoreLabel: "Pain Score",
+      romLabel: "Range of Motion",
+      recoveryTimelineHeading: "Recovery Timeline",
+      emptyStateText: "No case studies found for this filter.",
+      loadingText: "Loading case studies...",
+      painBeforeLabel: "Pain Before",
+      painAfterLabel: "Pain After",
+      readMoreLabel: "Read Full Story",
+      notFoundHeading: "Case Study Not Found",
+      backLabel: "Back to Case Studies",
+      ageGenderLabel: "Age / Gender",
+      hospitalStayLabel: "Hospital Stay",
+      followUpLabel: "Follow-Up",
+      outcomeHeading: "Outcome Summary",
+      returnToWorkLabel: "Return to Work",
+      returnToActivitiesLabel: "Return to Activities",
+    },
+  },
+};
+
+export function mergeSitePageContent(
+  slug: SitePageSlug,
+  raw: Partial<SitePageContent> | null | undefined,
+): SitePageContent {
+  const base = DEFAULT_SITE_PAGES_CONTENT[slug];
+  if (!raw || typeof raw !== "object") return base;
+  return {
+    ...base,
+    ...raw,
+    slug,
+    routePath: base.routePath,
+    highlights:
+      Array.isArray(raw.highlights)
+        ? raw.highlights
+        : base.highlights,
+    faqs:
+      Array.isArray(raw.faqs)
+        ? raw.faqs
+        : base.faqs,
+    customLabels: {
+      ...base.customLabels,
+      ...(raw.customLabels ?? {}),
+    },
+  };
+}
+
 // ---------------------------------------------------------------------------
 // 3. Media Library Validation & Types
 // ---------------------------------------------------------------------------
@@ -564,11 +1250,31 @@ export interface MediaAsset {
   createdAt: string;
 }
 
-export const ALLOWED_IMAGE_MIMES = ["image/jpeg", "image/png", "image/webp", "image/svg+xml"] as const;
+/**
+ * Must match the `cms-media` bucket's allowed_mime_types and the `chk_media_assets_mime_type`
+ * constraint (migration 004 as corrected by 005b). SVG is deliberately NOT allowed: an SVG served
+ * from a public bucket can carry script (stored XSS on the storage origin).
+ */
+export const ALLOWED_IMAGE_MIMES = ["image/jpeg", "image/png", "image/webp"] as const;
 export const ALLOWED_VIDEO_MIMES = ["video/mp4", "video/webm"] as const;
 
-export const MAX_IMAGE_BYTES = 5 * 1024 * 1024; // 5 MB
-export const MAX_VIDEO_BYTES = 50 * 1024 * 1024; // 50 MB
+/** File extensions accepted for each MIME type (the browser-reported type alone can be spoofed). */
+export const MEDIA_EXTENSIONS_BY_MIME: Record<string, readonly string[]> = {
+  "image/jpeg": ["jpg", "jpeg"],
+  "image/png": ["png"],
+  "image/webp": ["webp"],
+  "video/mp4": ["mp4"],
+  "video/webm": ["webm"],
+};
+
+/** Value for `<input type="file" accept>` everywhere media is chosen. */
+export const MEDIA_ACCEPT_ATTR = [...ALLOWED_IMAGE_MIMES, ...ALLOWED_VIDEO_MIMES].join(",");
+
+/** Human-readable summary shown in the CMS. */
+export const MEDIA_ALLOWED_DESCRIPTION = "JPG, PNG or WebP images up to 5 MB, and MP4 or WebM videos up to 50 MB";
+
+export const MAX_IMAGE_BYTES = 5 * 1024 * 1024; // 5 MB  (= chk_media_assets_size_limit, image)
+export const MAX_VIDEO_BYTES = 50 * 1024 * 1024; // 50 MB (= bucket file_size_limit and video limit)
 
 export interface MediaValidationResult {
   valid: boolean;
@@ -579,6 +1285,23 @@ export interface MediaValidationResult {
 export function validateMediaFile(file: { name: string; type: string; size: number }): MediaValidationResult {
   if (!file.size || file.size <= 0) {
     return { valid: false, error: "The selected file is empty." };
+  }
+
+  const unsupported: MediaValidationResult = {
+    valid: false,
+    error: `Unsupported file type "${file.type || file.name}". Allowed: ${MEDIA_ALLOWED_DESCRIPTION}.`,
+  };
+
+  const extension = file.name.includes(".") ? file.name.split(".").pop()!.toLowerCase() : "";
+  const allowedExtensions = MEDIA_EXTENSIONS_BY_MIME[file.type];
+  if (!allowedExtensions) {
+    return unsupported;
+  }
+  if (!allowedExtensions.includes(extension)) {
+    return {
+      valid: false,
+      error: `The file name "${file.name}" does not match its type (${file.type}). Rename it with a .${allowedExtensions[0]} extension or export it again.`,
+    };
   }
 
   if ((ALLOWED_IMAGE_MIMES as readonly string[]).includes(file.type)) {
@@ -601,10 +1324,7 @@ export function validateMediaFile(file: { name: string; type: string; size: numb
     return { valid: true, mediaType: "video" };
   }
 
-  return {
-    valid: false,
-    error: `Unsupported file type "${file.type || file.name}". Allowed: JPG, PNG, WebP, SVG (up to 5 MB) or MP4, WebM (up to 50 MB).`,
-  };
+  return unsupported;
 }
 
 // ---------------------------------------------------------------------------
@@ -767,6 +1487,46 @@ export const DEFAULT_ROUTE_SEO_CATALOG: RouteSeoMetadata[] = [
     seoKeywords: "OrthoCare Hub address, Ashok Nagar orthopedic hospital contact, Dr. Srivanth phone number",
     ogImageUrl: "https://orthocarehub.in/og-image.svg",
     canonicalUrl: "https://orthocarehub.in/contact",
+    noindex: false,
+  },
+  {
+    routePath: "/services",
+    pageLabel: "Services & Procedures Directory",
+    seoTitle: "Orthopedic Services & Procedures",
+    seoDescription: "Explore orthopedic surgeries, arthroscopy, joint replacement, and non-surgical treatments at OrthoCare Hub.",
+    seoKeywords: "orthopedic services Hyderabad, knee surgery cost, arthroscopy procedure",
+    ogImageUrl: "https://orthocarehub.in/og-image.svg",
+    canonicalUrl: "https://orthocarehub.in/services",
+    noindex: false,
+  },
+  {
+    routePath: "/second-opinion",
+    pageLabel: "Second Opinion",
+    seoTitle: "Get an Orthopedic Second Opinion",
+    seoDescription: "Advised knee, hip, or shoulder surgery? Upload your MRI/X-ray reports for an expert orthopedic second opinion.",
+    seoKeywords: "orthopedic second opinion Hyderabad, knee surgery second opinion, MRI review",
+    ogImageUrl: "https://orthocarehub.in/og-image.svg",
+    canonicalUrl: "https://orthocarehub.in/second-opinion",
+    noindex: false,
+  },
+  {
+    routePath: "/blog",
+    pageLabel: "Health Blog",
+    seoTitle: "Orthopedic Health Blog & Recovery Guides",
+    seoDescription: "Read articles and patient guides on joint health, sports injury prevention, and surgical recovery.",
+    seoKeywords: "orthopedic blog, knee replacement recovery tips, ACL rehab guide",
+    ogImageUrl: "https://orthocarehub.in/og-image.svg",
+    canonicalUrl: "https://orthocarehub.in/blog",
+    noindex: false,
+  },
+  {
+    routePath: "/case-studies",
+    pageLabel: "Patient Case Studies",
+    seoTitle: "Patient Case Studies & Surgical Outcomes",
+    seoDescription: "Real orthopedic case studies, pre/post pain scores, and recovery timelines from OrthoCare Hub.",
+    seoKeywords: "orthopedic case studies, knee replacement outcomes, sports injury recovery stories",
+    ogImageUrl: "https://orthocarehub.in/og-image.svg",
+    canonicalUrl: "https://orthocarehub.in/case-studies",
     noindex: false,
   },
 ];

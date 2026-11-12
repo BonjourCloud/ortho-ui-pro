@@ -1,14 +1,16 @@
 import { useParams, Link } from "react-router-dom";
 import { motion } from "framer-motion";
-import { ArrowLeft, Clock, Eye, Heart, Share2, Calendar } from "lucide-react";
+import { ArrowLeft, ArrowRight, Clock, Eye, Heart, Share2, Calendar } from "lucide-react";
 import { useBlogPost, useBlogPosts } from "@/hooks/useContent";
-import { useSiteConfig } from "@/contexts/SiteConfigContext";
+import { usePreviewSiteConfig, useSitePageContent } from "@/hooks/usePageContent";
 import DOMPurify from "dompurify";
 import SEO from "@/components/SEO";
+import { pageLabel } from "@/lib/cms/siteLabels";
 
 export default function BlogPost() {
   const { slug } = useParams();
-  const { config } = useSiteConfig();
+  const { config } = usePreviewSiteConfig();
+  const { content: page } = useSitePageContent("blog");
   const { post, loading } = useBlogPost(slug);
   const { posts } = useBlogPosts();
 
@@ -20,8 +22,8 @@ export default function BlogPost() {
     return (
       <section className="py-20">
         <div className="container text-center">
-          <h1 className="font-display text-3xl font-bold text-foreground mb-4">Post Not Found</h1>
-          <Link to="/blog" className="text-primary font-medium">← Back to Blog</Link>
+          <h1 className="font-display text-3xl font-bold text-foreground mb-4">{pageLabel(page, "notFoundHeading", "Post Not Found")}</h1>
+          <Link to="/blog" className="text-primary font-medium">← {pageLabel(page, "backLabel", "Back to Blog")}</Link>
         </div>
       </section>
     );
@@ -42,7 +44,7 @@ export default function BlogPost() {
         <div className="container max-w-3xl">
           <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
             <Link to="/blog" className="inline-flex items-center gap-1 text-primary-foreground/70 text-sm mb-4 hover:text-primary-foreground">
-              <ArrowLeft size={14} /> Back to Blog
+              <ArrowLeft size={14} /> {pageLabel(page, "backLabel", "Back to Blog")}
             </Link>
             <span className="block text-accent text-sm font-semibold mb-2">{post.category}</span>
             <h1 className="font-display text-3xl md:text-4xl font-bold text-primary-foreground mb-4">{post.title}</h1>
@@ -65,7 +67,7 @@ export default function BlogPost() {
               </div>
               <div>
                 <div className="text-sm font-semibold text-foreground">{config.doctorName}</div>
-                <div className="text-xs text-muted-foreground">Orthopedic Surgeon</div>
+                <div className="text-xs text-muted-foreground">{pageLabel(page, "authorTitle", "Orthopedic Surgeon")}</div>
               </div>
               <button className="ml-auto flex items-center gap-1 text-sm text-muted-foreground hover:text-primary">
                 <Share2 size={14} /> Share
@@ -83,7 +85,7 @@ export default function BlogPost() {
 
           {related.length > 0 && (
             <div className="mt-12 pt-8 border-t">
-              <h3 className="font-display text-xl font-bold text-foreground mb-4">Related Articles</h3>
+              <h3 className="font-display text-xl font-bold text-foreground mb-4">{pageLabel(page, "relatedHeading", "Related Articles")}</h3>
               <div className="grid sm:grid-cols-2 gap-4">
                 {related.map((r) => (
                   <Link key={r.id} to={`/blog/${r.slug}`} className="bg-card rounded-xl border p-5 hover:shadow-md transition-all group">
@@ -93,6 +95,19 @@ export default function BlogPost() {
                   </Link>
                 ))}
               </div>
+            </div>
+          )}
+
+          {page.ctaHeading && (
+            <div className="mt-12 rounded-2xl bg-teal-light p-8 text-center">
+              <h3 className="font-display text-2xl font-bold text-foreground mb-2">{page.ctaHeading}</h3>
+              {page.ctaDescription && <p className="text-sm text-muted-foreground mb-5">{page.ctaDescription}</p>}
+              <Link
+                to={page.ctaPrimaryLink || "/book"}
+                className="inline-flex items-center gap-2 rounded-lg bg-accent px-6 py-3 text-sm font-semibold text-accent-foreground shadow-md hover:opacity-90"
+              >
+                {page.ctaPrimaryLabel || "Book Appointment"} <ArrowRight size={16} />
+              </Link>
             </div>
           )}
         </div>

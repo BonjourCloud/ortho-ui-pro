@@ -85,12 +85,13 @@ export default function AdminHome() {
   });
 
   const quickActions = [
-    { to: "/admin/clinic", label: "Update clinic details", icon: MapPin, cap: "clinic.edit" as const },
-    { to: "/admin/content", label: "Edit services & blog", icon: Stethoscope, cap: "content.view" as const },
-    { to: "/admin/pages", label: "Edit pages (soon)", icon: FileText, cap: "content.view" as const },
-    { to: "/admin/media", label: "Media library (soon)", icon: ImageIcon, cap: "media.view" as const },
+    { to: "/admin/pages", label: "Edit all website pages", icon: FileText, cap: "content.view" as const },
+    { to: "/admin/treatments", label: "Edit treatment & subsection pages", icon: Stethoscope, cap: "treatments.edit" as const },
+    { to: "/admin/media", label: "Media library (images & video)", icon: ImageIcon, cap: "media.view" as const },
+    { to: "/admin/clinic", label: "Update clinic details & maps", icon: MapPin, cap: "clinic.edit" as const },
+    { to: "/admin/content", label: "Edit services, blog & reviews", icon: Stethoscope, cap: "content.view" as const },
     { to: "/admin/appointments", label: "View appointments", icon: Calendar, cap: "patientData.view" as const },
-    { to: "/admin/activity", label: "Activity log (soon)", icon: ScrollText, cap: "activity.view" as const },
+    { to: "/admin/activity", label: "Activity log", icon: ScrollText, cap: "activity.view" as const },
   ].filter((a) => can(a.cap));
 
   return (

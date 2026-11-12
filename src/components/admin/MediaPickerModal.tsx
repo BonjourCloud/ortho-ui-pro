@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { Image as ImageIcon, Video, Upload, X, Check } from "lucide-react";
 import { listMediaAssets, uploadMediaAsset } from "@/lib/cms/repository";
-import type { MediaAsset, MediaCategory, MediaType } from "@/lib/cms/types";
+import { MEDIA_ACCEPT_ATTR, type MediaAsset, type MediaCategory, type MediaType } from "@/lib/cms/types";
 
 export interface MediaPickerModalProps {
   open: boolean;
@@ -130,7 +130,7 @@ export function MediaPickerModal({
               {uploading ? "Uploading…" : "Upload new"}
               <input
                 type="file"
-                accept="image/jpeg,image/png,image/webp,image/svg+xml,video/mp4,video/webm"
+                accept={MEDIA_ACCEPT_ATTR}
                 onChange={handleFileChange}
                 className="sr-only"
               />

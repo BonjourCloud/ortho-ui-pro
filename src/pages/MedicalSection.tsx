@@ -1,16 +1,30 @@
-import { useParams, Link, useLocation } from "react-router-dom";
+import { Link, useLocation } from "react-router-dom";
 import { motion } from "framer-motion";
 import { ArrowRight } from "lucide-react";
 import { useMedicalSection } from "@/hooks/useMedicalSections";
-import { useSiteConfig } from "@/contexts/SiteConfigContext";
+import { usePreviewSiteConfig, useSitePageContent } from "@/hooks/usePageContent";
+import {
+  CmsDraftPreviewBanner,
+  PageFaqSection,
+  PageHighlightsGrid,
+  PageRichBodySection,
+} from "@/components/PageCmsSupplement";
+import type { SitePageSlug } from "@/lib/cms/types";
 import SEO from "@/components/SEO";
+import { pageLabel } from "@/lib/cms/siteLabels";
+
+const VALID_SECTION_SLUGS: SitePageSlug[] = ["orthopaedics", "physiotherapy", "rehabilitation"];
 
 export default function MedicalSection() {
   const location = useLocation();
-  // Extract section slug from pathname (e.g., "/orthopaedics" -> "orthopaedics")
-  const sectionSlug = location.pathname.split('/')[1];
-  const { section, loading } = useMedicalSection(sectionSlug);
-  const { config } = useSiteConfig();
+  const rawSlug = location.pathname.split("/")[1] || "orthopaedics";
+  const pageSlug: SitePageSlug = (VALID_SECTION_SLUGS as string[]).includes(rawSlug)
+    ? (rawSlug as SitePageSlug)
+    : "orthopaedics";
+
+  const { section, loading } = useMedicalSection(rawSlug);
+  const { config } = usePreviewSiteConfig();
+  const { content: page, usingDraft, workflowStatus } = useSitePageContent(pageSlug);
 
   if (loading) {
     return (
@@ -26,38 +40,62 @@ export default function MedicalSection() {
     return (
       <section className="py-20">
         <div className="container text-center">
-          <h1 className="font-display text-3xl font-bold text-foreground mb-4">Section Not Found</h1>
-          <Link to="/" className="text-primary font-medium">← Back to Home</Link>
+          <h1 className="font-display text-3xl font-bold text-foreground mb-4">{pageLabel(page, "notFoundHeading", "Section Not Found")}</h1>
+          <Link to="/" className="text-primary font-medium">
+            {pageLabel(page, "backHomeLabel", "← Back to Home")}
+          </Link>
         </div>
       </section>
     );
   }
 
+  const heroTitle = page.heroTitle?.trim() || section.display_name;
+  const heroSubtitle = page.heroSubtitle?.trim() || section.description || "";
+  const learnMoreLabel = page.customLabels.learnMoreLabel || "Learn More";
+
   return (
     <>
       <SEO
-        title={section.display_name}
-        description={section.description || `${section.display_name} services at ${config.clinicName}`}
+        title={heroTitle}
+        description={heroSubtitle || `${section.display_name} services at ${config.clinicName}`}
         keywords={`${section.display_name}, ${config.doctorName}, ${config.clinicName}`}
         url={`/${section.slug}`}
       />
+      <CmsDraftPreviewBanner usingDraft={usingDraft} workflowStatus={workflowStatus} pageLabel={heroTitle} />
 
       {/* Hero */}
       <section className="bg-hero-gradient py-16 md:py-20">
         <div className="container text-center">
           <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
-            <span className="text-accent text-sm font-semibold uppercase tracking-wider">Our Services</span>
+            <span className="text-accent text-sm font-semibold uppercase tracking-wider">
+              {page.heroEyebrow || "Our Services"}
+            </span>
             <h1 className="font-display text-4xl md:text-5xl font-bold text-primary-foreground mt-2 mb-4">
-              {section.display_name}
+              {heroTitle}
             </h1>
-            {section.description && (
-              <p className="text-primary-foreground/70 max-w-2xl mx-auto">
-                {section.description}
-              </p>
+            {heroSubtitle && (
+              <p className="text-primary-foreground/70 max-w-2xl mx-auto">{heroSubtitle}</p>
+            )}
+            {page.heroImageUrl && (
+              <div className="mt-8 max-w-3xl mx-auto">
+                <img
+                  src={page.heroImageUrl}
+                  alt={page.heroImageAlt || heroTitle}
+                  className="rounded-2xl shadow-xl w-full max-h-80 object-cover mx-auto"
+                />
+              </div>
             )}
           </motion.div>
         </div>
       </section>
+
+      <PageRichBodySection bodyHtml={page.bodyHtml} />
+
+      {page.highlights.length > 0 && (
+        <div className="container pt-10">
+          <PageHighlightsGrid highlights={page.highlights} />
+        </div>
+      )}
 
       {/* Subsections Grid */}
       <section className="py-16 md:py-24">
@@ -66,7 +104,6 @@ export default function MedicalSection() {
             {section.subsections.map((sub, i) => (
               <div key={sub.id}>
                 {sub.children && sub.children.length > 0 ? (
-                  // Category with nested treatments
                   <div>
                     <h2 className="font-display text-2xl font-bold text-foreground mb-6 flex items-center gap-2">
                       <span className="w-1 h-8 bg-primary rounded-full"></span>
@@ -94,7 +131,7 @@ export default function MedicalSection() {
                               </p>
                             )}
                             <div className="inline-flex items-center gap-1 text-sm font-semibold text-primary group-hover:text-accent transition-colors">
-                              Learn More <ArrowRight size={14} />
+                              {learnMoreLabel} <ArrowRight size={14} />
                             </div>
                           </Link>
                         </motion.div>
@@ -102,7 +139,6 @@ export default function MedicalSection() {
                     </div>
                   </div>
                 ) : (
-                  // Standalone subsection (no children)
                   <motion.div
                     initial={{ opacity: 0, y: 20 }}
                     whileInView={{ opacity: 1, y: 0 }}
@@ -122,7 +158,7 @@ export default function MedicalSection() {
                         </p>
                       )}
                       <div className="inline-flex items-center gap-1 text-sm font-semibold text-primary group-hover:text-accent transition-colors">
-                        Learn More <ArrowRight size={14} />
+                        {learnMoreLabel} <ArrowRight size={14} />
                       </div>
                     </Link>
                   </motion.div>
@@ -133,34 +169,37 @@ export default function MedicalSection() {
 
           {section.subsections.length === 0 && (
             <div className="text-center py-12 text-muted-foreground">
-              <p>Content coming soon. Please check back later.</p>
+              <p>{pageLabel(page, "comingSoonText", "Content coming soon. Please check back later.")}</p>
             </div>
           )}
         </div>
       </section>
+
+      <PageFaqSection faqs={page.faqs} />
 
       {/* CTA */}
       <section className="py-16 md:py-24 bg-teal-light">
         <div className="container">
           <div className="bg-card rounded-2xl p-8 md:p-14 text-center shadow-lg">
             <h2 className="font-display text-3xl md:text-4xl font-bold text-foreground mb-4">
-              Need {section.display_name} Treatment?
+              {page.ctaHeading || `Need ${section.display_name} Treatment?`}
             </h2>
             <p className="text-muted-foreground max-w-xl mx-auto mb-8">
-              Book a consultation with {config.doctorName} today. Expert care, personalized treatment plans.
+              {page.ctaDescription ||
+                `Book a consultation with ${config.doctorName} today. Expert care, personalized treatment plans.`}
             </p>
             <div className="flex flex-wrap justify-center gap-3">
               <Link
-                to="/book"
+                to={page.ctaPrimaryLink || "/book"}
                 className="inline-flex items-center gap-2 rounded-lg bg-accent px-6 py-3 text-sm font-semibold text-accent-foreground shadow-lg hover:opacity-90"
               >
-                Book Appointment <ArrowRight size={16} />
+                {page.ctaPrimaryLabel || "Book Appointment"} <ArrowRight size={16} />
               </Link>
               <Link
-                to="/contact"
+                to={page.ctaSecondaryLink || "/contact"}
                 className="inline-flex items-center gap-2 rounded-lg bg-primary px-6 py-3 text-sm font-semibold text-primary-foreground hover:opacity-90"
               >
-                Contact Us
+                {page.ctaSecondaryLabel || "Contact Us"}
               </Link>
             </div>
           </div>

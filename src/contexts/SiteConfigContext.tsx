@@ -1,5 +1,6 @@
-import { createContext, useContext, useState, useEffect, ReactNode } from "react";
+import { createContext, useCallback, useContext, useState, useEffect, ReactNode } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { resolveCmsRole, type RoleClient } from "@/lib/resolveCmsRole";
 import type { User } from "@supabase/supabase-js";
 
 export interface EducationEntry {
@@ -33,6 +34,25 @@ export interface ServiceCategoryEntry {
   description: string;
 }
 
+export interface NavItemConfig {
+  id: string;
+  label: string;
+  to: string;
+  visible: boolean;
+  sortOrder: number;
+  hasDropdown?: boolean;
+  dropdownKey?: "orthopaedics" | "physiotherapy" | "rehabilitation";
+}
+
+export const DEFAULT_NAV_ITEMS: NavItemConfig[] = [
+  { id: "home", label: "Home", to: "/", visible: true, sortOrder: 1 },
+  { id: "about", label: "About", to: "/about", visible: true, sortOrder: 2 },
+  { id: "orthopaedics", label: "Orthopaedics", to: "/orthopaedics", visible: true, sortOrder: 3, hasDropdown: true, dropdownKey: "orthopaedics" },
+  { id: "physiotherapy", label: "Physiotherapy", to: "/physiotherapy", visible: true, sortOrder: 4, hasDropdown: true, dropdownKey: "physiotherapy" },
+  { id: "rehabilitation", label: "Rehabilitation", to: "/rehabilitation", visible: true, sortOrder: 5, hasDropdown: true, dropdownKey: "rehabilitation" },
+  { id: "contact", label: "Contact", to: "/contact", visible: true, sortOrder: 6 },
+];
+
 export interface BrandingConfig {
   logoUrl?: string;
   logoAlt?: string;
@@ -44,7 +64,17 @@ export interface BrandingConfig {
   bodyFont?: "DM Sans" | "Inter" | "Plus Jakarta Sans";
   footerTagline?: string;
   headerCtaLabel?: string;
+  headerCtaLink?: string;
   googleMapsUrl?: string;
+  announcementEnabled?: boolean;
+  announcementText?: string;
+  announcementLinkLabel?: string;
+  announcementLinkUrl?: string;
+  copyrightText?: string;
+  youtubeUrl?: string;
+  navItems?: NavItemConfig[];
+  /** Site-wide UI labels (footer headings, 404 page, review badges…); see SITE_LABEL_DEFAULTS. */
+  labels?: Record<string, string>;
 }
 
 export interface SiteConfig {
@@ -68,6 +98,7 @@ export interface SiteConfig {
   logoInitials: string;
   heroImageUrl: string;
   whatsappFloatEnabled: boolean;
+  whatsappDefaultMessage?: string;
   googleRating: number;
   googleReviewCount: number;
   languages: string[];
@@ -82,9 +113,19 @@ export interface SiteConfig {
   whyChoose: WhyChooseEntry[];
   serviceCategories: ServiceCategoryEntry[];
   branding?: BrandingConfig;
+  showEducationSection?: boolean;
+  showAwardsSection?: boolean;
+  showFellowshipCard?: boolean;
+  fellowshipBadge?: string;
+  fellowshipTitle?: string;
+  fellowshipSubtitle?: string;
+  fellowshipDescription?: string;
+  fellowshipImageUrl?: string;
+  googleMapsEmbedUrl?: string;
+  googleMapsDirectionsUrl?: string;
 }
 
-const defaultConfig: SiteConfig = {
+export const defaultConfig: SiteConfig = {
   doctorName: "Dr. Ortho",
   clinicName: "Ortho Clinic",
   title: "MS Ortho, DNB - Orthopedic Surgeon",
@@ -105,6 +146,7 @@ const defaultConfig: SiteConfig = {
   logoInitials: "DO",
   heroImageUrl: "",
   whatsappFloatEnabled: true,
+  whatsappDefaultMessage: "Hi Doctor, I'd like to book a consultation.",
   googleRating: 4.9,
   googleReviewCount: 500,
   languages: ["English", "Hindi", "Telugu"],
@@ -118,11 +160,27 @@ const defaultConfig: SiteConfig = {
   timeSlots: [],
   whyChoose: [],
   serviceCategories: [],
+  showEducationSection: false,
+  showAwardsSection: false,
+  showFellowshipCard: true,
+  fellowshipBadge: "🇰🇷",
+  fellowshipTitle: "International Fellowship — South Korea",
+  fellowshipSubtitle: "Advanced Joint Replacement & Sports Medicine",
+  fellowshipDescription:
+    "Trained in advanced arthroscopy & minimally invasive joint replacement at leading orthopedic centres in Seoul, South Korea under Professor Dr. Young Rae Moon — one of Asia's foremost authorities in shoulder and sports surgery. Brought back cutting-edge surgical techniques that significantly reduce recovery times.",
+  fellowshipImageUrl: "",
+  googleMapsEmbedUrl:
+    "https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3807.2!2d78.55!3d17.36!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x3bcb99dac93e348d%3A0xc9039baf28225326!2sDr%20Prashanth%20Pinnamaneni!5e0!3m2!1sen!2sin!4v1700000000000",
+  googleMapsDirectionsUrl: "https://maps.app.goo.gl/LsTEZt9UvBoZVYUF6",
 };
 
 interface SiteConfigContextType {
   config: SiteConfig;
-  updateConfig: (updates: Partial<SiteConfig>) => Promise<any>;
+  /** False until the live config has been read from the database (forms must not save defaults). */
+  isConfigLoaded?: boolean;
+  /** Re-reads the live config (e.g. after a Super Admin publishes an approved draft). */
+  reloadConfig?: () => Promise<void>;
+  /** True when the signed-in user has any CMS role (used to show the admin link on the public site). */
   isAdmin: boolean;
   isAuthLoading: boolean;
   user: User | null;
@@ -137,11 +195,10 @@ export function SiteConfigProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [isAdmin, setIsAdmin] = useState(false);
   const [isAuthLoading, setIsAuthLoading] = useState(true);
-  const [configRowId, setConfigRowId] = useState<string | null>(null);
+  const [isConfigLoaded, setIsConfigLoaded] = useState(false);
 
-  // Load config
-  useEffect(() => {
-    const loadConfig = async () => {
+  const reloadConfig = useCallback(async () => {
+    try {
       const { data } = await supabase
         .from("site_config")
         .select("id, config")
@@ -149,13 +206,17 @@ export function SiteConfigProvider({ children }: { children: ReactNode }) {
         .single();
 
       if (data) {
-        setConfigRowId(data.id);
-        setConfig({ ...defaultConfig, ...(data.config as any) });
+        setConfig({ ...defaultConfig, ...(data.config as Partial<SiteConfig>) });
       }
-    };
-
-    loadConfig();
+    } finally {
+      setIsConfigLoaded(true);
+    }
   }, []);
+
+  // Load config
+  useEffect(() => {
+    void reloadConfig();
+  }, [reloadConfig]);
 
   // ✅ FIXED AUTH FLOW (single source of truth)
   useEffect(() => {
@@ -167,13 +228,17 @@ export function SiteConfigProvider({ children }: { children: ReactNode }) {
       setUser(currentUser);
 
       if (currentUser) {
-        const { data } = await supabase.rpc("has_role" as any, {
-          _user_id: currentUser.id,
-          _role: "admin",
-        });
+        // Any CMS role (super_admin / editor). Display only: RLS enforces every write.
+        let hasCmsRole = false;
+        try {
+          const resolved = await resolveCmsRole(supabase as unknown as RoleClient, currentUser.id);
+          hasCmsRole = resolved.role !== null;
+        } catch {
+          hasCmsRole = false;
+        }
 
         if (isMounted) {
-          setIsAdmin(data === true);
+          setIsAdmin(hasCmsRole);
         }
       } else {
         if (isMounted) {
@@ -204,45 +269,6 @@ export function SiteConfigProvider({ children }: { children: ReactNode }) {
     };
   }, []);
 
-  const updateConfig = async (updates: Partial<SiteConfig>) => {
-    // Preserve existing arrays if not explicitly provided in updates
-    const arrayFields = ['education', 'awards', 'memberships', 'insuranceProviders', 'timeSlots', 'whyChoose', 'serviceCategories'];
-    const preservedArrays: any = {};
-    
-    arrayFields.forEach(field => {
-      // If the update doesn't include this field, or it's an empty array, preserve the existing value
-      if (!updates[field as keyof SiteConfig] || (Array.isArray(updates[field as keyof SiteConfig]) && (updates[field as keyof SiteConfig] as any[]).length === 0)) {
-        if (config[field as keyof SiteConfig] && Array.isArray(config[field as keyof SiteConfig]) && (config[field as keyof SiteConfig] as any[]).length > 0) {
-          preservedArrays[field] = config[field as keyof SiteConfig];
-        }
-      }
-    });
-
-    const newConfig = { ...config, ...updates, ...preservedArrays };
-
-    // optimistic update
-    setConfig(newConfig);
-
-    if (!configRowId) {
-      throw new Error("No config row ID");
-    }
-
-    const { error } = await supabase
-      .from("site_config")
-      .update({
-        config: newConfig as any,
-        updated_at: new Date().toISOString(),
-      })
-      .eq("id", configRowId);
-
-    if (error) {
-      console.error(error);
-      throw error;
-    }
-
-    return { success: true };
-  };
-
   const adminLogin = async (email: string, password: string) => {
     const { error } = await supabase.auth.signInWithPassword({ email, password });
 
@@ -261,7 +287,7 @@ export function SiteConfigProvider({ children }: { children: ReactNode }) {
 
   return (
     <SiteConfigContext.Provider
-      value={{ config, updateConfig, isAdmin, isAuthLoading, user, adminLogin, adminLogout }}
+      value={{ config, isConfigLoaded, reloadConfig, isAdmin, isAuthLoading, user, adminLogin, adminLogout }}
     >
       {children}
     </SiteConfigContext.Provider>

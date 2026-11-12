@@ -4,16 +4,20 @@ import DOMPurify from "dompurify";
 import { PageHeader } from "@/components/admin/states";
 import { DraftPublishBar } from "@/components/admin/DraftPublishBar";
 import { MediaPickerModal } from "@/components/admin/MediaPickerModal";
+import RichTextEditor from "@/components/admin/RichTextEditor";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import {
   compileTreatmentBlocksToHtml,
+  parseHtmlToTreatmentBlocks,
   type ApprovalHistoryEntry,
+  type MediaAsset,
   type TreatmentBlockType,
   type TreatmentSectionBlock,
   type WorkflowStatus,
 } from "@/lib/cms/types";
 import {
+  listMediaAssets,
   loadStagedTreatment,
   transitionTreatmentWorkflow,
   type StagedTreatmentPayload,
@@ -86,6 +90,10 @@ export default function AdminTreatments() {
 
   const [items, setItems] = useState<SubsectionSummary[]>(FALLBACK_TREATMENTS);
   const [selectedSlug, setSelectedSlug] = useState<string>(FALLBACK_TREATMENTS[0].slug);
+  const [sectionFilter, setSectionFilter] = useState<string>("all");
+  const [searchQuery, setSearchQuery] = useState<string>("");
+  const [editorMode, setEditorMode] = useState<"blocks" | "rich_html">("blocks");
+  const [mediaAssets, setMediaAssets] = useState<MediaAsset[]>([]);
 
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
@@ -144,6 +152,10 @@ export default function AdminTreatments() {
   const currentItem = items.find((i) => i.slug === selectedSlug) ?? items[0];
 
   useEffect(() => {
+    void listMediaAssets().then((res) => setMediaAssets(res.assets));
+  }, []);
+
+  useEffect(() => {
     if (!currentItem) return;
     const staged = loadStagedTreatment(currentItem.slug);
     if (staged) {
@@ -151,7 +163,11 @@ export default function AdminTreatments() {
       setDescription(staged.draft.description);
       setMetaDescription(staged.draft.metaDescription);
       setHeroImageUrl(staged.draft.heroImageUrl);
-      setBlocks(staged.draft.blocks);
+      setBlocks(
+        staged.draft.blocks.length > 0
+          ? staged.draft.blocks
+          : parseHtmlToTreatmentBlocks(staged.draft.compiledHtml, staged.draft.name),
+      );
       setRawHtml(staged.draft.compiledHtml);
       setWorkflowStatus(staged.workflowStatus);
       setReviewFeedback(staged.reviewFeedback ?? null);
@@ -163,16 +179,19 @@ export default function AdminTreatments() {
       setDescription(currentItem.description);
       setMetaDescription(currentItem.metaDescription);
       setHeroImageUrl("");
-      setBlocks([
-        {
-          id: `blk-${currentItem.slug}-1`,
-          type: "overview",
-          heading: `About ${currentItem.name}`,
-          body: currentItem.description,
-          bulletItems: [],
-        },
-      ]);
-      setRawHtml(currentItem.content);
+      const parsedBlocks = currentItem.content?.trim()
+        ? parseHtmlToTreatmentBlocks(currentItem.content, currentItem.name)
+        : [
+            {
+              id: `blk-${currentItem.slug}-1`,
+              type: "overview" as const,
+              heading: `About ${currentItem.name}`,
+              body: currentItem.description,
+              bulletItems: [],
+            },
+          ];
+      setBlocks(parsedBlocks);
+      setRawHtml(currentItem.content || compileTreatmentBlocksToHtml(parsedBlocks));
       setWorkflowStatus("published");
       setReviewFeedback(null);
       setReviewedByEmail(null);
@@ -182,7 +201,12 @@ export default function AdminTreatments() {
     setStatusMessage(null);
   }, [currentItem]);
 
-  const compiledPreviewHtml = blocks.length > 0 ? compileTreatmentBlocksToHtml(blocks) : rawHtml;
+  const compiledPreviewHtml =
+    editorMode === "rich_html"
+      ? rawHtml
+      : blocks.length > 0
+        ? compileTreatmentBlocksToHtml(blocks)
+        : rawHtml;
 
   const runTransition = async (targetStatus: WorkflowStatus, feedback?: string) => {
     if (!currentItem) return;
@@ -195,7 +219,7 @@ export default function AdminTreatments() {
       description,
       metaDescription,
       heroImageUrl,
-      blocks,
+      blocks: editorMode === "rich_html" ? [] : blocks,
       compiledHtml: compiledPreviewHtml,
     };
 
@@ -265,38 +289,78 @@ export default function AdminTreatments() {
 
       <div className="grid gap-6 lg:grid-cols-12">
         {/* Left: Treatment selector */}
-        <aside className="rounded-xl border bg-card p-4 shadow-sm lg:col-span-4">
-          <div className="mb-3 flex items-center gap-2">
+        <aside className="rounded-xl border bg-card p-4 shadow-sm lg:col-span-4 space-y-3">
+          <div className="flex items-center gap-2">
             <Stethoscope size={16} className="text-primary" aria-hidden="true" />
-            <h2 className="font-display text-sm font-bold text-foreground">Select Treatment Page</h2>
+            <h2 className="font-display text-sm font-bold text-foreground">
+              Select Treatment Page ({items.length})
+            </h2>
           </div>
 
-          <ul className="max-h-[65vh] space-y-1.5 overflow-y-auto">
-            {items.map((item) => {
-              const active = item.slug === selectedSlug;
-              const staged = loadStagedTreatment(item.slug);
-              return (
-                <li key={item.slug}>
-                  <button
-                    type="button"
-                    onClick={() => setSelectedSlug(item.slug)}
-                    className={`flex w-full items-center justify-between rounded-lg border px-3 py-2 text-left text-xs transition-colors ${
-                      active ? "border-primary bg-primary/10 font-semibold text-primary" : "hover:bg-secondary/60"
-                    }`}
-                  >
-                    <div>
-                      <div className="text-foreground">{item.name}</div>
-                      <div className="text-[10px] text-muted-foreground">{item.sectionDisplayName}</div>
-                    </div>
-                    {staged && staged.workflowStatus !== "published" && (
-                      <span className="rounded-full bg-amber-500/20 px-2 py-0.5 text-[10px] font-medium text-amber-700 dark:text-amber-300">
-                        {staged.workflowStatus}
-                      </span>
-                    )}
-                  </button>
-                </li>
-              );
-            })}
+          <input
+            type="search"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            placeholder="Search treatment or subsection..."
+            className="w-full rounded-lg border bg-background px-3 py-1.5 text-xs text-foreground outline-none focus:border-primary"
+          />
+
+          <div className="flex flex-wrap gap-1">
+            {[
+              { id: "all", label: "All" },
+              { id: "orthopaedics", label: "Orthopaedics" },
+              { id: "physiotherapy", label: "Physiotherapy" },
+              { id: "rehabilitation", label: "Rehabilitation" },
+            ].map((tab) => (
+              <button
+                key={tab.id}
+                type="button"
+                onClick={() => setSectionFilter(tab.id)}
+                className={`rounded-md px-2 py-1 text-[11px] font-medium transition-colors ${
+                  sectionFilter === tab.id
+                    ? "bg-primary text-primary-foreground"
+                    : "bg-secondary/60 text-muted-foreground hover:text-foreground"
+                }`}
+              >
+                {tab.label}
+              </button>
+            ))}
+          </div>
+
+          <ul className="max-h-[60vh] space-y-1.5 overflow-y-auto">
+            {items
+              .filter(
+                (item) =>
+                  (sectionFilter === "all" || item.sectionSlug === sectionFilter) &&
+                  (!searchQuery.trim() ||
+                    item.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                    item.slug.toLowerCase().includes(searchQuery.toLowerCase())),
+              )
+              .map((item) => {
+                const active = item.slug === selectedSlug;
+                const staged = loadStagedTreatment(item.slug);
+                return (
+                  <li key={item.slug}>
+                    <button
+                      type="button"
+                      onClick={() => setSelectedSlug(item.slug)}
+                      className={`flex w-full items-center justify-between rounded-lg border px-3 py-2 text-left text-xs transition-colors ${
+                        active ? "border-primary bg-primary/10 font-semibold text-primary" : "hover:bg-secondary/60"
+                      }`}
+                    >
+                      <div>
+                        <div className="text-foreground">{item.name}</div>
+                        <div className="text-[10px] text-muted-foreground">{item.sectionDisplayName}</div>
+                      </div>
+                      {staged && staged.workflowStatus !== "published" && (
+                        <span className="rounded-full bg-amber-500/20 px-2 py-0.5 text-[10px] font-medium text-amber-700 dark:text-amber-300">
+                          {staged.workflowStatus}
+                        </span>
+                      )}
+                    </button>
+                  </li>
+                );
+              })}
           </ul>
         </aside>
 
@@ -406,19 +470,63 @@ export default function AdminTreatments() {
                     Structured Clinical Sections
                   </h2>
                   <p className="text-xs text-muted-foreground">
-                    Add or edit sections below. They are automatically formatted into clean medical page HTML.
+                    Add or edit sections below, or switch to Rich Text / HTML Mode for direct formatting.
                   </p>
                 </div>
-                <button
-                  type="button"
-                  onClick={() => addBlock("symptoms")}
-                  className="inline-flex items-center gap-1 rounded-lg bg-primary px-3 py-1.5 text-xs font-semibold text-primary-foreground"
-                >
-                  <Plus size={13} /> Add clinical section
-                </button>
+                <div className="flex flex-wrap items-center gap-2">
+                  <div className="inline-flex rounded-lg border bg-secondary/40 p-0.5">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        if (editorMode === "rich_html") {
+                          setBlocks(parseHtmlToTreatmentBlocks(rawHtml, name));
+                        }
+                        setEditorMode("blocks");
+                      }}
+                      className={`rounded-md px-2.5 py-1 text-xs font-medium ${
+                        editorMode === "blocks" ? "bg-card text-foreground shadow-sm" : "text-muted-foreground"
+                      }`}
+                    >
+                      Structured Blocks
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        if (editorMode === "blocks" && blocks.length > 0) {
+                          setRawHtml(compileTreatmentBlocksToHtml(blocks));
+                        }
+                        setEditorMode("rich_html");
+                      }}
+                      className={`rounded-md px-2.5 py-1 text-xs font-medium ${
+                        editorMode === "rich_html" ? "bg-card text-foreground shadow-sm" : "text-muted-foreground"
+                      }`}
+                    >
+                      Rich Text / HTML
+                    </button>
+                  </div>
+                  {editorMode === "blocks" && (
+                    <button
+                      type="button"
+                      onClick={() => addBlock("symptoms")}
+                      className="inline-flex items-center gap-1 rounded-lg bg-primary px-3 py-1.5 text-xs font-semibold text-primary-foreground"
+                    >
+                      <Plus size={13} /> Add clinical section
+                    </button>
+                  )}
+                </div>
               </div>
 
-              <div className="space-y-4">
+              {editorMode === "rich_html" ? (
+                <RichTextEditor
+                  label="Treatment Content (Headings, Paragraphs, Lists, Links & Illustrations)"
+                  value={rawHtml}
+                  onChange={(next) => setRawHtml(next)}
+                  mediaAssets={mediaAssets}
+                  rows={14}
+                  helpText="Format headings (H2/H3), bullet lists, numbered steps, links, and medical illustrations from the Media Library."
+                />
+              ) : (
+                <div className="space-y-4">
                 {blocks.map((block, idx) => (
                   <div key={block.id} className="space-y-3 rounded-xl border bg-background p-4">
                     <div className="flex flex-wrap items-center justify-between gap-2">
@@ -543,7 +651,8 @@ export default function AdminTreatments() {
                     </div>
                   </div>
                 ))}
-              </div>
+                </div>
+              )}
             </section>
           )}
         </div>

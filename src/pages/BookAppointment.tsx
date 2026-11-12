@@ -2,12 +2,19 @@ import { motion } from "framer-motion";
 import { Calendar, Clock, Phone, CheckCircle } from "lucide-react";
 import { useState } from "react";
 import { useServices } from "@/hooks/useContent";
-import { useSiteConfig } from "@/contexts/SiteConfigContext";
+import { usePreviewSiteConfig, useSitePageContent } from "@/hooks/usePageContent";
+import {
+  CmsDraftPreviewBanner,
+  PageFaqSection,
+  PageHighlightsGrid,
+  PageRichBodySection,
+} from "@/components/PageCmsSupplement";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import SEO from "@/components/SEO";
 import { trackAppointmentBooking } from "@/lib/analytics";
 import { trackClick } from "@/utils/analytics";
+import { pageLabel } from "@/lib/cms/siteLabels";
 
 export default function BookAppointment() {
   const [submitted, setSubmitted] = useState(false);
@@ -27,7 +34,10 @@ export default function BookAppointment() {
   });
   const { toast } = useToast();
   const { services } = useServices();
-  const { config } = useSiteConfig();
+  const { config, usingDraft: configDraft, workflowStatus: configStatus } = usePreviewSiteConfig("clinic");
+  const { content: page, usingDraft: pageDraft, workflowStatus: pageStatus } = useSitePageContent("book");
+  const usingDraft = configDraft || pageDraft;
+  const workflowStatus = pageDraft ? pageStatus : configStatus;
 
   // Fallback services if database is empty
   const serviceOptions = services.length > 0 ? services : [
@@ -133,11 +143,15 @@ export default function BookAppointment() {
             <div className="w-20 h-20 rounded-full bg-accent/10 flex items-center justify-center mx-auto mb-6">
               <CheckCircle className="text-accent" size={40} />
             </div>
-            <h1 className="font-display text-3xl font-bold text-foreground mb-3">Appointment Requested!</h1>
+            <h1 className="font-display text-3xl font-bold text-foreground mb-3">
+              {page.customLabels.confirmationHeading || "Appointment Requested!"}
+            </h1>
             <p className="text-muted-foreground mb-2">
-              Your appointment has been submitted successfully.
+              {pageLabel(page, "successMessage", "Your appointment has been submitted successfully.")}
             </p>
-            <p className="text-muted-foreground mb-6">We will confirm within 2 hours via WhatsApp.</p>
+            <p className="text-muted-foreground mb-6">
+              {page.customLabels.confirmationNote || "We will confirm within 2 hours via WhatsApp."}
+            </p>
             <a
               href={whatsappLink}
               target="_blank"
@@ -151,7 +165,7 @@ export default function BookAppointment() {
               }
               className="inline-flex items-center gap-2 rounded-lg bg-primary px-6 py-3 text-sm font-semibold text-primary-foreground"
             >
-              <Phone size={16} /> Chat on WhatsApp
+              <Phone size={16} /> {page.customLabels.whatsappConfirmLabel || "Chat on WhatsApp"}
             </a>
           </motion.div>
         </div>
@@ -162,31 +176,61 @@ export default function BookAppointment() {
   return (
     <>
       <SEO
-        title="Book Appointment"
-        description={`Book an appointment with ${config.doctorName}. Easy online booking, flexible scheduling, insurance accepted. Get expert orthopedic care at ${config.clinicName}.`}
+        title={page.heroTitle || "Book Appointment"}
+        description={
+          page.heroSubtitle ||
+          `Book an appointment with ${config.doctorName}. Easy online booking, flexible scheduling, insurance accepted. Get expert orthopedic care at ${config.clinicName}.`
+        }
         keywords="book orthopedic appointment, schedule consultation, online booking, orthopedic appointment, doctor appointment"
         url="/book"
       />
+      <CmsDraftPreviewBanner usingDraft={usingDraft} workflowStatus={workflowStatus} pageLabel="Book Appointment" />
       <section className="bg-hero-gradient py-14 md:py-20">
         <div className="container text-center">
           <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
-            <h1 className="font-display text-4xl md:text-5xl font-bold text-primary-foreground mb-3">Book Appointment</h1>
-            <p className="text-primary-foreground/70">Schedule your visit. We'll confirm via WhatsApp.</p>
+            {page.heroEyebrow && (
+              <span className="text-accent text-sm font-semibold uppercase tracking-wider block mb-2">
+                {page.heroEyebrow}
+              </span>
+            )}
+            <h1 className="font-display text-4xl md:text-5xl font-bold text-primary-foreground mb-3">
+              {page.heroTitle || "Book Appointment"}
+            </h1>
+            <p className="text-primary-foreground/70">
+              {page.heroSubtitle || "Schedule your visit. We'll confirm via WhatsApp."}
+            </p>
+            {page.heroImageUrl && (
+              <div className="mt-8 max-w-2xl mx-auto">
+                <img
+                  src={page.heroImageUrl}
+                  alt={page.heroImageAlt || page.heroTitle}
+                  className="rounded-2xl shadow-xl w-full max-h-72 object-cover mx-auto"
+                />
+              </div>
+            )}
           </motion.div>
         </div>
       </section>
+
+      <PageRichBodySection bodyHtml={page.bodyHtml} />
+
+      {page.highlights.length > 0 && (
+        <div className="container pt-8 max-w-2xl">
+          <PageHighlightsGrid highlights={page.highlights} />
+        </div>
+      )}
 
       <section className="py-12 md:py-20">
         <div className="container max-w-2xl">
           <form onSubmit={handleSubmit} className="space-y-6">
             <div className="grid sm:grid-cols-2 gap-4">
               <div>
-                <label className="block text-sm font-medium text-foreground mb-1.5">First Name *</label>
+                <label className="block text-sm font-medium text-foreground mb-1.5">{pageLabel(page, "firstNameLabel", "First Name *")}</label>
                 <input required type="text" value={form.firstName} onChange={(e) => setForm({ ...form, firstName: e.target.value })}
                   className="w-full rounded-lg border bg-card px-4 py-2.5 text-sm text-foreground focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none" />
               </div>
               <div>
-                <label className="block text-sm font-medium text-foreground mb-1.5">Last Name *</label>
+                <label className="block text-sm font-medium text-foreground mb-1.5">{pageLabel(page, "lastNameLabel", "Last Name *")}</label>
                 <input required type="text" value={form.lastName} onChange={(e) => setForm({ ...form, lastName: e.target.value })}
                   className="w-full rounded-lg border bg-card px-4 py-2.5 text-sm text-foreground focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none" />
               </div>
@@ -194,9 +238,9 @@ export default function BookAppointment() {
 
             <div className="grid sm:grid-cols-2 gap-4">
               <div>
-                <label className="block text-sm font-medium text-foreground mb-1.5">Phone *</label>
+                <label className="block text-sm font-medium text-foreground mb-1.5">{pageLabel(page, "phoneLabel", "Phone *")}</label>
                 <input required type="tel" value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })}
-                  className="w-full rounded-lg border bg-card px-4 py-2.5 text-sm text-foreground focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none" placeholder="+91" />
+                  className="w-full rounded-lg border bg-card px-4 py-2.5 text-sm text-foreground focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none" placeholder={pageLabel(page, "phonePlaceholder", "+91")} />
               </div>
               <div>
                 <label className="block text-sm font-medium text-foreground mb-1.5">Email</label>
@@ -207,10 +251,10 @@ export default function BookAppointment() {
 
             <div className="grid sm:grid-cols-2 gap-4">
               <div>
-                <label className="block text-sm font-medium text-foreground mb-1.5">Appointment Type *</label>
+                <label className="block text-sm font-medium text-foreground mb-1.5">{pageLabel(page, "appointmentTypeLabel", "Appointment Type *")}</label>
                 <select required value={form.appointmentType} onChange={(e) => setForm({ ...form, appointmentType: e.target.value })}
                   className="w-full rounded-lg border bg-card px-4 py-2.5 text-sm text-foreground focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none">
-                  <option value="">Select type</option>
+                  <option value="">{pageLabel(page, "selectTypePlaceholder", "Select type")}</option>
                   <option value="new">New Patient</option>
                   <option value="follow_up">Follow Up</option>
                   <option value="post_op">Post-Op Check</option>
@@ -219,10 +263,10 @@ export default function BookAppointment() {
                 </select>
               </div>
               <div>
-                <label className="block text-sm font-medium text-foreground mb-1.5">Service</label>
+                <label className="block text-sm font-medium text-foreground mb-1.5">{pageLabel(page, "serviceLabel", "Service")}</label>
                 <select value={form.service} onChange={(e) => setForm({ ...form, service: e.target.value })}
                   className="w-full rounded-lg border bg-card px-4 py-2.5 text-sm text-foreground focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none">
-                  <option value="">Select service</option>
+                  <option value="">{pageLabel(page, "selectServicePlaceholder", "Select service")}</option>
                   {serviceOptions.map((s) => (
                     <option key={s.id} value={s.name}>{s.name}</option>
                   ))}
@@ -233,18 +277,18 @@ export default function BookAppointment() {
             <div className="grid sm:grid-cols-2 gap-4">
               <div>
                 <label className="block text-sm font-medium text-foreground mb-1.5">
-                  <Calendar size={14} className="inline mr-1" /> Preferred Date *
+                  <Calendar size={14} className="inline mr-1" /> {pageLabel(page, "dateLabel", "Preferred Date *")}
                 </label>
                 <input required type="date" value={selectedDate} onChange={(e) => setSelectedDate(e.target.value)}
                   className="w-full rounded-lg border bg-card px-4 py-2.5 text-sm text-foreground focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none" />
               </div>
               <div>
                 <label className="block text-sm font-medium text-foreground mb-1.5">
-                  <Clock size={14} className="inline mr-1" /> Preferred Time *
+                  <Clock size={14} className="inline mr-1" /> {pageLabel(page, "timeLabel", "Preferred Time *")}
                 </label>
                 <select required value={selectedTime} onChange={(e) => setSelectedTime(e.target.value)}
                   className="w-full rounded-lg border bg-card px-4 py-2.5 text-sm text-foreground focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none">
-                  <option value="">Select time</option>
+                  <option value="">{pageLabel(page, "selectTimePlaceholder", "Select time")}</option>
                   {timeSlotOptions.map((slot) => (
                     <option key={slot.time} value={slot.time} disabled={!slot.available}>
                       {slot.time} {!slot.available ? "(Unavailable)" : ""}
@@ -255,16 +299,16 @@ export default function BookAppointment() {
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-foreground mb-1.5">Describe Your Symptoms *</label>
+              <label className="block text-sm font-medium text-foreground mb-1.5">{pageLabel(page, "symptomsLabel", "Describe Your Symptoms *")}</label>
               <textarea required rows={3} value={form.symptoms} onChange={(e) => setForm({ ...form, symptoms: e.target.value })}
-                className="w-full rounded-lg border bg-card px-4 py-2.5 text-sm text-foreground focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none resize-none" placeholder="Brief description of your condition..." />
+                className="w-full rounded-lg border bg-card px-4 py-2.5 text-sm text-foreground focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none resize-none" placeholder={pageLabel(page, "symptomsPlaceholder", "Brief description of your condition...")} />
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-foreground mb-1.5">Insurance Provider</label>
+              <label className="block text-sm font-medium text-foreground mb-1.5">{pageLabel(page, "insuranceLabel", "Insurance Provider")}</label>
               <select value={form.insuranceProvider} onChange={(e) => setForm({ ...form, insuranceProvider: e.target.value })}
                 className="w-full rounded-lg border bg-card px-4 py-2.5 text-sm text-foreground focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none">
-                <option value="">None / Self-pay</option>
+                <option value="">{pageLabel(page, "insuranceNoneOption", "None / Self-pay")}</option>
                 {config.insuranceProviders.map((p) => (
                   <option key={p} value={p}>{p}</option>
                 ))}
@@ -273,7 +317,7 @@ export default function BookAppointment() {
 
             <div className="flex items-center gap-2">
               <input type="checkbox" id="emi" checked={form.emiInterest} onChange={(e) => setForm({ ...form, emiInterest: e.target.checked })} className="rounded border-border" />
-              <label htmlFor="emi" className="text-sm text-muted-foreground">I'm interested in EMI payment options</label>
+              <label htmlFor="emi" className="text-sm text-muted-foreground">{pageLabel(page, "emiCheckboxLabel", "I'm interested in EMI payment options")}</label>
             </div>
 
             <button
@@ -285,7 +329,7 @@ export default function BookAppointment() {
             </button>
 
             <p className="text-xs text-center text-muted-foreground">
-              Or call directly: <a
+              {pageLabel(page, "callDirectlyLabel", "Or call directly:")} <a
                 href={`tel:${config.phone}`}
                 onClick={() =>
                   trackClick("phone_click", {
@@ -299,6 +343,8 @@ export default function BookAppointment() {
           </form>
         </div>
       </section>
+
+      <PageFaqSection faqs={page.faqs} />
     </>
   );
 }
