@@ -70,6 +70,7 @@ export default function AdminDoctor() {
         previewUrl={SITE_CONFIG_SCOPE_PREVIEW_URL.doctor}
         unsavedChanges={ws.unsavedChanges}
         changes={ws.pendingChanges}
+        directPublishTarget="site_config:doctor"
         onSave={(s) => void ws.save(s)}
         onReview={(d, fb) => void ws.review(d, fb)}
         onPublish={() => void ws.publish()}

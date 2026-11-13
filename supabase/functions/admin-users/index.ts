@@ -24,10 +24,39 @@
  *    - `SUPABASE_SERVICE_ROLE_KEY` is loaded exclusively via `Deno.env.get` on the server with `persistSession: false`.
  *    - Validates caller JWT via `callerClient.auth.getUser()`, verifies `is_super_admin()`, and double-checks
  *      active role server-side. Editors and legacy admins receive HTTP 403.
+ * 6. Email onboarding (migration 007):
+ *    - `create` is invite-only: the administrator never sets or sees a password. The user receives a
+ *      time-limited Supabase invitation link and sets their own password on /reset-password.
+ *    - With RESEND_API_KEY + CMS_INVITE_FROM_EMAIL the function generates the Supabase link and sends a
+ *      branded email through Resend; otherwise Supabase Auth sends its own "Invite user" email.
+ *    - The link is placed only in the email body. It is never returned, logged or audited.
+ *    - `resend_invite` issues a fresh link (the old one stops working) for users who have not accepted.
+ * 7. Per-user direct publishing (migration 007): `set_direct_publish` calls the service-role-only
+ *    `admin_set_direct_publish()` RPC (advisory lock, Super Admin check, Editor-only, audit log).
+ *
+ * Environment (Supabase → Edge Functions → Secrets):
+ *    CMS_SITE_URL              required for invitations, e.g. https://orthocarehub.in (must be in Auth → URL
+ *                              Configuration → Redirect URLs as <CMS_SITE_URL>/reset-password**)
+ *    CMS_INVITE_EXPIRY_HOURS   optional, default 24. Must match Auth → Email → "Email OTP Expiration".
+ *    RESEND_API_KEY            optional; with CMS_INVITE_FROM_EMAIL enables branded invitation emails.
+ *    CMS_INVITE_FROM_EMAIL     e.g. "OrthoCare Hub <cms@orthocarehub.in>" (verified Resend domain).
+ *    CMS_SUPPORT_EMAIL, CMS_SUPPORT_PHONE   optional contact lines in the email.
  */
 
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient, type SupabaseClient } from "https://esm.sh/@supabase/supabase-js@2";
+import {
+  deriveInviteStatus,
+  inviteRedirectUrl,
+  loginUrl,
+  normalizeSiteUrl,
+  parseExpiryHours,
+  runCreateInvite,
+  runResendInvite,
+  type CmsInviteRole,
+  type InviteContext,
+  type InviteDeps,
+} from "../_shared/cmsInvite.ts";
 
 interface UserProfileRow {
   user_id: string;
@@ -36,6 +65,135 @@ interface UserProfileRow {
   is_active: boolean;
   created_at: string;
   updated_at: string;
+  direct_publish_enabled?: boolean;
+  direct_publish_updated_at?: string | null;
+  direct_publish_updated_by?: string | null;
+  invite_status?: string | null;
+  invite_last_sent_at?: string | null;
+}
+
+interface AuthUserState {
+  email_confirmed_at: string | null;
+  last_sign_in_at: string | null;
+  invited_at: string | null;
+}
+
+const PROFILE_COLUMNS_007 =
+  "user_id, email, display_name, is_active, created_at, updated_at, direct_publish_enabled, direct_publish_updated_at, direct_publish_updated_by, invite_status, invite_last_sent_at";
+const PROFILE_COLUMNS_LEGACY = "user_id, email, display_name, is_active, created_at, updated_at";
+
+function isMissingRpc(err: { code?: string; message?: string } | null): boolean {
+  if (!err) return false;
+  return err.code === "PGRST202" || err.code === "42883" || /could not find the function/i.test(err.message ?? "");
+}
+
+async function listAuthUserStates(adminClient: SupabaseClient): Promise<Map<string, AuthUserState>> {
+  const states = new Map<string, AuthUserState>();
+  const perPage = 1000;
+  for (let page = 1; page <= 20; page++) {
+    const { data, error } = await adminClient.auth.admin.listUsers({ page, perPage });
+    if (error) throw new Error(`Auth error listing users: ${error.message}`);
+    const users = data?.users ?? [];
+    for (const u of users) {
+      states.set(u.id, {
+        email_confirmed_at: u.email_confirmed_at ?? null,
+        last_sign_in_at: u.last_sign_in_at ?? null,
+        invited_at: (u as { invited_at?: string | null }).invited_at ?? null,
+      });
+    }
+    if (users.length < perPage) break;
+  }
+  return states;
+}
+
+function inviteConfig(): { ctx: InviteContext; mode: "resend" | "supabase_auth"; resendKey?: string; from?: string } | null {
+  const siteUrl = normalizeSiteUrl(Deno.env.get("CMS_SITE_URL"));
+  if (!siteUrl) return null;
+  const resendKey = Deno.env.get("RESEND_API_KEY") ?? undefined;
+  const from = Deno.env.get("CMS_INVITE_FROM_EMAIL") ?? undefined;
+  return {
+    ctx: {
+      redirectTo: inviteRedirectUrl(siteUrl),
+      loginUrl: loginUrl(siteUrl),
+      expiryHours: parseExpiryHours(Deno.env.get("CMS_INVITE_EXPIRY_HOURS")),
+      clinicName: "OrthoCare Hub",
+      supportEmail: Deno.env.get("CMS_SUPPORT_EMAIL") ?? null,
+      supportPhone: Deno.env.get("CMS_SUPPORT_PHONE") ?? null,
+    },
+    mode: resendKey && from ? "resend" : "supabase_auth",
+    resendKey,
+    from,
+  };
+}
+
+function buildInviteDeps(
+  adminClient: SupabaseClient,
+  callerId: string,
+  cfg: NonNullable<ReturnType<typeof inviteConfig>>,
+  provisionArgs?: { email: string; displayName: string; role: CmsInviteRole },
+): InviteDeps {
+  return {
+    mode: cfg.mode,
+    profileExists: async (email) => {
+      const { data, error } = await adminClient.from("profiles").select("user_id").eq("email", email).limit(1);
+      if (error) throw new Error(`Database error checking existing accounts: ${error.message}`);
+      return Array.isArray(data) && data.length > 0;
+    },
+    generateInviteLink: async (email, redirectTo, metadata) => {
+      const { data, error } = await adminClient.auth.admin.generateLink({
+        type: "invite",
+        email,
+        options: { redirectTo, data: metadata },
+      });
+      if (error || !data?.user || !data.properties?.action_link) {
+        return { error: { message: error?.message ?? "No invitation link returned", code: (error as { code?: string } | null)?.code, status: error?.status } };
+      }
+      return { userId: data.user.id, actionLink: data.properties.action_link };
+    },
+    inviteViaSupabase: async (email, redirectTo, metadata) => {
+      const { data, error } = await adminClient.auth.admin.inviteUserByEmail(email, { redirectTo, data: metadata });
+      if (error || !data?.user) {
+        return { error: { message: error?.message ?? "Invitation failed", code: (error as { code?: string } | null)?.code, status: error?.status } };
+      }
+      return { userId: data.user.id };
+    },
+    provision: async (userId) => {
+      if (!provisionArgs) return { error: "Provisioning is not available for this action" };
+      const { error } = await adminClient.rpc("provision_cms_user", {
+        _user_id: userId,
+        _email: provisionArgs.email,
+        _display_name: provisionArgs.displayName,
+        _role: provisionArgs.role,
+        _caller_id: callerId,
+      });
+      return error ? { error: `Atomic provisioning failed: ${error.message}` } : {};
+    },
+    deleteAuthUser: async (userId) => {
+      const { error } = await adminClient.auth.admin.deleteUser(userId);
+      if (error) console.error(`CRITICAL ROLLBACK FAILURE: failed to clean up auth user ${userId}`);
+      return error ? { error: error.message } : {};
+    },
+    sendEmail: async (message) => {
+      const res = await fetch("https://api.resend.com/emails", {
+        method: "POST",
+        headers: { Authorization: `Bearer ${cfg.resendKey}`, "Content-Type": "application/json" },
+        body: JSON.stringify({ from: cfg.from, to: [message.to], subject: message.subject, html: message.html, text: message.text }),
+      });
+      // Never log the request body: it contains the invitation link.
+      return res.ok ? { ok: true } : { ok: false, errorCode: `email_provider_http_${res.status}` };
+    },
+    recordEvent: async (userId, event, provider, errorCode) => {
+      const { error } = await adminClient.rpc("admin_record_invite_event", {
+        _target_user_id: userId,
+        _event: event,
+        _caller_id: callerId,
+        _provider: provider,
+        _error_code: errorCode ?? null,
+      });
+      if (error) console.error(`Invite audit write failed for ${userId}: ${error.code ?? ""}`);
+      return error ? { error: error.message } : {};
+    },
+  };
 }
 
 const corsHeaders = {
@@ -232,13 +390,32 @@ serve(async (req) => {
     // ACTION: LIST
     // =========================================================================
     if (action === "list") {
-      const { data: profiles, error: pErr } = await adminClient
+      let migration007Ready = true;
+      let { data: profiles, error: pErr } = await adminClient
         .from("profiles")
-        .select("user_id, email, display_name, is_active, created_at, updated_at")
+        .select(PROFILE_COLUMNS_007)
         .order("created_at", { ascending: false });
+      if (pErr && (pErr.code === "42703" || /column .* does not exist/i.test(pErr.message ?? ""))) {
+        migration007Ready = false;
+        ({ data: profiles, error: pErr } = await adminClient
+          .from("profiles")
+          .select(PROFILE_COLUMNS_LEGACY)
+          .order("created_at", { ascending: false }));
+      }
       if (pErr) {
         return jsonResponse({ error: `Database error fetching profiles: ${pErr.message}` }, 500);
       }
+
+      let authStates = new Map<string, AuthUserState>();
+      try {
+        authStates = await listAuthUserStates(adminClient);
+      } catch (e) {
+        return jsonResponse({ error: e instanceof Error ? e.message : "Auth error listing users" }, 500);
+      }
+      const expiryHours = parseExpiryHours(Deno.env.get("CMS_INVITE_EXPIRY_HOURS"));
+      const emailById = new Map<string, string>(
+        (profiles ?? []).map((p: UserProfileRow) => [p.user_id, p.email] as [string, string]),
+      );
 
       const { data: roles, error: rErr } = await adminClient
         .from("user_roles")
@@ -254,20 +431,53 @@ serve(async (req) => {
         }
       }
 
-      const users = (profiles ?? []).map((p: UserProfileRow) => ({
-        userId: p.user_id,
-        email: p.email,
-        displayName: p.display_name ?? "",
-        role: roleMap.get(p.user_id) ?? "editor",
-        isActive: p.is_active,
-        createdAt: p.created_at,
-      }));
+      const users = (profiles ?? []).map((p: UserProfileRow) => {
+        const auth = authStates.get(p.user_id);
+        const inviteStatus = deriveInviteStatus({
+          emailConfirmedAt: auth?.email_confirmed_at,
+          lastSignInAt: auth?.last_sign_in_at,
+          invitedAt: auth?.invited_at,
+          storedStatus: p.invite_status ?? null,
+          lastSentAt: p.invite_last_sent_at ?? null,
+          expiryHours,
+        });
+        return {
+          userId: p.user_id,
+          email: p.email,
+          displayName: p.display_name ?? "",
+          role: roleMap.get(p.user_id) ?? "editor",
+          isActive: p.is_active,
+          createdAt: p.created_at,
+          inviteStatus,
+          inviteLastSentAt: p.invite_last_sent_at ?? auth?.invited_at ?? null,
+          directPublishEnabled: p.direct_publish_enabled === true,
+          directPublishUpdatedAt: p.direct_publish_updated_at ?? null,
+          directPublishUpdatedByEmail: p.direct_publish_updated_by ? emailById.get(p.direct_publish_updated_by) ?? null : null,
+          _storedInviteStatus: p.invite_status ?? null,
+        };
+      });
 
-      return jsonResponse({ users });
+      // Keep profiles.invite_status in step with Auth once a user accepts (best effort, not audited).
+      if (migration007Ready) {
+        for (const u of users) {
+          if (u.inviteStatus === "accepted" && u._storedInviteStatus && u._storedInviteStatus !== "accepted") {
+            await adminClient.rpc("admin_record_invite_event", {
+              _target_user_id: u.userId,
+              _event: "accepted",
+              _caller_id: caller.id,
+            });
+          }
+        }
+      }
+
+      return jsonResponse({
+        users: users.map(({ _storedInviteStatus, ...u }) => u),
+        features: { directPublishing: migration007Ready, invitations: migration007Ready },
+      });
     }
 
     // =========================================================================
-    // ACTION: CREATE
+    // ACTION: CREATE (invitation only – the user sets their own password)
     // =========================================================================
     if (action === "create") {
       const email = typeof rawBody.email === "string" ? rawBody.email.trim().toLowerCase() : "";
@@ -277,110 +487,102 @@ serve(async (req) => {
       if (!isAssignableCmsRole(rawBody.role)) {
         return jsonResponse({ error: "Invalid role: must be 'editor' or 'super_admin'" }, 400);
       }
-      const role = rawBody.role;
-
-      let password: string | undefined;
       if (rawBody.password !== undefined && rawBody.password !== "") {
-        if (
-          typeof rawBody.password !== "string" ||
-          rawBody.password.length < 8 ||
-          rawBody.password.length > 128
-        ) {
-          return jsonResponse({ error: "Password must be between 8 and 128 characters" }, 400);
-        }
-        password = rawBody.password;
+        return jsonResponse(
+          { error: "Administrators cannot set passwords. The user sets their own password from the invitation email." },
+          400,
+        );
       }
-
+      const role = rawBody.role;
       const displayName =
         typeof rawBody.displayName === "string" && rawBody.displayName.trim()
           ? rawBody.displayName.trim().slice(0, 100)
           : email.split("@")[0];
 
-      // Step 1: Create user in Supabase Auth
-      const createRes = password
-        ? await adminClient.auth.admin.createUser({
-            email,
-            password,
-            email_confirm: true,
-          })
-        : await adminClient.auth.admin.inviteUserByEmail(email);
-
-      if (createRes.error || !createRes.data?.user) {
-        return jsonResponse(
-          { error: createRes.error?.message ?? "Failed to create user in auth system" },
-          400,
-        );
+      const cfg = inviteConfig();
+      if (!cfg) {
+        return jsonResponse({ error: "Server configuration incomplete: set CMS_SITE_URL (https) for invitation links." }, 500);
       }
 
-      const newUid = createRes.data.user.id;
-      let provisioningError: string | null = null;
+      const outcome = await runCreateInvite(
+        { email, displayName, role },
+        cfg.ctx,
+        buildInviteDeps(adminClient, caller.id, cfg, { email, displayName, role }),
+      );
+      return jsonResponse(outcome.body, outcome.status);
+    }
 
-      // Step 2: Atomic database provisioning (Profile + Role + Audit in 1 transaction under advisory lock)
-      const { error: rpcErr } = await adminClient.rpc("provision_cms_user", {
-        _user_id: newUid,
-        _email: email,
-        _display_name: displayName,
-        _role: role,
+    // =========================================================================
+    // ACTION: RESEND_INVITE
+    // =========================================================================
+    if (action === "resend_invite") {
+      if (!isValidUuid(rawBody.userId)) {
+        return jsonResponse({ error: "A valid target userId (UUID) is required" }, 400);
+      }
+      const targetUserId = rawBody.userId.trim();
+
+      const cfg = inviteConfig();
+      if (!cfg) {
+        return jsonResponse({ error: "Server configuration incomplete: set CMS_SITE_URL (https) for invitation links." }, 500);
+      }
+
+      const { data: profile, error: pErr } = await adminClient
+        .from("profiles")
+        .select("user_id, email, display_name, is_active, invite_last_sent_at")
+        .eq("user_id", targetUserId)
+        .maybeSingle();
+      if (pErr) {
+        return jsonResponse({ error: `Database error loading the account: ${pErr.message}` }, 500);
+      }
+      if (!profile) return jsonResponse({ error: "Target user does not exist" }, 404);
+
+      const { data: authUser, error: aErr } = await adminClient.auth.admin.getUserById(targetUserId);
+      if (aErr || !authUser?.user) return jsonResponse({ error: "Target user does not exist" }, 404);
+
+      const { data: roles } = await adminClient.from("user_roles").select("role").eq("user_id", targetUserId);
+      const role: CmsInviteRole = (roles ?? []).some((r: { role: string }) => r.role === "super_admin") ? "super_admin" : "editor";
+
+      const outcome = await runResendInvite(
+        {
+          userId: targetUserId,
+          email: profile.email,
+          displayName: profile.display_name ?? "",
+          role,
+          isActive: profile.is_active !== false,
+          accepted: Boolean(authUser.user.email_confirmed_at || authUser.user.last_sign_in_at),
+          lastSentAt: profile.invite_last_sent_at ?? null,
+        },
+        cfg.ctx,
+        buildInviteDeps(adminClient, caller.id, cfg),
+      );
+      return jsonResponse(outcome.body, outcome.status);
+    }
+
+    // =========================================================================
+    // ACTION: SET_DIRECT_PUBLISH (per-user, Editors only; enforced again in the RPC)
+    // =========================================================================
+    if (action === "set_direct_publish") {
+      if (!isValidUuid(rawBody.userId)) {
+        return jsonResponse({ error: "A valid target userId (UUID) is required" }, 400);
+      }
+      if (typeof rawBody.enabled !== "boolean") {
+        return jsonResponse({ error: "enabled must be a boolean" }, 400);
+      }
+      const { data, error: rpcErr } = await adminClient.rpc("admin_set_direct_publish", {
+        _target_user_id: rawBody.userId.trim(),
+        _enabled: rawBody.enabled,
         _caller_id: caller.id,
       });
-
       if (rpcErr) {
-        // Fallback only if RPC function does not exist in the database (code PGRST202 / 42883)
-        if (rpcErr.code === "PGRST202" || rpcErr.code === "42883" || rpcErr.message?.includes("function")) {
-          const { error: pErr } = await adminClient.from("profiles").upsert({
-            user_id: newUid,
-            email,
-            display_name: displayName,
-            is_active: true,
-            created_by: caller.id,
-          });
-
-          if (pErr) {
-            provisioningError = `Failed to create profile: ${pErr.message}`;
-          } else {
-            const { error: delErr } = await adminClient.from("user_roles").delete().eq("user_id", newUid);
-            if (delErr) {
-              provisioningError = `Failed to clear prior roles: ${delErr.message}`;
-            } else {
-              const { error: insErr } = await adminClient.from("user_roles").insert({
-                user_id: newUid,
-                role,
-              });
-              if (insErr) {
-                provisioningError = `Failed to assign role: ${insErr.message}`;
-              } else {
-                // Ensure audit logging succeeds; if audit fails, treat as failure
-                const { error: logErr } = await callerClient.rpc("log_activity", {
-                  _action: "user.create",
-                  _entity_type: "user",
-                  _entity_id: newUid,
-                  _details: { email, role },
-                });
-                if (logErr) {
-                  provisioningError = `Failed to write audit log: ${logErr.message}`;
-                }
-              }
-            }
-          }
-        } else {
-          provisioningError = `Atomic provisioning failed: ${rpcErr.message}`;
+        if (isMissingRpc(rpcErr)) {
+          return jsonResponse({ error: "Direct publishing needs CMS migration 007. Nothing was changed." }, 501);
         }
+        if (rpcErr.code === "P0002") return jsonResponse({ error: "Target user does not exist" }, 404);
+        if (rpcErr.code === "P0010") return jsonResponse({ error: rpcErr.message }, 400);
+        if (rpcErr.code === "42501") return jsonResponse({ error: "Forbidden: Super Admin access required" }, 403);
+        return jsonResponse({ error: rpcErr.message }, 500);
       }
-
-      // Step 3: Compensatory rollback: Delete Auth user if DB provisioning failed (zero orphan accounts)
-      if (provisioningError) {
-        const { error: delAuthErr } = await adminClient.auth.admin.deleteUser(newUid);
-        if (delAuthErr) {
-          console.error(`CRITICAL ROLLBACK FAILURE: failed to clean up auth user ${newUid}:`, delAuthErr);
-          return jsonResponse(
-            { error: `${provisioningError}. Furthermore, Auth rollback failed: ${delAuthErr.message}` },
-            500,
-          );
-        }
-        return jsonResponse({ error: provisioningError }, 500);
-      }
-
-      return jsonResponse({ success: true, userId: newUid, email, role });
+      return jsonResponse({ success: true, ...(data ?? {}) });
     }
 
     // =========================================================================

@@ -21,11 +21,8 @@ describe("admin navigation", () => {
   it("super admin sees everything", () => {
     expect(getVisibleNav("super_admin")).toHaveLength(ADMIN_NAV.length);
   });
-  it("legacy admin does not see modules that need unapplied database tables", () => {
-    const l = labels("legacy_admin");
-    expect(l).toContain("Appointments");
-    expect(l).not.toContain("Users");
-    expect(l).not.toContain("Activity log");
+  it("retired legacy admin sees no CMS modules (it is never a CMS role)", () => {
+    expect(labels("legacy_admin")).toEqual([]);
   });
   it("routes are unique and live under /admin", () => {
     const paths = ADMIN_NAV.map((i) => i.to);

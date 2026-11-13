@@ -283,7 +283,7 @@ describe("Clinic Information draft workflow (005c)", () => {
     expect(screen.getByText(/please enter feedback/i)).toBeInTheDocument();
     expect(db.row.workflow_status).toBe("pending_approval");
 
-    fireEvent.change(screen.getByLabelText(/feedback for content editor/i), {
+    fireEvent.change(screen.getByLabelText(/feedback for the admin/i), {
       target: { value: "Sunday hours are wrong." },
     });
     fireEvent.click(screen.getByRole("button", { name: /confirm rejection/i }));

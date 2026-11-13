@@ -183,7 +183,7 @@ describe("Branding draft workflow (005c, scope 'branding')", () => {
     expect(within(changes).getByText("Theme preset")).toBeInTheDocument();
     expect(within(changes).getByText("Footer tagline")).toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: /reject with feedback/i }));
-    fireEvent.change(screen.getByLabelText(/feedback for content editor/i), { target: { value: "Use the teal theme tagline." } });
+    fireEvent.change(screen.getByLabelText(/feedback for the admin/i), { target: { value: "Use the teal theme tagline." } });
     fireEvent.click(screen.getByRole("button", { name: /confirm rejection/i }));
     await waitFor(() => expect(db.siteDrafts.branding.workflow_status).toBe("rejected"));
     second.unmount();

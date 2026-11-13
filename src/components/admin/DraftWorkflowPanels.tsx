@@ -2,6 +2,7 @@ import { AlertTriangle, GitCompare, RotateCcw } from "lucide-react";
 import { DraftPublishBar } from "@/components/admin/DraftPublishBar";
 import { useAuth } from "@/contexts/AuthContext";
 import type { ApprovalHistoryEntry, WorkflowStatus } from "@/lib/cms/types";
+import { directPublishBlockedReason, type DirectPublishTarget } from "@/lib/cms/directPublish";
 
 export interface DraftChangeRow {
   key: string;
@@ -29,6 +30,13 @@ export interface DraftWorkflowPanelsProps {
   changes: DraftChangeRow[];
   /** Override the comparison table (collections render their own summary). */
   changesTable?: React.ReactNode;
+  /**
+   * Content this workspace publishes, for per-user direct publishing (migration 007). Omit for
+   * workspaces that always need review (clinic, branding).
+   */
+  directPublishTarget?: DirectPublishTarget;
+  /** The saved draft removes items (collections). Removals always need review. */
+  hasRemovals?: boolean;
   onSave: (status: "draft" | "pending_approval") => void;
   onReview: (decision: "approved" | "rejected", feedback?: string) => void;
   onPublish: () => void;
@@ -37,11 +45,12 @@ export interface DraftWorkflowPanelsProps {
 
 /**
  * Banners, action bar, unsaved-edits bar and the "compared with the live website" table used by
- * every database-backed draft workspace. Publish only unlocks for an approved draft (the database
- * enforces the same rule).
+ * every database-backed draft workspace. For Super Admins, Publish only unlocks for an approved draft;
+ * for an Editor with direct publishing (007) it unlocks for their saved draft. The database enforces both.
  */
 export function DraftWorkflowPanels(props: DraftWorkflowPanelsProps) {
-  const { can } = useAuth();
+  const auth = useAuth();
+  const { can } = auth;
   const {
     label,
     migration,
@@ -52,6 +61,13 @@ export function DraftWorkflowPanels(props: DraftWorkflowPanelsProps) {
     changes,
     changesTable,
   } = props;
+
+  // Super Admins keep the approval path; only Editors with the flag ON get "Publish now".
+  const directPublish =
+    !can("content.publish") && Boolean(props.directPublishTarget) && auth.canDirectPublish?.(props.directPublishTarget) === true;
+  const blockedReason = directPublish
+    ? directPublishBlockedReason({ workflowStatus, unsavedChanges, hasRemovals: props.hasRemovals })
+    : null;
 
   return (
     <>
@@ -82,6 +98,8 @@ export function DraftWorkflowPanels(props: DraftWorkflowPanelsProps) {
         canSubmitReview={can("content.submit_review")}
         canApprove={can("content.approve")}
         canPublish={can("content.publish")}
+        directPublish={directPublish}
+        directPublishBlockedReason={blockedReason}
         reviewFeedback={props.reviewFeedback}
         reviewedByEmail={props.reviewedByEmail}
         reviewedAt={props.reviewedAt}
@@ -92,7 +110,11 @@ export function DraftWorkflowPanels(props: DraftWorkflowPanelsProps) {
         onSubmitForReview={() => props.onSave("pending_approval")}
         onApprove={() => props.onReview("approved")}
         onReject={(fb) => props.onReview("rejected", fb)}
-        onPublish={props.onPublish}
+        onPublish={() => {
+          // Keep the UI in step with the database flag; the publish function re-checks it anyway.
+          if (directPublish) void auth.refreshDirectPublish?.();
+          props.onPublish();
+        }}
       />
 
       {unsavedChanges && (

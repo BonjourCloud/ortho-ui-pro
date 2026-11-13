@@ -50,11 +50,13 @@ describe("permissions", () => {
       expect(can("editor", "users.manage")).toBe(false);
     });
 
-    it("cannot publish unless editorsCanPublish is explicitly true", () => {
+    it("never holds the global publish capability (the deprecated editorsCanPublish option is ignored)", () => {
+      // Per-account direct publishing (migration 007) is decided by canDirectPublish() and the
+      // database, never by the role-wide `content.publish` capability.
       expect(can("editor", "content.publish")).toBe(false);
       expect(can("editor", "content.publish", {})).toBe(false);
       expect(can("editor", "content.publish", { editorsCanPublish: false })).toBe(false);
-      expect(can("editor", "content.publish", { editorsCanPublish: true })).toBe(true);
+      expect(can("editor", "content.publish", { editorsCanPublish: true })).toBe(false);
     });
 
     it("editorsCanPublish does not unlock anything else", () => {
@@ -64,10 +66,11 @@ describe("permissions", () => {
   });
 
   describe("legacy_admin", () => {
-    it("keeps today's content and inbox abilities, including content deletes", () => {
-      expect(can("legacy_admin", "content.delete")).toBe(true);
-      expect(can("legacy_admin", "patientData.view")).toBe(true);
-      expect(can("legacy_admin", "clinic.edit")).toBe(true);
+    it("is retired: unlocks nothing in the CMS (005b drops its policies; decideAccess shows 'No CMS access')", () => {
+      expect(can("legacy_admin", "content.delete")).toBe(false);
+      expect(can("legacy_admin", "patientData.view")).toBe(false);
+      expect(can("legacy_admin", "clinic.edit")).toBe(false);
+      expect(can("legacy_admin", "content.publish")).toBe(false);
     });
     it("cannot bypass Super Admin restrictions (users, audit, system/security settings)", () => {
       expect(can("legacy_admin", "users.manage")).toBe(false);

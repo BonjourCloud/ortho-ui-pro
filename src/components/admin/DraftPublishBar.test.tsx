@@ -85,7 +85,7 @@ describe("DraftPublishBar (ROLE-001, PUB-001, Approval Workflow)", () => {
     expect(screen.getByText(/please enter feedback/i)).toBeInTheDocument();
 
     // Enter feedback and confirm rejection
-    fireEvent.change(screen.getByLabelText(/feedback for content editor/i), {
+    fireEvent.change(screen.getByLabelText(/feedback for the admin/i), {
       target: { value: "Check image alt text" },
     });
     fireEvent.click(screen.getByRole("button", { name: /confirm rejection/i }));

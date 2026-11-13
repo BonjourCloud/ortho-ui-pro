@@ -4,6 +4,7 @@ import { DraftWorkflowPanels } from "@/components/admin/DraftWorkflowPanels";
 import { useAuth } from "@/contexts/AuthContext";
 import type { useCollectionDraft } from "@/hooks/useCollectionDraft";
 import type { CollectionRow } from "@/lib/cms/collections";
+import { collectionTarget } from "@/lib/cms/directPublish";
 
 type Workspace<T extends CollectionRow> = ReturnType<typeof useCollectionDraft<T>>;
 
@@ -84,6 +85,8 @@ export function CollectionDraftList<T extends CollectionRow>({
         unsavedChanges={ws.unsavedChanges}
         changes={[]}
         changesTable={changesTable}
+        directPublishTarget={collectionTarget(ws.key)}
+        hasRemovals={(ws.record?.changeset.deletedIds.length ?? 0) > 0}
         onSave={(s) => void ws.save(s)}
         onReview={(d, fb) => void ws.review(d, fb)}
         onPublish={() => void ws.publish()}

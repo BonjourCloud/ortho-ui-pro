@@ -11,7 +11,18 @@ import {
   ThumbsDown,
   History,
   MessageSquareWarning,
+  Zap,
 } from "lucide-react";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import {
   WORKFLOW_STATUS_LABELS,
   type ApprovalHistoryEntry,
@@ -49,6 +60,14 @@ export interface DraftPublishBarProps {
   publishRequiresApproval?: boolean;
   /** Disables every action (e.g. the workspace's database tables are not available yet). */
   actionsDisabled?: boolean;
+  /**
+   * The signed-in Editor has direct publishing for this content (migration 007). Shows a
+   * "Publish now" button with a confirmation step instead of the "Super Admin approves" lock.
+   * The database re-checks the permission when `onPublish` runs.
+   */
+  directPublish?: boolean;
+  /** When set, "Publish now" is disabled and this explains why (e.g. unsaved edits). */
+  directPublishBlockedReason?: string | null;
   onSaveDraft: () => void;
   onSubmitForReview?: () => void;
   onApprove?: () => void;
@@ -69,7 +88,8 @@ const STATUS_BADGE_STYLES: Record<WorkflowStatus, string> = {
  * 1. Editor saves draft (`draft`) -> clicks "Submit for review" (`pending_approval`).
  * 2. Super Admin previews (`?preview=1`) -> approves (`approved`), rejects with feedback (`rejected`),
  *    or publishes (`published`).
- * 3. Editors can never directly publish or modify live published fields.
+ * 3. Editors cannot publish, unless a Super Admin enabled direct publishing for their account
+ *    (`directPublish`, migration 007) — the database re-checks that permission on every publish.
  */
 export function DraftPublishBar({
   workflowStatus,
@@ -86,6 +106,8 @@ export function DraftPublishBar({
   previewUrl,
   publishRequiresApproval = false,
   actionsDisabled = false,
+  directPublish = false,
+  directPublishBlockedReason = null,
   onSaveDraft,
   onSubmitForReview,
   onApprove,
@@ -101,6 +123,7 @@ export function DraftPublishBar({
   const [rejectFeedback, setRejectFeedback] = useState("");
   const [rejectError, setRejectError] = useState("");
   const [showHistory, setShowHistory] = useState(false);
+  const [confirmDirectPublish, setConfirmDirectPublish] = useState(false);
 
   const handleConfirmReject = () => {
     if (!rejectFeedback.trim()) {
@@ -219,6 +242,27 @@ export function DraftPublishBar({
               <Send size={14} aria-hidden="true" />
               {effectiveStatus === "approved" ? "Publish approved" : "Publish to live website"}
             </button>
+          ) : directPublish ? (
+            <>
+              <span
+                data-testid="direct-publish-badge"
+                className="inline-flex items-center gap-1 rounded-full bg-emerald-500/15 px-2.5 py-1 text-[11px] font-semibold text-emerald-700 dark:text-emerald-300"
+                title="A Super Admin allowed your account to publish this content without review."
+              >
+                <Zap size={12} aria-hidden="true" />
+                Direct publishing enabled
+              </span>
+              <button
+                type="button"
+                disabled={disabled || Boolean(directPublishBlockedReason)}
+                onClick={() => setConfirmDirectPublish(true)}
+                title={directPublishBlockedReason ?? undefined}
+                className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-4 py-2 text-xs font-semibold text-primary-foreground transition-opacity hover:opacity-90 disabled:opacity-50"
+              >
+                <Send size={14} aria-hidden="true" />
+                Publish now
+              </button>
+            </>
           ) : (
             <span
               title="Only a Super Admin can approve and publish changes to the live website."
@@ -230,6 +274,33 @@ export function DraftPublishBar({
           )}
         </div>
       </div>
+
+      {directPublish && directPublishBlockedReason && !disabled && (
+        <p className="text-[11px] text-muted-foreground">{directPublishBlockedReason}</p>
+      )}
+
+      <AlertDialog open={confirmDirectPublish} onOpenChange={setConfirmDirectPublish}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Publish to the live website now?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Your saved draft will go live immediately, without Super Admin review. Preview it first if you have
+              not already. The change is recorded in the activity log.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => {
+                setConfirmDirectPublish(false);
+                onPublish();
+              }}
+            >
+              Publish now
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       {/* Rejection feedback banner */}
       {effectiveStatus === "rejected" && reviewFeedback && (

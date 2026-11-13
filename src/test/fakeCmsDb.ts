@@ -6,7 +6,9 @@
  *
  * It mirrors the database rules that matter for frontend behaviour (publish only when approved,
  * Super Admin only, scope/column allow-lists) so component tests can prove the UI routes every
- * change through drafts. It is NOT a substitute for the 006 harness on a real staging database.
+ * change through drafts. It also mirrors migration 007's direct-publishing rule (per-user flag read
+ * at publish time, allow-listed targets, own-draft-only contributors, no removals).
+ * It is NOT a substitute for the 006 / 007b harnesses on a real staging database.
  */
 import { SITE_CONFIG_SCOPE_KEYS, pickScopeConfig, type SiteConfigScope } from "@/lib/cms/siteConfigScopes";
 import { COLLECTION_DEFINITIONS, isPersistedId, type CollectionKey } from "@/lib/cms/collections";
@@ -22,7 +24,20 @@ export interface FakeDbState {
   /** Any attempted browser write to a live table (must stay 0). */
   liveWrites: string[];
   role: "editor" | "super_admin";
+  /** Current actor (auth.uid()). */
+  userId: string;
+  /** profiles.direct_publish_enabled per user id (007). Read at publish time. */
+  directPublish: Record<string, boolean>;
 }
+
+/** Mirrors public.direct_publish_targets() in 007. */
+export const FAKE_DIRECT_PUBLISH_TARGETS = [
+  "site_config:doctor",
+  "collection:services",
+  "collection:blog_posts",
+  "collection:case_studies",
+  "collection:testimonials",
+];
 
 let uuidCounter = 0;
 export function fakeUuid(): string {
@@ -38,6 +53,7 @@ export function createFakeDb(liveConfig: Row, tables: Partial<Record<CollectionK
     reviewed_at: null,
     submitted_at: null,
     published_at: null,
+    contributors: [] as string[],
   });
   return {
     liveConfig: { ...liveConfig },
@@ -61,6 +77,8 @@ export function createFakeDb(liveConfig: Row, tables: Partial<Record<CollectionK
     history: [],
     liveWrites: [],
     role: "editor",
+    userId: "u-editor",
+    directPublish: {},
   };
 }
 
@@ -70,6 +88,62 @@ function clone<T>(v: T): T {
 
 /** Builds a `supabase`-shaped object backed by `state`. */
 export function createFakeSupabase(state: FakeDbState) {
+  // track_cms_draft_contributors() (007)
+  const trackContributor = (row: Row, update: Row) => {
+    const contributors = (row.contributors as string[] | undefined) ?? [];
+    if ("draft" in update && JSON.stringify(update.draft) !== JSON.stringify(row.draft) && !contributors.includes(state.userId)) {
+      row.contributors = [...contributors, state.userId];
+    }
+  };
+
+  // authorize_cms_publish() (007): returns "direct", "approved" or an error.
+  const authorizePublish = (
+    target: string,
+    row: Row,
+    hasRemovals: boolean,
+  ): { mode: "direct" | "approved" } | { error: { code: string; message: string } } => {
+    const status = String(row.workflow_status);
+    if (state.role === "super_admin") {
+      if (status !== "approved") {
+        return { error: { code: "P0001", message: `Only approved changes can be published (current status: ${status}).` } };
+      }
+      return { mode: "approved" };
+    }
+    const allowed = state.directPublish[state.userId] === true && FAKE_DIRECT_PUBLISH_TARGETS.includes(target);
+    if (!allowed) {
+      return { error: { code: "42501", message: "Your account must submit this change for Super Admin review." } };
+    }
+    if (status !== "draft" && status !== "pending_approval") {
+      return { error: { code: "P0001", message: `Save your changes as a draft before publishing (current status: ${status}).` } };
+    }
+    const contributors = (row.contributors as string[] | undefined) ?? [];
+    if (contributors.length !== 1 || contributors[0] !== state.userId) {
+      return {
+        error: {
+          code: "42501",
+          message: "This draft includes changes made by another CMS user. Submit it for Super Admin review instead.",
+        },
+      };
+    }
+    if (hasRemovals) return { error: { code: "42501", message: "Removing items always needs Super Admin review." } };
+    return { mode: "direct" };
+  };
+
+  const recordDirect = (entityType: string, entityId: string, from: unknown) => {
+    state.history.push({
+      id: String(state.history.length + 1),
+      entity_type: entityType,
+      entity_id: entityId,
+      from_status: from,
+      to_status: "published",
+      actor_email: "doctor@orthocarehub.in",
+      actor_role: "editor",
+      feedback: null,
+      direct_publish: true,
+      created_at: new Date().toISOString(),
+    });
+  };
+
   const builder = (table: string) => {
     const filters: Record<string, string> = {};
     let update: Row | null = null;
@@ -81,6 +155,7 @@ export function createFakeSupabase(state: FakeDbState) {
         const row = state.siteDrafts[scope];
         if (!row) return { data: null, error: null };
         if (mode === "update" && update) {
+          trackContributor(row, update);
           Object.assign(row, clone(update));
           return { data: [{ workflow_status: row.workflow_status }], error: null };
         }
@@ -91,6 +166,7 @@ export function createFakeSupabase(state: FakeDbState) {
         const row = state.collectionDrafts[key];
         if (!row) return { data: null, error: null };
         if (mode === "update" && update) {
+          trackContributor(row, update);
           Object.assign(row, clone(update));
           return { data: [{ workflow_status: row.workflow_status }], error: null };
         }
@@ -168,29 +244,29 @@ export function createFakeSupabase(state: FakeDbState) {
       return { data: null, error: null };
     }
     if (fn === "publish_site_config_draft") {
-      if (state.role !== "super_admin") return { data: null, error: { code: "42501", message: "Only a Super Admin can publish site settings." } };
       const scope = args._scope as SiteConfigScope;
       const row = state.siteDrafts[scope];
-      if (row.workflow_status !== "approved") {
-        return { data: null, error: { code: "P0001", message: `Only approved changes can be published (current status: ${String(row.workflow_status)}).` } };
-      }
+      const auth = authorizePublish(`site_config:${scope}`, row, false);
+      if ("error" in auth) return { data: null, error: auth.error };
+      const fromStatus = row.workflow_status;
       const patch: Row = {};
       for (const key of SITE_CONFIG_SCOPE_KEYS[scope]) {
         if (key in (row.draft as Row)) patch[key] = (row.draft as Row)[key];
       }
       state.liveConfig = { ...state.liveConfig, ...clone(patch) };
       row.workflow_status = "published";
+      row.contributors = [];
+      if (auth.mode === "direct") recordDirect("site_config", scope, fromStatus);
       return { data: clone(state.liveConfig), error: null };
     }
     if (fn === "publish_collection_draft") {
-      if (state.role !== "super_admin") return { data: null, error: { code: "42501", message: "Only a Super Admin can publish content." } };
       const key = args._key as CollectionKey;
       const row = state.collectionDrafts[key];
-      if (row.workflow_status !== "approved") {
-        return { data: null, error: { code: "P0001", message: `Only approved changes can be published (current status: ${String(row.workflow_status)}).` } };
-      }
-      const def = COLLECTION_DEFINITIONS[key];
       const draft = row.draft as { items: Row[]; deletedIds: string[] };
+      const auth = authorizePublish(`collection:${key}`, row, draft.deletedIds.length > 0);
+      if ("error" in auth) return { data: null, error: auth.error };
+      const fromStatus = row.workflow_status;
+      const def = COLLECTION_DEFINITIONS[key];
       let inserted = 0;
       let updated = 0;
       let deleted = 0;
@@ -213,6 +289,8 @@ export function createFakeSupabase(state: FakeDbState) {
       }
       row.draft = { items: [], deletedIds: [] };
       row.workflow_status = "published";
+      row.contributors = [];
+      if (auth.mode === "direct") recordDirect("collection", key, fromStatus);
       return { data: { inserted, updated, deleted }, error: null };
     }
     return { data: null, error: null };

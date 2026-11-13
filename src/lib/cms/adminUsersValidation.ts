@@ -11,9 +11,17 @@ export type AdminUserActionPayload =
   | {
       action: "create";
       email: string;
-      password?: string;
       displayName?: string;
       role: AssignableCmsRole;
+    }
+  | {
+      action: "resend_invite";
+      userId: string;
+    }
+  | {
+      action: "set_direct_publish";
+      userId: string;
+      enabled: boolean;
     }
   | {
       action: "set_role";
@@ -57,7 +65,8 @@ export interface ValidationOutcome {
  * Enforces:
  * 1. Valid Bearer JWT presence (`callerUid` must be non-empty)
  * 2. Active Super Admin authorization (`isSuperAdmin === true`)
- * 3. Strict input validation on `action`, `email`, `password`, `displayName`, `userId`, and `role`
+ * 3. Strict input validation on `action`, `email`, `displayName`, `userId`, `role` and `enabled`;
+ *    `password` is always rejected (invitation-only onboarding)
  * 4. Self-lockout & privilege-escalation prevention (cannot demote, disable, or delete own Super Admin account)
  */
 export function validateAdminUserRequest(params: {
@@ -100,14 +109,13 @@ export function validateAdminUserRequest(params: {
         error: "Invalid role: must be explicitly 'editor' or 'super_admin'",
       };
     }
+    // Invitation only: an administrator never chooses (or sees) another user's password.
     if (body.password !== undefined && body.password !== "") {
-      if (typeof body.password !== "string" || body.password.length < 8 || body.password.length > 128) {
-        return {
-          ok: false,
-          status: 400,
-          error: "Password must be between 8 and 128 characters",
-        };
-      }
+      return {
+        ok: false,
+        status: 400,
+        error: "Administrators cannot set passwords. The user sets their own password from the invitation email.",
+      };
     }
     const rawDisplay = typeof body.displayName === "string" ? body.displayName.trim().slice(0, 100) : "";
 
@@ -117,7 +125,6 @@ export function validateAdminUserRequest(params: {
       sanitized: {
         action: "create",
         email: rawEmail,
-        password: typeof body.password === "string" && body.password.length > 0 ? body.password : undefined,
         displayName: rawDisplay || rawEmail.split("@")[0],
         role: body.role,
       },
@@ -175,6 +182,36 @@ export function validateAdminUserRequest(params: {
         userId: body.userId.trim(),
         isActive: body.isActive,
       },
+    };
+  }
+
+  if (action === "resend_invite") {
+    if (!isValidUuid(body.userId)) {
+      return { ok: false, status: 400, error: "A valid target userId (UUID) is required" };
+    }
+    return { ok: true, status: 200, sanitized: { action: "resend_invite", userId: body.userId.trim() } };
+  }
+
+  if (action === "set_direct_publish") {
+    if (!isValidUuid(body.userId)) {
+      return { ok: false, status: 400, error: "A valid target userId (UUID) is required" };
+    }
+    if (typeof body.enabled !== "boolean") {
+      return { ok: false, status: 400, error: "enabled must be a boolean" };
+    }
+    // A Super Admin already publishes after approval; the flag only applies to Editor accounts,
+    // which can never be the caller (the caller is always a Super Admin).
+    if (body.userId.trim() === callerUid) {
+      return {
+        ok: false,
+        status: 400,
+        error: "Direct publishing applies to Admin (editor) accounts, not your own Super Admin account",
+      };
+    }
+    return {
+      ok: true,
+      status: 200,
+      sanitized: { action: "set_direct_publish", userId: body.userId.trim(), enabled: body.enabled },
     };
   }
 

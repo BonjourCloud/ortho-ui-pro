@@ -95,7 +95,7 @@ export function useSiteConfigDraft(scope: SiteConfigScope) {
   const publish = async () => {
     setBusy(true);
     setStatusMessage(null);
-    const res = await publishSiteConfigDraft(scope);
+    const res = await publishSiteConfigDraft(scope, { direct: workflowStatus !== "approved" });
     if (res.ok) await reloadConfig?.();
     await finish(res, true);
   };

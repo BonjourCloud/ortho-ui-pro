@@ -3,6 +3,7 @@ import type { Session, User } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
 import { can as canRole, type Capability, type CmsRole } from "@/lib/permissions";
 import { resolveCmsRole, type RoleClient } from "@/lib/resolveCmsRole";
+import { canDirectPublish as canDirectPublishFor, type DirectPublishTarget } from "@/lib/cms/directPublish";
 
 export type AuthStatus = "loading" | "unauthenticated" | "authenticated" | "error";
 
@@ -13,6 +14,11 @@ export interface AuthValue {
   role: CmsRole | null;
   roleSource: "rpc" | "legacy" | null;
   editorsCanPublish: boolean;
+  /**
+   * The signed-in Editor's own `profiles.direct_publish_enabled` flag (migration 007), for display
+   * only. The publish functions re-check it in the database at publish time.
+   */
+  directPublishEnabled: boolean;
   /** True when a signed-in session ended without the user pressing "Sign out". */
   sessionExpired: boolean;
   error: string | null;
@@ -20,9 +26,32 @@ export interface AuthValue {
   signOut: () => Promise<void>;
   retry: () => void;
   can: (capability: Capability) => boolean;
+  /** UX helper: may this user publish this target without review? (database re-checks) */
+  canDirectPublish: (target: DirectPublishTarget | string | null | undefined) => boolean;
+  /** Re-reads the direct publishing flag (e.g. before showing a publish button). */
+  refreshDirectPublish: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthValue | null>(null);
+
+/** Own profile row only (RLS "Users read own profile"). Missing column (007 not applied) → false. */
+async function readDirectPublishFlag(userId: string): Promise<boolean> {
+  try {
+    const { data, error } = await (supabase as unknown as {
+      from: (t: string) => {
+        select: (c: string) => { eq: (k: string, v: string) => { maybeSingle: () => Promise<{ data: { direct_publish_enabled?: boolean } | null; error: unknown }> } };
+      };
+    })
+      .from("profiles")
+      .select("direct_publish_enabled")
+      .eq("user_id", userId)
+      .maybeSingle();
+    if (error || !data) return false;
+    return data.direct_publish_enabled === true;
+  } catch {
+    return false;
+  }
+}
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [status, setStatus] = useState<AuthStatus>("loading");
@@ -30,6 +59,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [role, setRole] = useState<CmsRole | null>(null);
   const [roleSource, setRoleSource] = useState<"rpc" | "legacy" | null>(null);
   const [editorsCanPublish, setEditorsCanPublish] = useState(false);
+  const [directPublishEnabled, setDirectPublishEnabled] = useState(false);
   const [sessionExpired, setSessionExpired] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -49,6 +79,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setRole(null);
       setRoleSource(null);
       setEditorsCanPublish(false);
+      setDirectPublishEnabled(false);
       setError(null);
       if (hadUser && !manualSignOutRef.current) setSessionExpired(true);
       manualSignOutRef.current = false;
@@ -73,9 +104,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
       if (request !== requestRef.current) return;
 
+      const direct = resolved.role === "editor" ? await readDirectPublishFlag(session.user.id) : false;
+      if (request !== requestRef.current) return;
+
       setRole(resolved.role);
       setRoleSource(resolved.source);
       setEditorsCanPublish(publish);
+      setDirectPublishEnabled(direct);
       setError(null);
       setStatus("authenticated");
     } catch (e) {
@@ -112,6 +147,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     await supabase.auth.signOut();
   }, []);
 
+  const refreshDirectPublish = useCallback(async () => {
+    const uid = userIdRef.current;
+    if (!uid || role !== "editor") {
+      setDirectPublishEnabled(false);
+      return;
+    }
+    setDirectPublishEnabled(await readDirectPublishFlag(uid));
+  }, [role]);
+
   const retry = useCallback(() => {
     setStatus("loading");
     void applySession(sessionRef.current);
@@ -124,14 +168,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       role,
       roleSource,
       editorsCanPublish,
+      directPublishEnabled,
       sessionExpired,
       error,
       signIn,
       signOut,
       retry,
       can: (capability) => canRole(role, capability, { editorsCanPublish }),
+      canDirectPublish: (target) => canDirectPublishFor(role, directPublishEnabled, target),
+      refreshDirectPublish,
     }),
-    [status, user, role, roleSource, editorsCanPublish, sessionExpired, error, signIn, signOut, retry],
+    [status, user, role, roleSource, editorsCanPublish, directPublishEnabled, sessionExpired, error, signIn, signOut, retry, refreshDirectPublish],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

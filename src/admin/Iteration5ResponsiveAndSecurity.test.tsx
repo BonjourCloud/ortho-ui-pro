@@ -159,7 +159,7 @@ describe("Iteration 5: RESPONSIVE-001 & Edge Function Security Validation", () =
       });
     });
 
-    it("validates email, password length (8..128), and strict role allowlist on 'create'", () => {
+    it("validates email, rejects admin-set passwords, and enforces a strict role allowlist on 'create'", () => {
       expect(
         validateAdminUserRequest({
           hasAuthHeader: true,
@@ -179,7 +179,15 @@ describe("Iteration 5: RESPONSIVE-001 & Edge Function Security Validation", () =
         }).status,
       ).toBe(400);
 
-      // Rejects weak passwords < 8 chars
+      // Rejects any administrator-chosen password (invitation-only onboarding)
+      expect(
+        validateAdminUserRequest({
+          hasAuthHeader: true,
+          callerUid: CALLER_UID,
+          isSuperAdmin: true,
+          rawBody: { action: "create", email: "doc@orthocarehub.in", password: "StrongPassword123!", role: "editor" },
+        }).status,
+      ).toBe(400);
       expect(
         validateAdminUserRequest({
           hasAuthHeader: true,
@@ -197,7 +205,6 @@ describe("Iteration 5: RESPONSIVE-001 & Edge Function Security Validation", () =
         rawBody: {
           action: "create",
           email: "  Test_Doctor@OrthoCareHub.in ",
-          password: "StrongPassword123!",
           displayName: "Dr. Test",
           role: "editor",
         },
@@ -208,7 +215,6 @@ describe("Iteration 5: RESPONSIVE-001 & Edge Function Security Validation", () =
         sanitized: {
           action: "create",
           email: "test_doctor@orthocarehub.in",
-          password: "StrongPassword123!",
           displayName: "Dr. Test",
           role: "editor",
         },

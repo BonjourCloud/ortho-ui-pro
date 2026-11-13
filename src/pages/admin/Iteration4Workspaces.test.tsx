@@ -314,7 +314,7 @@ describe("Iteration 4 Workspaces (BRAND-001, SEO-001, AUDIT-001, ROLE-004, ROLE-
       fireEvent.change(screen.getByLabelText(/display name/i), {
         target: { value: "Clinic Reception" },
       });
-      fireEvent.click(screen.getByRole("button", { name: /create cms account/i }));
+      fireEvent.click(screen.getByRole("button", { name: /send invitation/i }));
 
       await waitFor(() => {
         expect(mockInvoke).toHaveBeenCalledWith("admin-users", {

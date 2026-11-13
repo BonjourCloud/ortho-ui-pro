@@ -1330,7 +1330,10 @@ export async function reviewSiteConfigDraft(params: {
 }
 
 /** Super Admin: publish an approved scope draft. The database rejects anything not approved. */
-export async function publishSiteConfigDraft(scope: SiteConfigScope): Promise<CmsOperationResult> {
+export async function publishSiteConfigDraft(
+  scope: SiteConfigScope,
+  options: { direct?: boolean } = {},
+): Promise<CmsOperationResult> {
   const label = SITE_CONFIG_SCOPE_LABELS[scope];
   try {
     const { error } = await db.rpc("publish_site_config_draft", { _scope: scope });
@@ -1344,7 +1347,14 @@ export async function publishSiteConfigDraft(scope: SiteConfigScope): Promise<Cm
   } catch {
     return { ok: false, persistedToDatabase: false, message: schemaMissingMessage(label, "005c") };
   }
-  return { ok: true, persistedToDatabase: true, workflowStatus: "published", message: `${label} published to the live website.` };
+  return {
+    ok: true,
+    persistedToDatabase: true,
+    workflowStatus: "published",
+    message: options.direct
+      ? `${label} published directly to the live website. The change is recorded in the activity log.`
+      : `${label} published to the live website.`,
+  };
 }
 
 // Clinic wrappers (kept for existing callers and tests)
@@ -2021,6 +2031,8 @@ export async function fetchActivityLogs(limit = 50): Promise<{
 //    NEVER assigns roles client-side; all writes go through `supabase.functions.invoke('admin-users')`.
 // ---------------------------------------------------------------------------
 
+export type CmsInviteStatus = "pending" | "accepted" | "expired" | "failed" | "not_invited";
+
 export interface CmsManagedUser {
   userId: string;
   email: string;
@@ -2028,6 +2040,12 @@ export interface CmsManagedUser {
   role: "super_admin" | "editor";
   isActive: boolean;
   createdAt: string;
+  /** Migration 007 + updated admin-users function; absent on older deployments. */
+  inviteStatus?: CmsInviteStatus;
+  inviteLastSentAt?: string | null;
+  directPublishEnabled?: boolean;
+  directPublishUpdatedAt?: string | null;
+  directPublishUpdatedByEmail?: string | null;
 }
 
 export async function invokeAdminUsers<T = Record<string, unknown>>(
@@ -2255,7 +2273,10 @@ export async function reviewCollectionDraft(params: {
 }
 
 /** Super Admin: apply the approved changeset to the live table (database-side, all-or-nothing). */
-export async function publishCollectionDraft(key: CollectionKey): Promise<CmsOperationResult> {
+export async function publishCollectionDraft(
+  key: CollectionKey,
+  options: { direct?: boolean } = {},
+): Promise<CmsOperationResult> {
   const def = COLLECTION_DEFINITIONS[key];
   try {
     const { data, error } = await db.rpc("publish_collection_draft", { _key: key });
@@ -2271,7 +2292,7 @@ export async function publishCollectionDraft(key: CollectionKey): Promise<CmsOpe
       ok: true,
       persistedToDatabase: true,
       workflowStatus: "published",
-      message: `${def.label} published: ${counts.inserted ?? 0} added, ${counts.updated ?? 0} updated, ${counts.deleted ?? 0} removed.`,
+      message: `${def.label} published${options.direct ? " directly" : ""}: ${counts.inserted ?? 0} added, ${counts.updated ?? 0} updated, ${counts.deleted ?? 0} removed.`,
     };
   } catch {
     return { ok: false, persistedToDatabase: false, message: schemaMissingMessage(def.label, "005d") };

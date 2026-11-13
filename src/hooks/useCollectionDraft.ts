@@ -119,7 +119,7 @@ export function useCollectionDraft<T extends CollectionRow>(key: CollectionKey) 
   const publish = async () => {
     setBusy(true);
     setStatusMessage(null);
-    await finish(await publishCollectionDraft(key), true);
+    await finish(await publishCollectionDraft(key, { direct: workflowStatus !== "approved" }), true);
   };
 
   const discardEdits = () => {
@@ -128,6 +128,7 @@ export function useCollectionDraft<T extends CollectionRow>(key: CollectionKey) 
   };
 
   return {
+    key,
     rows,
     liveRows,
     record,
